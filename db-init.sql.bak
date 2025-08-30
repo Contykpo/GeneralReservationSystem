@@ -11,7 +11,7 @@ GO
 -- Create admin login and user
 IF NOT EXISTS (SELECT name FROM sys.server_principals WHERE name = N'admin_user')
 BEGIN
-    CREATE LOGIN admin_user WITH PASSWORD = 'Admin1234';
+    CREATE LOGIN admin_user WITH PASSWORD = 'Admin_User1234';
 END
 GO
 
@@ -25,7 +25,7 @@ GO
 -- Create app login and user
 IF NOT EXISTS (SELECT name FROM sys.server_principals WHERE name = N'app_user')
 BEGIN
-    CREATE LOGIN app_user WITH PASSWORD = 'Application1234';
+    CREATE LOGIN app_user WITH PASSWORD = 'Application_User1234';
 END
 GO
 

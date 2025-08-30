@@ -35,6 +35,10 @@ builder.Services.AddSingleton<DbConnectionHelper>();
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
+builder.WebHost.UseKestrel(o =>
+    o.ListenAnyIP(5000)
+    );
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

@@ -5,11 +5,11 @@ services:
       context: .
       dockerfile: GeneralReservationSystem.Web/Dockerfile
     ports:
-      - "5000:80"
+      - "5000:5000"
     depends_on:
       - sqlserver
     environment:
-      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=AppDb;User Id=sa;Password=1234;
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=AppDb;User Id=sa;Password=SuperSa1234;
 
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -18,7 +18,7 @@ services:
       - "1433:1433"
     environment:
       - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=1234
+      - MSSQL_SA_PASSWORD=SuperSa1234
     volumes:
       - sql_data:/var/opt/mssql
       - ./db-init.sql:/docker-entrypoint-initdb.d/db-init.sql
