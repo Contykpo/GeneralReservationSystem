@@ -4,8 +4,9 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>aspnet-GeneralReservationSystem.Web-1922b98f-251f-4faa-8460-5d01fe6a80e7</UserSecretsId>
+    <UserSecretsId>aspnet-GeneralReservationSystem.Web-55b28aa8-f814-40b4-b9aa-c82815505d36</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <DockerComposeProjectPath>..\docker-compose.dcproj</DockerComposeProjectPath>
   </PropertyGroup>
 
   <ItemGroup>

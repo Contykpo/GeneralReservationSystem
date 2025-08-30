@@ -1,0 +1,27 @@
+services:
+  generalreservationsystem.web:
+    image: ${DOCKER_REGISTRY-}generalreservationsystemweb
+    build:
+      context: .
+      dockerfile: GeneralReservationSystem.Web/Dockerfile
+    ports:
+      - "5000:80"
+    depends_on:
+      - sqlserver
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=AppDb;User Id=sa;Password=1234;
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver_container
+    ports:
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=1234
+    volumes:
+      - sql_data:/var/opt/mssql
+      - ./db-init.sql:/docker-entrypoint-initdb.d/db-init.sql
+
+volumes:
+  sql_data:

@@ -13,9 +13,6 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0-noble AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["GeneralReservationSystem.Web/GeneralReservationSystem.Web.csproj", "GeneralReservationSystem.Web/"]
-COPY ["GeneralReservationSystem.Infrastructure/GeneralReservationSystem.Infrastructure.csproj", "GeneralReservationSystem.Infrastructure/"]
-COPY ["GeneralReservationSystem.Application/GeneralReservationSystem.Application.csproj", "GeneralReservationSystem.Application/"]
-COPY ["GeneralReservationSystem.Domain/GeneralReservationSystem.Domain.csproj", "GeneralReservationSystem.Domain/"]
 RUN dotnet restore "./GeneralReservationSystem.Web/GeneralReservationSystem.Web.csproj"
 COPY . .
 WORKDIR "/src/GeneralReservationSystem.Web"

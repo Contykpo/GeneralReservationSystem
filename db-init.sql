@@ -1,0 +1,65 @@
+﻿-- Create database
+IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'AppDb')
+BEGIN
+    CREATE DATABASE AppDb;
+END
+GO
+
+USE AppDb;
+GO
+
+-- Create admin login and user
+IF NOT EXISTS (SELECT name FROM sys.server_principals WHERE name = N'admin')
+BEGIN
+    CREATE LOGIN admin_user WITH PASSWORD = 'admin123';
+END
+GO
+
+IF NOT EXISTS (SELECT name FROM sys.database_principals WHERE name = N'admin')
+BEGIN
+    CREATE USER admin_user FOR LOGIN admin_user;
+    ALTER ROLE db_owner ADD MEMBER admin_user;
+END
+GO
+
+-- Create app login and user
+IF NOT EXISTS (SELECT name FROM sys.server_principals WHERE name = N'application')
+BEGIN
+    CREATE LOGIN app_user WITH PASSWORD = 'app123';
+END
+GO
+
+IF NOT EXISTS (SELECT name FROM sys.database_principals WHERE name = N'application')
+BEGIN
+    CREATE USER app_user FOR LOGIN app_user;
+    ALTER ROLE db_datareader ADD MEMBER app_user;
+    ALTER ROLE db_datawriter ADD MEMBER app_user;
+END
+GO
+
+-- Create ApplicationUser table
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='ApplicationUsers' AND xtype='U')
+BEGIN
+    CREATE TABLE ApplicationUsers (
+        Id NVARCHAR(450) NOT NULL PRIMARY KEY,
+        UserName NVARCHAR(256) NULL,
+        NormalizedUserName NVARCHAR(256) NULL,
+        Email NVARCHAR(256) NULL,
+        NormalizedEmail NVARCHAR(256) NULL,
+        EmailConfirmed BIT NOT NULL DEFAULT(0),
+        PasswordHash NVARCHAR(MAX) NULL,
+        SecurityStamp NVARCHAR(MAX) NULL
+    );
+END
+GO
+
+-- Create ApplicationRole table
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='ApplicationRoles' AND xtype='U')
+BEGIN
+    CREATE TABLE ApplicationRoles (
+        Id NVARCHAR(450) NOT NULL PRIMARY KEY,
+        Name NVARCHAR(256) NULL,
+        NormalizedName NVARCHAR(256) NULL
+    );
+END
+GO
