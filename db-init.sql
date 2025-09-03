@@ -1,5 +1,5 @@
 ﻿-- Create database
-IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'AppDb')
+IF DB_ID(N'AppDb') IS NULL
 BEGIN
     CREATE DATABASE AppDb;
 END
@@ -9,13 +9,13 @@ USE AppDb;
 GO
 
 -- Create admin login and user
-IF NOT EXISTS (SELECT name FROM sys.server_principals WHERE name = N'admin_user')
+IF SUSER_ID(N'admin_user') IS NULL
 BEGIN
     CREATE LOGIN admin_user WITH PASSWORD = 'Admin1234';
 END
 GO
 
-IF NOT EXISTS (SELECT name FROM sys.database_principals WHERE name = N'admin_user')
+IF DATABASE_PRINCIPAL_ID(N'admin_user') IS NULL
 BEGIN
     CREATE USER admin_user FOR LOGIN admin_user;
     ALTER ROLE db_owner ADD MEMBER admin_user;
@@ -23,13 +23,13 @@ END
 GO
 
 -- Create app login and user
-IF NOT EXISTS (SELECT name FROM sys.server_principals WHERE name = N'app_user')
+IF SUSER_ID(N'app_user') IS NULL
 BEGIN
     CREATE LOGIN app_user WITH PASSWORD = 'Application1234';
 END
 GO
 
-IF NOT EXISTS (SELECT name FROM sys.database_principals WHERE name = N'app_user')
+IF DATABASE_PRINCIPAL_ID(N'app_user') IS NULL
 BEGIN
     CREATE USER app_user FOR LOGIN app_user;
     ALTER ROLE db_datareader ADD MEMBER app_user;
@@ -38,28 +38,34 @@ END
 GO
 
 -- Create ApplicationUser table
-IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='ApplicationUsers' AND xtype='U')
+IF OBJECT_ID(N'ApplicationUser', 'U') IS NULL
 BEGIN
-    CREATE TABLE ApplicationUsers (
-        Id NVARCHAR(450) NOT NULL PRIMARY KEY,
-        UserName NVARCHAR(256) NULL,
-        NormalizedUserName NVARCHAR(256) NULL,
+    CREATE TABLE ApplicationUser (
+        Id UNIQUEIDENTIFIER NOT NULL PRIMARY KEY,
+        UserName NVARCHAR(256) NOT NULL,
+        NormalizedUserName NVARCHAR(256) NOT NULL,
         Email NVARCHAR(256) NULL,
         NormalizedEmail NVARCHAR(256) NULL,
         EmailConfirmed BIT NOT NULL DEFAULT(0),
-        PasswordHash NVARCHAR(MAX) NULL,
-        SecurityStamp NVARCHAR(MAX) NULL
+        PasswordHash VARBINARY(64) NOT NULL,             --Hash de 64 bytes guardo en crudo
+        PasswordSalt VARBINARY(32) NOT NULL,             --Salt de 32 bytes guardado en crudo
+        SecurityStamp UNIQUEIDENTIFIER NULL DEFAULT(NEWID())
     );
+
+    CREATE UNIQUE INDEX IX_ApplicationUser_NormalizedEmail ON ApplicationUser(NormalizedEmail) 
 END
 GO
 
 -- Create ApplicationRole table
-IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='ApplicationRoles' AND xtype='U')
+IF OBJECT_ID(N'ApplicationRole', 'U') IS NULL
 BEGIN
-    CREATE TABLE ApplicationRoles (
-        Id NVARCHAR(450) NOT NULL PRIMARY KEY,
-        Name NVARCHAR(256) NULL,
-        NormalizedName NVARCHAR(256) NULL
+    CREATE TABLE ApplicationRole (
+        Id UNIQUEIDENTIFIER NOT NULL PRIMARY KEY,
+        Name NVARCHAR(256) NOT NULL,
+        NormalizedName NVARCHAR(256) NOT NULL
     );
+
+    --Indice para la busqueda por nombre de rol normalizado
+    CREATE UNIQUE INDEX IX_ApplicationRole_NormalizedName ON ApplicationRole(NormalizedName) 
 END
 GO
