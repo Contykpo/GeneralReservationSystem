@@ -19,15 +19,15 @@ jobs:
       
       #Instalar dependencias
       - name: Restore                                         
-        run: dotnet restore
+        run: dotnet restore GeneralReservationSystem.sln
 
       #Buildear
       - name: Build
-        run: dotnet build --no-restore -c Release
+        run: dotnet build GeneralReservationSystem.sln --no-restore -c Release
 
       #Correr tests
       - name: Test
-        run: dotnet test --no-build -c Release
+        run: dotnet test GeneralReservationSystem.sln --no-build -c Release
 
       #Builder imagen
       - name: Build Docker image
