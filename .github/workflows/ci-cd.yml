@@ -1,0 +1,85 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  #Builder proyecto, correr tests y buildear imagen
+  build-test:                                                 
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0.x'
+      
+      #Instalar dependencias
+      - name: Restore                                         
+        run: dotnet restore
+
+      #Buildear
+      - name: Build
+        run: dotnet build --no-restore -c Release
+
+      #Correr tests
+      - name: Test
+        run: dotnet test --no-build -c Release
+
+      #Builder imagen
+      - name: Build Docker image
+        run: docker compose -f docker-compose.yml build
+
+  #Subir imagen a docker hub
+  push-image:
+    runs-on: ubuntu-latest
+    needs: build-test
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Build and Push Staging
+        if: !startsWith(github.ref, 'refs/tags/')
+        run: |
+          docker compose -f docker-compose.yml build
+          docker tag generalreservationsystemweb ${{ secrets.DOCKER_HUB_USER }}/generalreservationsystemweb:${{ github.sha }}
+          docker push ${{ secrets.DOCKER_HUB_USER }}/generalreservationsystemweb:${{ github.sha }}
+
+      - name: Build and Push Production
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          docker compose -f docker-compose.yml build
+          SEM_TAG=${GITHUB_REF#refs/tags/}
+          docker tag generalreservationsystemweb ${{ secrets.DOCKER_HUB_USER }}/generalreservationsystemweb:$SEM_TAG
+          docker push ${{ secrets.DOCKER_HUB_USER }}/generalreservationsystemweb:$SEM_TAG
+    
+
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: push-image
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Deploy to Staging
+        run: |
+          docker compose -f docker-compose.yml up -d --remove-orphans
+
+  deploy-prod:
+    runs-on: ubuntu-latest
+    needs: push-image
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Deploy to Production
+        run: |
+          docker compose -f docker-compose.yml up -d --remove-orphans
