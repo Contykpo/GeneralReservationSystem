@@ -47,7 +47,7 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
       - name: Build and Push Staging
-        if: !startsWith(github.ref, 'refs/tags/')
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         run: |
           docker compose -f docker-compose.yml build
           docker tag generalreservationsystemweb ${{ secrets.DOCKER_HUB_USER }}/generalreservationsystemweb:${{ github.sha }}
