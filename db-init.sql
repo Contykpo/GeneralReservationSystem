@@ -69,3 +69,20 @@ BEGIN
     CREATE UNIQUE INDEX IX_ApplicationRole_NormalizedName ON ApplicationRole(NormalizedName) 
 END
 GO
+
+-- Create UserSession table
+IF OBJECT_ID(N'UserSession', 'U') IS NULL
+BEGIN
+    CREATE TABLE UserSession (
+        Id UNIQUEIDENTIFIER NOT NULL PRIMARY KEY,
+        UserId UNIQUEIDENTIFIER NOT NULL,
+        CreatedAt DATETIMEOFFSET NOT NULL,
+        ExpiresAt DATETIMEOFFSET,
+        SessionInfo NVARCHAR(1024),
+
+        CONSTRAINT FK_UserSession_User FOREIGN KEY(UserId)
+            REFERENCES ApplicationUser(Id)
+            ON DELETE CASCADE
+    );
+END
+GO

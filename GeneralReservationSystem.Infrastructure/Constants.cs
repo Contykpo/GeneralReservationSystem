@@ -41,6 +41,16 @@ namespace GeneralReservationSystem.Infrastructure
 				public const string NormalizedNameColumnName	= "ApplicationRole";
 				public const string RoleIdColumnName			= "Id";
 			}
+
+			public static class UserSession
+			{
+				public const string TableName				= "UserSession";
+				public const string IdColumnName			= "Id";
+				public const string UserIdColumnName		= "UserId";
+				public const string CreatedAtColumnName		= "CreatedAt";
+				public const string ExpiresAtColumnName		= "ExpiresAt";
+				public const string SessionInfoColumnName	= "SessionInfo";
+			}
 		}
 	}
 }
