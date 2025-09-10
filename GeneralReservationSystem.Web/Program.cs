@@ -7,10 +7,15 @@ using GeneralReservationSystem.Infrastructure;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 
+using MudBlazor.Services;
+
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
+
+builder.Services.AddMudServices();
 
 //builder.Services.AddCascadingAuthenticationState();
 //builder.Services.AddScoped<IdentityUserAccessor>();
@@ -59,8 +64,7 @@ app.UseHttpsRedirection();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
