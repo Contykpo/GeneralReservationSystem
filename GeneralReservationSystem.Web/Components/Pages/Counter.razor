@@ -5,14 +5,20 @@
 
 <h1>Counter</h1>
 
-<p role="status">Current count: @currentCount</p>
+<MudText Typo="Typo.h6">
+    Current count: @currentCount
+</MudText>
+<MudButton Variant="Variant.Filled"
+           Color="Color.Primary"
+           OnClick="ButtonOnClick">
+    Click Me!
+</MudButton>
 
-<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
-
-@code {
+@code
+{
     private int currentCount = 0;
 
-    private void IncrementCount()
+    void ButtonOnClick()
     {
         currentCount++;
     }
