@@ -10,12 +10,37 @@ namespace GeneralReservationSystem.Infrastructure
 	{
 		public static class CookieNames
 		{
-			public static readonly string SessionIDCookieName = "grs_session_id";
+			public const string SessionID = "grs_session_id";
 		} 
 		
 		public static class RoleNames
 		{
-			public static readonly string User = "customer";
+			public const string User = "customer";
+		}
+
+		public static class Tables
+		{
+			public static class ApplicationUser
+			{
+				public const string TableName					= "ApplicationUser";
+				public const string UserIdColumnName			= "Id";
+				public const string NameColumnName				= "UserName";
+				public const string NormalizedNameColumnName	= "NormalizedUserName";
+				public const string EmailColumnName				= "Email";
+				public const string NormalizedEmailColumnName	= "NormalizedEmail";
+				public const string EmailConfirmedColumnName	= "EmailConfirmed";
+				public const string PasswordHashColumnName		= "PasswordHash";
+				public const string PasswordSaltColumnName		= "PasswordSalt";
+				public const string SecurityStampColumnName		= "SecurityStamp";
+			}
+
+			public static class ApplicationRole
+			{
+				public const string TableName					= "ApplicationRole";
+				public const string NameColumnName				= "ApplicationRole";
+				public const string NormalizedNameColumnName	= "ApplicationRole";
+				public const string RoleIdColumnName			= "Id";
+			}
 		}
 	}
 }

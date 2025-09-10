@@ -25,7 +25,7 @@ namespace GeneralReservationSystem.Infrastructure.Middleware
 
 		public async Task InvokeAsync(HttpContext context)
 		{
-			if(context.Request.Cookies.TryGetValue(Constants.CookieNames.SessionIDCookieName, out var sessionIDCookieValue)
+			if(context.Request.Cookies.TryGetValue(Constants.CookieNames.SessionID, out var sessionIDCookieValue)
 				&& Guid.TryParse(sessionIDCookieValue, out Guid sessionId))
 			{
 				//TODO: Query a la base de datos para obtener la sesion, el usuario y sus roles
