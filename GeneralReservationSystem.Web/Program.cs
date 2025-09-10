@@ -3,6 +3,7 @@ using GeneralReservationSystem.Web.Components.Account;
 using GeneralReservationSystem.Web.Data;
 
 using GeneralReservationSystem.Infrastructure;
+using GeneralReservationSystem.Infrastructure.Middleware;
 
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -36,7 +37,7 @@ builder.Services.AddSingleton<DbConnectionHelper>();
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.WebHost.UseKestrel(o =>
-    o.ListenAnyIP(5000)
+        o.ListenAnyIP(5000)
     );
 
 var app = builder.Build();
@@ -64,5 +65,7 @@ app.MapRazorComponents<App>()
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
+
+app.UseMiddleware<SessionMiddleware>();
 
 app.Run();
