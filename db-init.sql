@@ -70,6 +70,26 @@ BEGIN
 END
 GO
 
+-- Create UserRole table, representa relaciones entre pares Usuario, Rol
+IF OBJECT_ID(N'UserRole', 'U') IS NULL
+BEGIN
+    CREATE TABLE UserRole (
+        UserId UNIQUEIDENTIFIER NOT NULL,
+        RoleId UNIQUEIDENTIFIER NOT NULL,
+
+        CONSTRAINT FK_UserRole_User FOREIGN KEY(UserId)
+            REFERENCES ApplicationUser(Id)
+            ON DELETE CASCADE,
+
+        CONSTRAINT FK_UserRole_Role FOREIGN KEY(RoleId)
+            REFERENCES ApplicationRole(Id)
+            ON DELETE CASCADE,
+
+        CONSTRAINT PK_UserRole PRIMARY KEY(UserId, RoleId)
+    );
+END
+GO
+
 -- Create UserSession table
 IF OBJECT_ID(N'UserSession', 'U') IS NULL
 BEGIN
