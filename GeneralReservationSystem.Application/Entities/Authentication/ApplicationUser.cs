@@ -1,6 +1,6 @@
 namespace GeneralReservationSystem.Application.Entities.Authentication
 {
-    public class ApplicationUser : BaseEntity
+    public class ApplicationUser
     {
         public Guid UserId { get; set; }
         public string UserName { get; set; } = string.Empty;
