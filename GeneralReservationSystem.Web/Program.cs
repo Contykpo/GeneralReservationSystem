@@ -10,6 +10,9 @@ using Microsoft.AspNetCore.Identity;
 
 using MudBlazor.Services;
 
+using GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations;
+using GeneralReservationSystem.Infrastructure.Repositories.Interfaces;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +34,7 @@ builder.Services.AddMudServices();
 //    .AddIdentityCookies();
 
 builder.Services.AddSingleton<DbConnectionHelper>();
+builder.Services.AddScoped<IUserRepository, DefaultUserRepository>();
 
 //builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
 //    .AddEntityFrameworkStores<ApplicationDbContext>()
