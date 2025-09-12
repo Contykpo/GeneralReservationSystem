@@ -45,9 +45,17 @@ builder.Services.AddScoped<IUserRepository, DefaultUserRepository>();
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-builder.WebHost.UseKestrel(o =>
-        o.ListenAnyIP(5000)
-    );
+builder.WebHost.UseKestrel(options =>
+{
+    var httpPort = Environment.GetEnvironmentVariable("ASPNETCORE_HTTP_PORTS") ?? "8080";
+    var httpsPort = Environment.GetEnvironmentVariable("ASPNETCORE_HTTPS_PORTS") ?? "8081";
+
+    options.ListenAnyIP(int.Parse(httpPort)); // HTTP
+    options.ListenAnyIP(int.Parse(httpsPort), listenOptions =>
+    {
+        listenOptions.UseHttps(); // HTTPS
+    });
+});
 
 var app = builder.Build();
 
@@ -58,13 +66,14 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
+    // TODO: Se debería configurar un certificado SSL válido en producción. También sería útil redirigir HTTP a HTTPS en desarrollo.
+    // Se puede crear un certificado autofirmado para pruebas (y demos de producción).
+    app.UseHttpsRedirection();
+
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
-
-app.UseHttpsRedirection();
-
 
 app.UseAntiforgery();
 
