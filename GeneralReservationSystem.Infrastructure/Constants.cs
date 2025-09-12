@@ -51,6 +51,13 @@ namespace GeneralReservationSystem.Infrastructure
 				public const string ExpiresAtColumnName		= "ExpiresAt";
 				public const string SessionInfoColumnName	= "SessionInfo";
 			}
+
+			public static class UserRole
+			{
+				public const string TableName			= "UserRole";
+				public const string UserIdColumnName	= "UserId";
+				public const string RoleIdColumnName	= "RoleId";
+			}
 		}
 	}
 }
