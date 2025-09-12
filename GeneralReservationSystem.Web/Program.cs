@@ -1,14 +1,13 @@
+using FluentValidation;
+using GeneralReservationSystem.Infrastructure;
+using GeneralReservationSystem.Infrastructure.Middleware;
 using GeneralReservationSystem.Web.Components;
 using GeneralReservationSystem.Web.Components.Account;
 using GeneralReservationSystem.Web.Data;
-
-using GeneralReservationSystem.Infrastructure;
-using GeneralReservationSystem.Infrastructure.Middleware;
-
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
-
 using MudBlazor.Services;
+using System.Reflection;
 
 using GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations;
 using GeneralReservationSystem.Infrastructure.Repositories.Interfaces;
@@ -20,6 +19,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 
 builder.Services.AddMudServices();
+
+builder.Services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
+
+builder.Services.AddScoped<IPasswordHasher<ApplicationUser>, PasswordHasher<ApplicationUser>>();
 
 //builder.Services.AddCascadingAuthenticationState();
 //builder.Services.AddScoped<IdentityUserAccessor>();

@@ -1,5 +1,176 @@
 ﻿@page "/Account/Register"
 
+@using GeneralReservationSystem.Application.Entities.Authentication
+
+@inject IPasswordHasher<ApplicationUser> PasswordHasher
+@inject ISnackbar Snackbar
+
+
+<MudContainer Class="mt-16">
+    <MudGrid Class="mt-16" Justify="Justify.Center">
+        <MudItem xs="12" sm="12" md="4">
+            <MudCard Elevation="25" Class="rounded-lg pb-4">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h5" Align="Align.Center">Registrarse</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudForm Model="@registerUserData" @ref="@form" Validation="@(registerValidator.ValidateValue)" ValidationDelay="0">
+                        <MudCardContent>
+                            <MudTextField @bind-Value="registerUserData.UserName"
+                                          For="@(() => registerUserData.UserName)"
+                                          Required="true"
+                                          Label="Nombre" />
+
+                            <MudTextField @bind-Value="registerUserData.Email"
+                                          For="@(() => registerUserData.Email)"
+                                          Required="true"
+                                          Label="Email" />
+
+                            <MudTextField @bind-Value="registerUserData.Password"
+                                          For="@(() => registerUserData.Password)"
+                                          InputType="InputType.Password"
+                                          Required="true"
+                                          Label="Contraseña" />
+
+                            <MudTextField @bind-Value="registerUserData.ConfirmPassword"
+                                          For="@(() => registerUserData.ConfirmPassword)"
+                                          InputType="InputType.Password"
+                                          Required="true"
+                                          Label="Confirme la contraseña" />
+                        </MudCardContent>
+                    </MudForm>
+                </MudCardContent>
+                <MudCardActions Class="d-flex justify-center">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" Style="width:50%;" OnClick="@(async () => await RegisterAsync())">Registrarse</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+    <MudText Align="Align.Center" Class="mt-4">
+        ¿Ya esta registrado?
+        <MudLink Href="/Account/Login" Align="Align.Center">Loguearse</MudLink>
+    </MudText>
+</MudContainer>
+
+
+@code
+{
+    #region Properties and Fields
+
+    string Message { get; set; } = string.Empty;
+
+    MudForm form;
+
+    ApplicationUser registerUser = new();
+
+    ApplicationUserCreationData registerUserData = new();
+
+    RegisterValidator registerValidator = new RegisterValidator();
+
+    #endregion
+
+    private async Task RegisterAsync()
+    {
+        try
+        {
+            await form.Validate();
+
+            registerUser = new ApplicationUser
+            {
+                UserId = Guid.NewGuid(),
+                UserName = registerUserData.UserName,
+                NormalizedUserName = registerUserData.UserName.ToUpperInvariant(),
+                Email = registerUserData.Email,
+                NormalizedEmail = registerUserData.Email.ToUpperInvariant(),
+                EmailConfirmed = false,
+                SecurityStamp = Guid.NewGuid()
+            };
+
+            // Remove and leave the security and validation logic to the UserManager in the future. 
+            string hashedPassword = PasswordHasher.HashPassword(registerUser, registerUserData.Password);
+
+            registerUser.PasswordHash = System.Text.Encoding.UTF8.GetBytes(hashedPassword);
+
+            // TODO: send registerUser to the repository to create the user and validate if the creation was successful.
+
+            // if (result.Flag && form.IsValid)
+            // {
+            //     NavigationManager.NavigateTo("/Account/Login", forceLoad: true);
+            // }
+            // {
+            //     Message = result.Message;
+            // }
+
+            // Snackbar.Add(Message, result.Flag && form.IsValid ? MudBlazor.Severity.Success : MudBlazor.Severity.Error);
+
+        }
+        catch
+        {
+            return;
+        }
+    }
+
+    /// <summary>
+    /// Middle class to hold the user registration data.
+    /// </summary>
+    public class ApplicationUserCreationData
+    {
+        public string UserName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// A standard AbstractValidator which contains multiple rules and can be shared with the back end API.
+    /// </summary>
+    /// <typeparam name="registerUser"></typeparam>
+    public class RegisterValidator : AbstractValidator<ApplicationUserCreationData>
+    {
+        public RegisterValidator()
+        {
+            RuleFor(r => r.UserName)
+                .NotEmpty()
+                .Length(1, 50);
+            RuleFor(r => r.Email)
+                .Cascade(CascadeMode.Stop)
+                .NotEmpty()
+                .EmailAddress()
+                .MustAsync(async (value, cancellationToken) => await IsUniqueAsync(value));
+            RuleFor(r => r.Password)
+                .NotEmpty().WithMessage("Your password cannot be empty.")
+                .MinimumLength(8).WithMessage("Your password length must be at least 8 characters.")
+                .Matches(@"[A-Z]+").WithMessage("Your password must contain at least one uppercase letter.")
+                .Matches(@"[a-z]+").WithMessage("Your password must contain at least one lowercase letter.")
+                .Matches(@"[0-9]+").WithMessage("Your password must contain at least one number.")
+                .Matches(@"[\#\?\!\@\$\%\^\&\*\-\.]+").WithMessage("Your password must contain at least one special character: #?!@$ %^&*-.");
+            RuleFor(r => r.ConfirmPassword)
+                .Equal(r => r.Password);
+        }
+
+        private async Task<bool> IsUniqueAsync(string email)
+        {
+            // Simulates a long running http call.
+            await Task.Delay(2000);
+
+            return email.ToLower() != "test@test.com";
+        }
+
+        public Func<object, string, Task<IEnumerable<string>>> ValidateValue => async (model, propertyName) =>
+        {
+            var result = await ValidateAsync(ValidationContext<ApplicationUserCreationData>.CreateWithOptions((ApplicationUserCreationData)model, x => x.IncludeProperties(propertyName)));
+
+            if (result.IsValid) return Array.Empty<string>();
+
+            return result.Errors.Select(e => e.ErrorMessage);
+        };
+    }
+}
+
+
+@*
 @using System.ComponentModel.DataAnnotations
 @using System.Text
 @using System.Text.Encodings.Web
@@ -143,3 +314,4 @@
         public string ConfirmPassword { get; set; } = "";
     }
 }
+ *@

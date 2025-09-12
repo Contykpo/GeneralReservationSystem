@@ -11,7 +11,7 @@ namespace GeneralReservationSystem.Application.Entities.Authentication
         public bool EmailConfirmed { get; set; }
 
         public byte[] PasswordHash { get; set; } = Array.Empty<byte>();
-        public byte[] PasswordSalt { get; set; } = Array.Empty<byte>();
+
         public Guid SecurityStamp { get; set; } = Guid.NewGuid();
     }
 }

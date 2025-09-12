@@ -48,7 +48,6 @@ BEGIN
         NormalizedEmail NVARCHAR(256) NULL,
         EmailConfirmed BIT NOT NULL DEFAULT(0),
         PasswordHash VARBINARY(64) NOT NULL,             --Hash de 64 bytes guardo en crudo
-        PasswordSalt VARBINARY(32) NOT NULL,             --Salt de 32 bytes guardado en crudo
         SecurityStamp UNIQUEIDENTIFIER NULL DEFAULT(NEWID())
     );
 

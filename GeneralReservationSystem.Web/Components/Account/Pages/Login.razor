@@ -1,6 +1,141 @@
 ﻿@page "/Account/Login"
 
-@using System.ComponentModel.DataAnnotations
+@using GeneralReservationSystem.Application.Entities.Authentication
+
+@inject ISnackbar Snackbar
+
+
+<MudContainer Class="mt-16">
+    <MudGrid Class="mt-16" Justify="Justify.Center">
+        <MudItem xs="12" sm="12" md="4">
+            <MudCard Elevation="25" Class="rounded-lg pb-4">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h5" Align="Align.Center">Loguearse</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudForm Model="@loginUserData" @ref="@form" Validation="@(loginValidator.ValidateValue)" ValidationDelay="0">
+                        <MudCardContent>
+                            <MudTextField @bind-Value="loginUserData.EmailAddress"
+                                          For="@(() => loginUserData.EmailAddress)"
+                                          Required="true"
+                                          Label="Email" />
+
+                            <MudTextField @bind-Value="loginUserData.Password"
+                                          For="@(() => loginUserData.Password)"
+                                          InputType="InputType.Password"
+                                          Required="true"
+                                          Label="Contraseña" />
+                        </MudCardContent>
+                    </MudForm>
+                </MudCardContent>
+                <MudCardActions Class="d-flex justify-center">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" Style="width:50%;" OnClick="@(async () => await LoginAsync())">Loguearse</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+    <MudText Align="Align.Center" Class="mt-4">
+        ¿Todavia no tiene una cuenta?
+        <MudLink Href="/register" Align="Align.Center">Registrarse</MudLink>
+    </MudText>
+</MudContainer>
+
+
+@code
+{
+    #region Properties and Fields
+
+    string Message { get; set; } = string.Empty;
+
+    MudForm form;
+
+    ApplicationUserLoginData loginUserData = new();
+
+    LoginValidator loginValidator = new LoginValidator();
+
+    #endregion
+
+    private async Task LoginAsync()
+    {
+        try
+        {
+            await form.Validate();
+
+            // var result = await UserAccountService.LogInUserAccountAsync(loginUserData);
+
+            // if (form.IsValid && result.Flag)
+            // {
+            //     var customAuthenticationStateProvider = (CustomAuthenticationStateProvider)AuthenticationStateProvider;
+            //     await customAuthenticationStateProvider.UpdateAuthenticationState(result.Token);
+
+            //     NavigationManager.NavigateTo("/auth", forceLoad: true);
+            // }
+            // {
+            //     Message = result.Message;
+            // }
+
+            // Snackbar.Add(Message, form.IsValid && result.Flag ? MudBlazor.Severity.Success : MudBlazor.Severity.Error);
+        }
+        catch
+        {
+            return;
+        }
+    }
+
+    /// <summary>
+    /// Middle model for user login data.
+    /// </summary>
+    public class ApplicationUserLoginData
+    {
+        public string EmailAddress { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// A standard AbstractValidator which contains multiple rules and can be shared with the back end API.
+    /// </summary>
+    /// <typeparam name="OrderModel"></typeparam>
+    public class LoginValidator : AbstractValidator<ApplicationUserLoginData>
+    {
+        public LoginValidator()
+        {
+            RuleFor(l => l.EmailAddress)
+                .Cascade(CascadeMode.Stop)
+                .NotEmpty()
+                .EmailAddress()
+                .MustAsync(async (value, cancellationToken) => await IsUniqueAsync(value));
+            RuleFor(l => l.Password)
+                .NotEmpty().WithMessage("Your password cannot be empty.")
+                .MinimumLength(8).WithMessage("Your password length must be at least 8 characters.")
+                .Matches(@"[A-Z]+").WithMessage("Your password must contain at least one uppercase letter.")
+                .Matches(@"[a-z]+").WithMessage("Your password must contain at least one lowercase letter.")
+                .Matches(@"[0-9]+").WithMessage("Your password must contain at least one number.")
+                .Matches(@"[\#\?\!\@\$\%\^\&\*\-\.]+").WithMessage("Your password must contain at least one special character: #?!@$ %^&*-.");
+        }
+
+        private async Task<bool> IsUniqueAsync(string email)
+        {
+            // Simulates a long running http call.
+            await Task.Delay(2000);
+
+            return email.ToLower() != "test@test.com";
+        }
+
+        public Func<object, string, Task<IEnumerable<string>>> ValidateValue => async (model, propertyName) =>
+        {
+            var result = await ValidateAsync(ValidationContext<ApplicationUserLoginData>.CreateWithOptions((ApplicationUserLoginData)model, x => x.IncludeProperties(propertyName)));
+
+            if (result.IsValid) return Array.Empty<string>();
+
+            return result.Errors.Select(e => e.ErrorMessage);
+        };
+    }
+}
+
+
+@* @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Identity
 @using GeneralReservationSystem.Web.Data
@@ -126,3 +261,4 @@
         public bool RememberMe { get; set; }
     }
 }
+ *@
