@@ -17,8 +17,4 @@
     <ProjectReference Include="..\GeneralReservationSystem.Application\GeneralReservationSystem.Application.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Repositories\DefaultImplementations\" />
-  </ItemGroup>
-
 </Project>

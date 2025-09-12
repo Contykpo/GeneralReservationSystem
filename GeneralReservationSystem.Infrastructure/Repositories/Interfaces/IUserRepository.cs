@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 
 using GeneralReservationSystem.Application.Entities.Authentication;
 
+using GeneralReservationSystem.Infrastructure.Common;
+
 namespace GeneralReservationSystem.Infrastructure.Repositories.Interfaces
 {
 	public interface IUserRepository
@@ -20,7 +22,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Interfaces
 		/// A <see cref="Task{ApplicationUser}"/> representing the asynchronous operation,
 		/// containing the user if found, or <c>null</c> if no user exists with the given GUID.
 		/// </returns>
-		public Task<ApplicationUser?> GetByGuidAsync(Guid guid);
+		public Task<OptionalResult<ApplicationUser>> GetByGuidAsync(Guid guid);
 
 		/// <summary>
 		/// Retrieves a user by their email address.
@@ -30,7 +32,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Interfaces
 		/// A <see cref="Task{ApplicationUser}"/> representing the asynchronous operation,
 		/// containing the user if found, or <c>null</c> if no user exists with the given email.
 		/// </returns>
-		public Task<ApplicationUser?> GetByEmailAsync(string email);
+		public Task<OptionalResult<ApplicationUser>> GetByEmailAsync(string email);
 
 		/// <summary>
 		/// Checks if a user exists with the specified email.
@@ -40,7 +42,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Interfaces
 		/// A <see cref="Task{Boolean}"/> representing the asynchronous operation,
 		/// with <c>true</c> if a user exists with the specified email; otherwise, <c>false</c>.
 		/// </returns>
-		public Task<bool> ExistsWithEmailAsync(string email);
+		public Task<OptionalResult<bool>> ExistsWithEmailAsync(string email);
 
 		/// <summary>
 		/// Retrieves all users that have the specified role.
@@ -50,7 +52,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Interfaces
 		/// A <see cref="Task{IList{ApplicationUser}}"/> representing the asynchronous operation,
 		/// containing a list of users with the specified role.
 		/// </returns>
-		public Task<IList<ApplicationUser>> GetWithRoleAsync(string roleName);
+		public Task<OptionalResult<IList<ApplicationUser>>> GetWithRoleAsync(string roleName);
 
 		/// <summary>
 		/// Retrieves all roles assigned to the user identified by <paramref name="userGuid"/>.
@@ -60,7 +62,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Interfaces
 		/// A <see cref="Task{IList{ApplicationRole}}"/> representing the asynchronous operation,
 		/// containing a list of roles assigned to the user.
 		/// </returns>
-		public Task<IList<ApplicationRole>> GetUserRolesAsync(Guid userGuid);
+		public Task<OptionalResult<IList<ApplicationRole>>> GetUserRolesAsync(Guid userGuid);
 
 		/// <summary>
 		/// Retrieves all users in the system.
@@ -69,7 +71,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Interfaces
 		/// A <see cref="Task{IList{ApplicationUser}}"/> representing the asynchronous operation,
 		/// containing a list of all users.
 		/// </returns>
-		public Task<IList<ApplicationUser>> GetAllAsync();
+		public Task<OptionalResult<IList<ApplicationUser>>> GetAllAsync();
 
 		/// <summary>
 		/// Retrieves users that satisfy a specified filter.
@@ -79,7 +81,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Interfaces
 		/// A <see cref="Task{IList{ApplicationUser}}"/> representing the asynchronous operation,
 		/// containing a list of users that match the filter.
 		/// </returns>
-		public Task<IList<ApplicationUser>> FilterAsync(Func<ApplicationUser, bool> predicate);
+		public Task<OptionalResult<IList<ApplicationUser>>> FilterAsync(Func<ApplicationUser, bool> predicate);
 
 		//----------------------__CREATE__------------------------
 
@@ -92,7 +94,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Interfaces
 		/// A <see cref="Task{Boolean}"/> representing the asynchronous operation,
 		/// with <c>true</c> if the user was successfully created; otherwise, <c>false</c>.
 		/// </returns>
-		public Task<bool> CreateUserAsync(ApplicationUser newUser, IEnumerable<ApplicationRole> userRoles);
+		public Task<OperationResult> CreateUserAsync(ApplicationUser newUser, IEnumerable<ApplicationRole> userRoles);
 
 		//----------------------__UPDATE__------------------------
 
@@ -104,7 +106,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Interfaces
 		/// A <see cref="Task{Boolean}"/> representing the asynchronous operation,
 		/// with <c>true</c> if the user was successfully updated; otherwise, <c>false</c>.
 		/// </returns>
-		public Task<bool> UpdateUserAsync(ApplicationUser user);
+		public Task<OperationResult> UpdateUserAsync(ApplicationUser user);
 
 		/// <summary>
 		/// Adds the specified role to the user identified by <paramref name="userGuid"/>.
@@ -115,7 +117,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Interfaces
 		/// A <see cref="Task{Boolean}"/> representing the asynchronous operation,
 		/// with <c>true</c> if the role was successfully added; otherwise, <c>false</c>.
 		/// </returns>
-		public Task<bool> AddRoleAsync(Guid userGuid, string roleName);
+		public Task<OperationResult> AddRoleAsync(Guid userGuid, string roleName);
 
 		/// <summary>
 		/// Removes the specified role from the user identified by <paramref name="userGuid"/>.
@@ -126,6 +128,6 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Interfaces
 		/// A <see cref="Task{Boolean}"/> representing the asynchronous operation,
 		/// with <c>true</c> if the role was successfully removed; otherwise, <c>false</c>.
 		/// </returns>
-		public Task<bool> RemoveRoleAsync(Guid userGuid, string roleName);
+		public Task<OperationResult> RemoveRoleAsync(Guid userGuid, string roleName);
 	}
 }
