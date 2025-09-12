@@ -30,7 +30,6 @@ namespace GeneralReservationSystem.Infrastructure
 				public const string NormalizedEmailColumnName	= "NormalizedEmail";
 				public const string EmailConfirmedColumnName	= "EmailConfirmed";
 				public const string PasswordHashColumnName		= "PasswordHash";
-				public const string PasswordSaltColumnName		= "PasswordSalt";
 				public const string SecurityStampColumnName		= "SecurityStamp";
 			}
 

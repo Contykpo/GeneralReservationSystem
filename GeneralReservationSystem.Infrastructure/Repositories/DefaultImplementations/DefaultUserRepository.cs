@@ -38,7 +38,6 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 				EmailConfirmed		= reader.GetBoolean(reader.GetOrdinal(Constants.Tables.ApplicationUser.EmailConfirmedColumnName)),
 				
 				PasswordHash		= (byte[])reader[Constants.Tables.ApplicationUser.PasswordHashColumnName],
-				PasswordSalt		= (byte[])reader[Constants.Tables.ApplicationUser.PasswordSaltColumnName],
 			};
 		}
 
@@ -148,12 +147,11 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 						{Constants.Tables.ApplicationUser.EmailColumnName}, 
 						{Constants.Tables.ApplicationUser.NormalizedEmailColumnName}, 
 						{Constants.Tables.ApplicationUser.EmailConfirmedColumnName}, 
-						{Constants.Tables.ApplicationUser.PasswordHashColumnName}, 
-						{Constants.Tables.ApplicationUser.PasswordSaltColumnName}, 
+						{Constants.Tables.ApplicationUser.PasswordHashColumnName},
 						{Constants.Tables.ApplicationUser.SecurityStampColumnName}
 					)
 					VALUES 
-					(@UserId, @UserName, @NormalizedUserName, @Email, @NormalizedEmail, @EmailConfirmed, @PasswordHash, @PasswordSalt, @SecurityStamp);";
+					(@UserId, @UserName, @NormalizedUserName, @Email, @NormalizedEmail, @EmailConfirmed, @PasswordHash, @SecurityStamp);";
 
 				var userParameters = new Dictionary<string, object>
 				{
@@ -164,7 +162,6 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 					{ "@NormalizedEmail",       newUser.NormalizedEmail },
 					{ "@EmailConfirmed",        newUser.EmailConfirmed },
 					{ "@PasswordHash",          newUser.PasswordHash },
-					{ "@PasswordSalt",          newUser.PasswordSalt },
 					{ "@SecurityStamp",         newUser.SecurityStamp }
 				};
 
@@ -287,7 +284,6 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 						{Constants.Tables.ApplicationUser.NormalizedEmailColumnName}	= @NormalizedEmail,
 						{Constants.Tables.ApplicationUser.EmailConfirmedColumnName}		= @EmailConfirmed,
 						{Constants.Tables.ApplicationUser.PasswordHashColumnName}		= @PasswordHash,
-						{Constants.Tables.ApplicationUser.PasswordSaltColumnName}		= @PasswordSalt,
 						{Constants.Tables.ApplicationUser.SecurityStampColumnName}		= @SecurityStamp
 					WHERE {Constants.Tables.ApplicationUser.UserIdColumnName}			= @UserId;",
 				parameters: new Dictionary<string, object>
@@ -299,7 +295,6 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 					{ "@NormalizedEmail",       user.NormalizedEmail },
 					{ "@EmailConfirmed",        user.EmailConfirmed },
 					{ "@PasswordHash",          user.PasswordHash },
-					{ "@PasswordSalt",          user.PasswordSalt },
 					{ "@SecurityStamp",         user.SecurityStamp }
 
 				})).Match<OperationResult>(
