@@ -1,7 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
 
 using GeneralReservationSystem.Application.Entities.Authentication;
-using GeneralReservationSystem.Infrastructure.Repositories.Interfaces;
+using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication;
 
 using GeneralReservationSystem.Infrastructure.Common;
 
@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 using static GeneralReservationSystem.Infrastructure.Common.OperationResult;
 using static GeneralReservationSystem.Infrastructure.Common.OptionalResult<object>;
 
-namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations
+namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations.Authentication
 {
 	public class DefaultUserRepository : IUserRepository
 	{
@@ -54,14 +54,14 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 
 		public async Task<OptionalResult<IList<ApplicationUser>>> GetAllAsync()
 		{
-			return await _dbConnection.ExecuteReaderAsync<ApplicationUser>(
+			return await _dbConnection.ExecuteReaderAsync(
 				sql: $"SELECT * FROM {Constants.Tables.ApplicationUser.TableName};",
 				converter: ConvertReaderToUser);
 		}
 
 		public async Task<OptionalResult<ApplicationUser>> GetByEmailAsync(string email)
 		{
-			return await _dbConnection.ExecuteReaderSingleAsync<ApplicationUser>(
+			return await _dbConnection.ExecuteReaderSingleAsync(
 				sql: $"SELECT * FROM {Constants.Tables.ApplicationUser.TableName} WHERE {Constants.Tables.ApplicationUser.NormalizedEmailColumnName} = @Email;",
 				converter: ConvertReaderToUser,
 				parameters: new Dictionary<string, object>
@@ -72,7 +72,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 
 		public async Task<OptionalResult<ApplicationUser>> GetByGuidAsync(Guid guid)
 		{
-			return await _dbConnection.ExecuteReaderSingleAsync<ApplicationUser>(
+			return await _dbConnection.ExecuteReaderSingleAsync(
 				sql:		$"SELECT * FROM {Constants.Tables.ApplicationUser.TableName} WHERE {Constants.Tables.ApplicationUser.UserIdColumnName} = @UserId;",
 				converter:	ConvertReaderToUser,
 				parameters: new Dictionary<string, object>
@@ -83,7 +83,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 
 		public async Task<OptionalResult<IList<ApplicationRole>>> GetUserRolesAsync(Guid userGuid)
 		{
-			return await _dbConnection.ExecuteReaderAsync<ApplicationRole>(
+			return await _dbConnection.ExecuteReaderAsync(
 				sql: $@"
 					SELECT r.{Constants.Tables.ApplicationRole.NameColumnName}, r.{Constants.Tables.ApplicationRole.NormalizedNameColumnName}
 					FROM {Constants.Tables.ApplicationRole.TableName} AS r
@@ -98,7 +98,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 
 		public async Task<OptionalResult<IList<ApplicationUser>>> GetWithRoleAsync(string roleName)
 		{
-			return await _dbConnection.ExecuteReaderAsync<ApplicationUser>(
+			return await _dbConnection.ExecuteReaderAsync(
 				sql: $@"
 					SELECT u.*
 					FROM {Constants.Tables.ApplicationUser.TableName} AS u
@@ -136,7 +136,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 
 		public async Task<OperationResult> CreateUserAsync(ApplicationUser newUser, IEnumerable<ApplicationRole> userRoles)
 		{
-			return (await _dbConnection.ExecuteInTransactionAsync(async (connection, transaction) =>
+			return await _dbConnection.ExecuteInTransactionAsync(async (connection, transaction) =>
 			{
 				//TODO: Considerar si insertar id del usuario directamente o si dejar que la base de datos lo genere
 				// Insert the new user
@@ -171,7 +171,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 				int rowsAffected = 0;
 
 				var userCreationResult = (await _dbConnection.ExecuteAsync(insertUserSql, connection, userParameters, transaction))
-					.Match<int>(
+					.Match(
 						onValue: (rows) => {						
 							if (rows == 0)
 							{
@@ -207,7 +207,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 					rowsAffected = 0;
 
 					(await _dbConnection.ExecuteAsync(assignRoleSql, connection, roleParameters, transaction)).Match(
-						onValue: (rows) => Value<int>(rows),
+						onValue: (rows) => Value(rows),
 						onEmpty: () => {
 							_logger.LogError($"Role assignment returned no result for role {role} and user {newUser.UserName}.");
 							throw new Exception("Role assignment returned no result.");
@@ -230,12 +230,12 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 
 				_logger.LogDebug($"All roles assigned to user {newUser} successfully.");
 
-			}));
+			});
 		}
 
 		public async Task<OptionalResult<bool>> ExistsWithEmailAsync(string email)
 		{
-			return (await _dbConnection.ExecuteReaderSingleAsync<int>(
+			return (await _dbConnection.ExecuteReaderSingleAsync(
 				sql:		$"SELECT COUNT(1) FROM {Constants.Tables.ApplicationUser.TableName} WHERE {Constants.Tables.ApplicationUser.NormalizedEmailColumnName} = @Email;",
 				converter:	reader => reader.GetInt32(0),
 				parameters: new Dictionary<string, object>

@@ -9,9 +9,9 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 
 using MudBlazor.Services;
-
-using GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations;
 using GeneralReservationSystem.Infrastructure.Repositories.Interfaces;
+using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication;
+using GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations.Authentication;
 
 
 var builder = WebApplication.CreateBuilder(args);
