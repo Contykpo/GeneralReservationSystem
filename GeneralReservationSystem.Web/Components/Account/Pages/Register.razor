@@ -77,10 +77,10 @@
         {
             await form.Validate();
 
-            var PasswordHasher = new Helpers.PasswordHasherHelper<ApplicationUser>();
+            var passwordHasher = new Helpers.PasswordHashingHelper<ApplicationUser>();
 
             // Remove and leave the security and validation logic to the UserManager in the future.
-            string hashedPassword = PasswordHasher.HashPassword(registerUser, registerUserData.Password);
+            string hashedPassword = passwordHasher.HashPassword(registerUser, registerUserData.Password);
 
             registerUser = new ApplicationUser
             {
