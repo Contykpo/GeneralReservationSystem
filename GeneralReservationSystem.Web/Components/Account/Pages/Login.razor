@@ -1,7 +1,10 @@
 ﻿@page "/Account/Login"
 
 @using GeneralReservationSystem.Application.Entities.Authentication
+@using GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations
+@using GeneralReservationSystem.Infrastructure.Repositories.Interfaces
 
+@inject IUserRepository UserRepository
 @inject ISnackbar Snackbar
 
 
@@ -51,7 +54,7 @@
 
     MudForm form;
 
-    ApplicationUserLoginData loginUserData = new();
+    ApplicationUserInputData loginUserData = new();
 
     LoginValidator loginValidator = new LoginValidator();
 
@@ -63,20 +66,58 @@
         {
             await form.Validate();
 
-            // var result = await UserAccountService.LogInUserAccountAsync(loginUserData);
+            var passwordHasher = new Helpers.PasswordHasherHelper<ApplicationUser>();
 
-            // if (form.IsValid && result.Flag)
-            // {
-            //     var customAuthenticationStateProvider = (CustomAuthenticationStateProvider)AuthenticationStateProvider;
-            //     await customAuthenticationStateProvider.UpdateAuthenticationState(result.Token);
+            var result = UserRepository.GetByEmailAsync(loginUserData.EmailAddress.ToUpperInvariant()).Result;
+            result.IfValue(loginUser =>
+            {
+                var verificationResult = passwordHasher.VerifyHashedPassword(loginUser, System.Text.Encoding.UTF8.GetString(loginUser.PasswordHash), loginUserData.Password);
+                if (verificationResult == PasswordVerificationResult.Success)
+                {
+                    // Create a new session for the user.
+                    var userSession = new UserSession
+                    {
+                        SessionID = Guid.NewGuid(),
+                        UserID = loginUser.UserId,
+                        CreatedAt = DateTime.UtcNow,
+                        ExpiresAt = DateTime.UtcNow.AddHours(12),
+                        SessionInfo = string.Empty
+                    };
 
-            //     NavigationManager.NavigateTo("/auth", forceLoad: true);
-            // }
-            // {
-            //     Message = result.Message;
-            // }
+                    // await SessionRepository.CreateAsync(userSession);
 
-            // Snackbar.Add(Message, form.IsValid && result.Flag ? MudBlazor.Severity.Success : MudBlazor.Severity.Error);
+                    // Write the session cookie into the browser.
+                    var context = HttpContextAccessor.HttpContext ?? throw new InvalidOperationException("No se pudo obtener el contexto HTTP.");
+                    context.Response.Cookies.Append(
+                        "UserSessionId",
+                        userSession.SessionID.ToString(),
+                        new CookieOptions
+                        {
+                            HttpOnly = true,
+                            Secure = true,
+                            SameSite = SameSiteMode.Strict,
+                            Expires = userSession.ExpiresAt
+                        });
+
+                    // TODO: Add delay and success message.
+                    // Snackbar.Add("Login exitoso.", MudBlazor.Severity.Success);
+                    // await Task.Delay(2000);
+                        
+                    NavigationManager.NavigateTo("/auth", forceLoad: true);
+                }
+                else
+                {
+                    Snackbar.Add("Contraseña incorrecta.", MudBlazor.Severity.Error);
+                }
+            })
+            .IfEmpty(() =>
+            {
+                Snackbar.Add("No existe un usuario con este mail registrado.", MudBlazor.Severity.Warning);
+            })
+            .IfError(error =>
+            {
+                Snackbar.Add($"Se produjo el error: {error}", MudBlazor.Severity.Error);
+            });
         }
         catch
         {
@@ -87,7 +128,7 @@
     /// <summary>
     /// Middle model for user login data.
     /// </summary>
-    public class ApplicationUserLoginData
+    public class ApplicationUserInputData
     {
         public string EmailAddress { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
@@ -97,7 +138,7 @@
     /// A standard AbstractValidator which contains multiple rules and can be shared with the back end API.
     /// </summary>
     /// <typeparam name="OrderModel"></typeparam>
-    public class LoginValidator : AbstractValidator<ApplicationUserLoginData>
+    public class LoginValidator : AbstractValidator<ApplicationUserInputData>
     {
         public LoginValidator()
         {
@@ -125,7 +166,7 @@
 
         public Func<object, string, Task<IEnumerable<string>>> ValidateValue => async (model, propertyName) =>
         {
-            var result = await ValidateAsync(ValidationContext<ApplicationUserLoginData>.CreateWithOptions((ApplicationUserLoginData)model, x => x.IncludeProperties(propertyName)));
+            var result = await ValidateAsync(ValidationContext<ApplicationUserInputData>.CreateWithOptions((ApplicationUserInputData)model, x => x.IncludeProperties(propertyName)));
 
             if (result.IsValid) return Array.Empty<string>();
 

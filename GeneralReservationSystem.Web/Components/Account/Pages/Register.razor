@@ -1,8 +1,10 @@
 ﻿@page "/Account/Register"
 
 @using GeneralReservationSystem.Application.Entities.Authentication
+@using GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations
+@using GeneralReservationSystem.Infrastructure.Repositories.Interfaces
 
-@inject IPasswordHasher<ApplicationUser> PasswordHasher
+@inject IUserRepository UserRepository
 @inject ISnackbar Snackbar
 
 
@@ -59,13 +61,11 @@
 {
     #region Properties and Fields
 
-    string Message { get; set; } = string.Empty;
-
     MudForm form;
 
     ApplicationUser registerUser = new();
 
-    ApplicationUserCreationData registerUserData = new();
+    ApplicationUserInputData registerUserData = new();
 
     RegisterValidator registerValidator = new RegisterValidator();
 
@@ -77,6 +77,11 @@
         {
             await form.Validate();
 
+            var PasswordHasher = new Helpers.PasswordHasherHelper<ApplicationUser>();
+
+            // Remove and leave the security and validation logic to the UserManager in the future.
+            string hashedPassword = PasswordHasher.HashPassword(registerUser, registerUserData.Password);
+
             registerUser = new ApplicationUser
             {
                 UserId = Guid.NewGuid(),
@@ -85,26 +90,34 @@
                 Email = registerUserData.Email,
                 NormalizedEmail = registerUserData.Email.ToUpperInvariant(),
                 EmailConfirmed = false,
+                PasswordHash = System.Text.Encoding.UTF8.GetBytes(hashedPassword),
                 SecurityStamp = Guid.NewGuid()
             };
 
-            // Remove and leave the security and validation logic to the UserManager in the future. 
-            string hashedPassword = PasswordHasher.HashPassword(registerUser, registerUserData.Password);
+            // TODO: Remove hardcoded role assignment once we have an admin functionality to manage roles.
+            var userRole = new ApplicationRole
+            {
+                Name = "Cliente",
+                NormalizedName = "CLIENTE"
+            };
 
-            registerUser.PasswordHash = System.Text.Encoding.UTF8.GetBytes(hashedPassword);
+            var result = await UserRepository.CreateUserAsync(registerUser, new List<ApplicationRole> { userRole });
 
-            // TODO: send registerUser to the repository to create the user and validate if the creation was successful.
+            if (form.IsValid)
+            {
+                result.IfSuccess(() =>
+                {
+                    // TODO: Might want to make IfSuccess async in the future, so that we can show some message for a few seconds before redirecting.
+                    // Snackbar.Add("User created successfully!", MudBlazor.Severity.Success);
+                    // await Task.Delay(2000);
 
-            // if (result.Flag && form.IsValid)
-            // {
-            //     NavigationManager.NavigateTo("/Account/Login", forceLoad: true);
-            // }
-            // {
-            //     Message = result.Message;
-            // }
-
-            // Snackbar.Add(Message, result.Flag && form.IsValid ? MudBlazor.Severity.Success : MudBlazor.Severity.Error);
-
+                    NavigationManager.NavigateTo("/Account/Login", forceLoad: true);
+                })
+                .IfFailure(error =>
+                {
+                    Snackbar.Add($"Failed to create user: {error}", MudBlazor.Severity.Error);
+                });
+            }
         }
         catch
         {
@@ -115,7 +128,7 @@
     /// <summary>
     /// Middle class to hold the user registration data.
     /// </summary>
-    public class ApplicationUserCreationData
+    public class ApplicationUserInputData
     {
         public string UserName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
@@ -127,7 +140,7 @@
     /// A standard AbstractValidator which contains multiple rules and can be shared with the back end API.
     /// </summary>
     /// <typeparam name="registerUser"></typeparam>
-    public class RegisterValidator : AbstractValidator<ApplicationUserCreationData>
+    public class RegisterValidator : AbstractValidator<ApplicationUserInputData>
     {
         public RegisterValidator()
         {
@@ -160,7 +173,7 @@
 
         public Func<object, string, Task<IEnumerable<string>>> ValidateValue => async (model, propertyName) =>
         {
-            var result = await ValidateAsync(ValidationContext<ApplicationUserCreationData>.CreateWithOptions((ApplicationUserCreationData)model, x => x.IncludeProperties(propertyName)));
+            var result = await ValidateAsync(ValidationContext<ApplicationUserInputData>.CreateWithOptions((ApplicationUserInputData)model, x => x.IncludeProperties(propertyName)));
 
             if (result.IsValid) return Array.Empty<string>();
 
