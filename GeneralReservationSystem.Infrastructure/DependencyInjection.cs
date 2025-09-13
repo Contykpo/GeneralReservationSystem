@@ -8,6 +8,8 @@ namespace GeneralReservationSystem.Infrastructure
         public static void AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
             // TODO: Implement infrastructure services registration
+
+
         }
     }
 }

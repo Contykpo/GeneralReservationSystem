@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using GeneralReservationSystem.Application.Entities.Authentication;
-using GeneralReservationSystem.Infrastructure.Common;
+using GeneralReservationSystem.Application.Common;
 
 namespace GeneralReservationSystem.Application.Repositories.Interfaces.Authentication
 {
