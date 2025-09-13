@@ -15,7 +15,7 @@ using static GeneralReservationSystem.Application.Common.OperationResult;
 
 namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations
 {
-    internal class DefaultSessionRepository : ISessionRepository
+    public class DefaultSessionRepository : ISessionRepository
     {
         private readonly DbConnectionHelper _dbConnection;
         private readonly ILogger<DefaultUserRepository> _logger;

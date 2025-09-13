@@ -1,45 +1,21 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using GeneralReservationSystem.Application.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GeneralReservationSystem.Web.Controllers
 {
+    [Route("auth")]
     public class AuthenticationController : Controller
     {
+        private readonly AuthenticationService _authenticationService;
+
+        public AuthenticationController(AuthenticationService authenticationService)
+        {
+            _authenticationService = authenticationService;
+        }
+
         // GET: AuthenticationController
-        public ActionResult Index()
-        {
-            return View();
-        }
-
-        // GET: AuthenticationController/Details/5
-        public ActionResult Details(int id)
-        {
-            return View();
-        }
-
-        // GET: AuthenticationController/Create
-        public ActionResult Create()
-        {
-            return View();
-        }
-
-        // POST: AuthenticationController/Create
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
-        {
-            try
-            {
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
-            }
-        }
-
-        // GET: AuthenticationController/Edit/5
-        public ActionResult Edit(int id)
+        public ActionResult Index() 
         {
             return View();
         }
@@ -57,12 +33,6 @@ namespace GeneralReservationSystem.Web.Controllers
             {
                 return View();
             }
-        }
-
-        // GET: AuthenticationController/Delete/5
-        public ActionResult Delete(int id)
-        {
-            return View();
         }
 
         // POST: AuthenticationController/Delete/5
