@@ -3,12 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
 using GeneralReservationSystem.Application.Entities.Authentication;
+using GeneralReservationSystem.Application.Common;
 
-using GeneralReservationSystem.Infrastructure.Common;
-
-namespace GeneralReservationSystem.Infrastructure.Repositories.Interfaces
+namespace GeneralReservationSystem.Application.Repositories.Interfaces.Authentication
 {
 	public interface IUserRepository
 	{

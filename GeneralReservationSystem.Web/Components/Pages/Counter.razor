@@ -1,6 +1,8 @@
 ﻿@page "/counter"
+@using GeneralReservationSystem.Application.Repositories.Interfaces
+@using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication
 @rendermode InteractiveServer
-@inject GeneralReservationSystem.Infrastructure.Repositories.Interfaces.IUserRepository UserRepository
+@inject IUserRepository UserRepository
 
 <PageTitle>Counter</PageTitle>
 

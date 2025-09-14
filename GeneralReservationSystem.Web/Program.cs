@@ -1,18 +1,11 @@
-using GeneralReservationSystem.Web.Components;
-using GeneralReservationSystem.Web.Components.Account;
-using GeneralReservationSystem.Web.Data;
-
+using GeneralReservationSystem.Application.Repositories.Interfaces;
+using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication;
 using GeneralReservationSystem.Infrastructure;
 using GeneralReservationSystem.Infrastructure.Middleware;
-
-using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.AspNetCore.Identity;
-
-using MudBlazor.Services;
-
 using GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations;
-using GeneralReservationSystem.Infrastructure.Repositories.Interfaces;
-
+using GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations.Authentication;
+using GeneralReservationSystem.Web.Components;
+using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,27 +14,7 @@ builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 
 builder.Services.AddMudServices();
 
-//builder.Services.AddCascadingAuthenticationState();
-//builder.Services.AddScoped<IdentityUserAccessor>();
-//builder.Services.AddScoped<IdentityRedirectManager>();
-//builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
-
-//builder.Services.AddAuthentication(options =>
-//    {
-//        options.DefaultScheme = IdentityConstants.ApplicationScheme;
-//        options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
-//    })
-//    .AddIdentityCookies();
-
-builder.Services.AddSingleton<DbConnectionHelper>();
-builder.Services.AddScoped<IUserRepository, DefaultUserRepository>();
-
-//builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
-//    .AddEntityFrameworkStores<ApplicationDbContext>()
-//    .AddSignInManager()
-//    .AddDefaultTokenProviders();
-
-//builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
