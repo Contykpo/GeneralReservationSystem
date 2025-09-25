@@ -7,6 +7,7 @@
 
         <AuthorizeView>
             <Authorized>
+                <MudNavLink Href="/counter">Contador</MudNavLink>
                 <MudNavLink Href="/Account/Manage">@context.User.Identity?.Name</MudNavLink>
                 <MudNavLink Href="/Account/Logout"><AntiforgeryToken />Logout</MudNavLink>
             </Authorized>

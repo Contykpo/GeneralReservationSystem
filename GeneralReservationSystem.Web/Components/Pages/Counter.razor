@@ -1,0 +1,80 @@
+﻿@page "/counter"
+@rendermode InteractiveServer
+
+@using GeneralReservationSystem.Application.Entities.Authentication
+@using GeneralReservationSystem.Infrastructure.Repositories.Interfaces
+
+@inject IUserRepository UserRepository
+@* @inject ISessionRepository SessionRepository *@
+
+<PageTitle>Counter</PageTitle>
+
+<h1>Counter</h1>
+
+<MudText Typo="Typo.h6">
+    Current count: @currentCount
+    @contenido
+</MudText>
+<MudButton Variant="Variant.Filled"
+           Color="Color.Primary"
+           OnClick="ButtonOnClick">
+    Click Me!
+</MudButton>
+
+@code
+{
+
+    private string contenido;
+    private int currentCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        (await UserRepository.ExistsWithEmailAsync("ILUV@JESUS.com")).IfValue(async (exists) =>
+        {
+
+            if (!exists)
+            {
+                var contyk = new ApplicationUser
+                {
+                    UserId = Guid.NewGuid(),
+                    Email = "ILUV@JESUS.com",
+                    EmailConfirmed = true,
+                    UserName = "contykpo",
+                    NormalizedUserName = "CONTYKPO",
+                    NormalizedEmail = "ILUV@JESUS.COM",
+                    PasswordHash = System.Text.Encoding.UTF8.GetBytes("LORDJESUS"),
+                    SecurityStamp = Guid.NewGuid()
+                };
+
+                await UserRepository.CreateUserAsync(contyk, new ApplicationRole[] { });
+            }
+        });
+
+        (await UserRepository.GetByEmailAsync("ILUV@JESUS.com"))
+            .IfValue(async user =>
+            {
+                var newContykSession = new UserSession
+                {
+                    UserID = user.UserId,
+                    SessionID = Guid.NewGuid(),
+                    ExpiresAt = DateTime.UtcNow.AddHours(12),
+                    CreatedAt = DateTime.UtcNow,
+                    SessionInfo = "Contykpo's session"
+                };
+
+                (await SessionRepository.CreateSessionAsync(newContykSession)).IfSuccess(() =>
+                {
+                    navManager.NavigateTo($"/teraLogin?sessionId={newContykSession.SessionId}", forceLoad: true);
+                });
+            })
+            .IfEmpty(() =>
+            {
+                contenido = "User not found.";
+            });
+    }
+
+    void ButtonOnClick()
+    {
+        currentCount++;
+    }
+}
