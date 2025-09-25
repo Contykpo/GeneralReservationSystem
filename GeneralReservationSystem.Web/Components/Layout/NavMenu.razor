@@ -1,17 +1,14 @@
-﻿
-
-
-<MudPaper Elevation="0">
+﻿<MudPaper Elevation="0">
     <MudNavMenu Bordered="true">
         <MudNavLink Href="/">Inicio</MudNavLink>
 
         <AuthorizeView>
             <Authorized>
-                <MudNavLink Href="/counter">Contador</MudNavLink>
                 <MudNavLink Href="/Account/Manage">@context.User.Identity?.Name</MudNavLink>
                 <MudNavLink Href="/Account/Logout"><AntiforgeryToken />Logout</MudNavLink>
             </Authorized>
             <NotAuthorized>
+                <MudNavLink Href="/counter">Contador</MudNavLink>
                 <MudNavLink Href="/Account/Register">Registrarse</MudNavLink>
                 <MudNavLink Href="/Account/Login">Loguearse</MudNavLink>
             </NotAuthorized>
@@ -25,4 +22,3 @@
 {
 
 }
-

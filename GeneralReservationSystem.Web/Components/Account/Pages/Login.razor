@@ -1,7 +1,7 @@
 ﻿@page "/Account/Login"
 
 @using GeneralReservationSystem.Application.Entities.Authentication
-@using GeneralReservationSystem.Infrastructure.Repositories.Interfaces
+@using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication
 
 @inject IUserRepository UserRepository
 @inject ISnackbar Snackbar
@@ -76,8 +76,8 @@
                     // Create a new session for the user.
                     var userSession = new UserSession
                     {
-                        SessionID = Guid.NewGuid(),
-                        UserID = loginUser.UserId,
+                        SessionId = Guid.NewGuid(),
+                        UserId = loginUser.UserId,
                         CreatedAt = DateTime.UtcNow,
                         ExpiresAt = DateTime.UtcNow.AddHours(12),
                         SessionInfo = string.Empty
@@ -89,7 +89,7 @@
                     var context = HttpContextAccessor.HttpContext ?? throw new InvalidOperationException("No se pudo obtener el contexto HTTP.");
                     context.Response.Cookies.Append(
                         "UserSessionId",
-                        userSession.SessionID.ToString(),
+                        userSession.SessionId.ToString(),
                         new CookieOptions
                         {
                             HttpOnly = true,

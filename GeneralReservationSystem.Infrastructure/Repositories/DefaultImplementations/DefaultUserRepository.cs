@@ -40,7 +40,6 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 				EmailConfirmed		= reader.GetBoolean(reader.GetOrdinal(EmailConfirmedColumnName)),
 				
 				PasswordHash		= (byte[])reader[PasswordHashColumnName],
-				PasswordSalt		= (byte[])reader[PasswordSaltColumnName],
 			};
 		}
 
@@ -150,12 +149,11 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 						{EmailColumnName}, 
 						{NormalizedEmailColumnName}, 
 						{EmailConfirmedColumnName}, 
-						{PasswordHashColumnName}, 
-						{PasswordSaltColumnName}, 
+						{PasswordHashColumnName},
 						{SecurityStampColumnName}
 					)
 					VALUES 
-					(@UserId, @UserName, @NormalizedUserName, @Email, @NormalizedEmail, @EmailConfirmed, @PasswordHash, @PasswordSalt, @SecurityStamp);";
+					(@UserId, @UserName, @NormalizedUserName, @Email, @NormalizedEmail, @EmailConfirmed, @PasswordHash, @SecurityStamp);";
 
 				var userParameters = new Dictionary<string, object>
 				{
@@ -166,7 +164,6 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 					{ "@NormalizedEmail",       newUser.NormalizedEmail },
 					{ "@EmailConfirmed",        newUser.EmailConfirmed },
 					{ "@PasswordHash",          newUser.PasswordHash },
-					{ "@PasswordSalt",          newUser.PasswordSalt },
 					{ "@SecurityStamp",         newUser.SecurityStamp }
 				};
 
@@ -289,7 +286,6 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 						{NormalizedEmailColumnName}		= @NormalizedEmail,
 						{EmailConfirmedColumnName}		= @EmailConfirmed,
 						{PasswordHashColumnName}		= @PasswordHash,
-						{PasswordSaltColumnName}		= @PasswordSalt,
 						{SecurityStampColumnName}		= @SecurityStamp
 					WHERE {UserIdColumnName}			= @UserId;",
 				parameters: new Dictionary<string, object>
@@ -301,7 +297,6 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 					{ "@NormalizedEmail",       user.NormalizedEmail },
 					{ "@EmailConfirmed",        user.EmailConfirmed },
 					{ "@PasswordHash",          user.PasswordHash },
-					{ "@PasswordSalt",          user.PasswordSalt },
 					{ "@SecurityStamp",         user.SecurityStamp }
 
 				})).Match<OperationResult>(

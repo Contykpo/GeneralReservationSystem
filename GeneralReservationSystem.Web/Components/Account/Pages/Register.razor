@@ -1,7 +1,8 @@
 ﻿@page "/Account/Register"
 
 @using GeneralReservationSystem.Application.Entities.Authentication
-@using GeneralReservationSystem.Infrastructure.Repositories.Interfaces
+@using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication
+@using System.Text
 
 @inject IUserRepository UserRepository
 @inject ISnackbar Snackbar
@@ -89,7 +90,7 @@
                 Email = registerUserData.Email,
                 NormalizedEmail = registerUserData.Email.ToUpperInvariant(),
                 EmailConfirmed = false,
-                PasswordHash = System.Text.Encoding.UTF8.GetBytes(hashedPassword),
+                PasswordHash = Encoding.UTF8.GetBytes(hashedPassword),
                 SecurityStamp = Guid.NewGuid()
             };
 

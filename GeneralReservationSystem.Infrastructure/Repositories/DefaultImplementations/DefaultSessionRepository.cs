@@ -103,8 +103,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 								u.{Constants.Tables.ApplicationUser.EmailColumnName}, 
 								u.{Constants.Tables.ApplicationUser.NormalizedEmailColumnName}, 
 								u.{Constants.Tables.ApplicationUser.EmailConfirmedColumnName}, 
-								u.{Constants.Tables.ApplicationUser.PasswordHashColumnName}, 
-								u.{Constants.Tables.ApplicationUser.PasswordSaltColumnName}, 
+								u.{Constants.Tables.ApplicationUser.PasswordHashColumnName},
 								u.{Constants.Tables.ApplicationUser.SecurityStampColumnName}
 					FROM {TableName} AS s
 					INNER JOIN {Constants.Tables.ApplicationUser.TableName} AS u ON u.{Constants.Tables.ApplicationUser.UserIdColumnName} = s.{UserIdColumnName}

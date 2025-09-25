@@ -59,6 +59,8 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
+builder.Services.AddHttpContextAccessor();
+
 builder.WebHost.UseKestrel(o =>
         o.ListenAnyIP(5000)
     );
@@ -88,7 +90,7 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 
 // Add additional endpoints required by the Identity /Account Razor components.
-app.MapAdditionalIdentityEndpoints();
+// app.MapAdditionalIdentityEndpoints();
 
 app.MapGet("/teraLogin", httpContext =>
 {
