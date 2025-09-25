@@ -8,12 +8,12 @@ namespace GeneralReservationSystem.Application.Entities.Authentication
 {
 	public class UserSession
 	{
-		public Guid SessionID { get; set; } = Guid.NewGuid();
+		public Guid SessionId { get; set; } = Guid.NewGuid();
 
 		/// <summary>
 		/// ID del usuario al que pertenece esta sesion
 		/// </summary>
-		public Guid UserID { get; set; }
+		public Guid UserId { get; set; }
 
 		/// <summary>
 		/// Fecha en la que se creo esta sesion

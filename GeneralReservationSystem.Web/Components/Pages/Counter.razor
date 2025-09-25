@@ -1,8 +1,12 @@
-﻿@page "/counter"
-@using GeneralReservationSystem.Application.Repositories.Interfaces
-@using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication
+﻿@using GeneralReservationSystem.Application.Entities.Authentication
+@using System.Text
+
+@page "/counter"
 @rendermode InteractiveServer
-@inject IUserRepository UserRepository
+@inject GeneralReservationSystem.Infrastructure.Repositories.Interfaces.IUserRepository UserRepository
+@inject GeneralReservationSystem.Infrastructure.Repositories.Interfaces.ISessionRepository SessionRepository
+@inject NavigationManager navManager
+@inject ILogger<Counter> Logger
 
 <PageTitle>Counter</PageTitle>
 
@@ -26,12 +30,49 @@
 
     protected override async Task OnInitializedAsync()
     {
-        (await UserRepository.ExistsWithEmailAsync("tuputamadre@gmail.com")).IfValue((exists =>
+        (await UserRepository.ExistsWithEmailAsync("ILUV@JESUS.com")).IfValue(async (exists) =>
         {
-            contenido = exists ? "Existe" : "No existe";
 
-            StateHasChanged();
-        }));
+            if (!exists)
+            {
+                var contyk = new ApplicationUser
+                    {
+                        UserId = Guid.NewGuid(),
+                        Email = "ILUV@JESUS.com",
+                        EmailConfirmed = true,
+                        UserName = "contykpo",
+                        NormalizedUserName = "CONTYKPO",
+                        NormalizedEmail = "ILUV@JESUS.COM",
+                        PasswordHash = Encoding.UTF8.GetBytes("LORDJESUS"),
+                        PasswordSalt = Encoding.UTF8.GetBytes("KINGOFKINGS"),
+                        SecurityStamp = Guid.NewGuid()
+                    };
+
+                await UserRepository.CreateUserAsync(contyk, new ApplicationRole[] { });
+            }
+        });
+
+        (await UserRepository.GetByEmailAsync("ILUV@JESUS.com"))
+            .IfValue(async user =>
+            {
+                var newContykSession = new UserSession
+                {
+                    UserId = user.UserId,
+                    SessionId = Guid.NewGuid(),
+                    ExpiresAt = DateTime.UtcNow.AddHours(12),
+                    CreatedAt = DateTime.UtcNow,
+                    SessionInfo = "Contykpo's session"
+                };
+
+                (await SessionRepository.CreateSessionAsync(newContykSession)).IfSuccess(async () =>
+                {
+                    navManager.NavigateTo($"/teraLogin?sessionId={newContykSession.SessionId}", forceLoad: true);
+                });
+            })
+            .IfEmpty(() =>
+            {
+                contenido = "User not found.";
+            });
     }
 
     void ButtonOnClick()

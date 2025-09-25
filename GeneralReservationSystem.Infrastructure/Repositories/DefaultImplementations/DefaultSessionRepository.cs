@@ -1,173 +1,160 @@
-﻿using GeneralReservationSystem.Application.Common;
-using GeneralReservationSystem.Application.Entities.Authentication;
-using GeneralReservationSystem.Application.Repositories.Interfaces;
-using GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations.Authentication;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-using static GeneralReservationSystem.Application.Common.OperationResult;
+using GeneralReservationSystem.Application.Entities.Authentication;
+using GeneralReservationSystem.Infrastructure.Common;
+using GeneralReservationSystem.Infrastructure.Repositories.Interfaces;
+
+using static GeneralReservationSystem.Infrastructure.Constants.Tables.UserSession;
+using static GeneralReservationSystem.Infrastructure.Common.OperationResult;
+using static GeneralReservationSystem.Infrastructure.Common.OptionalResult<object>;
+
 
 namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations
 {
-    public class DefaultSessionRepository : ISessionRepository
-    {
-        private readonly DbConnectionHelper _dbConnection;
-        private readonly ILogger<DefaultUserRepository> _logger;
+	public class DefaultSessionRepository : ISessionRepository
+	{
+		private readonly DbConnectionHelper _dbConnection;
+		private readonly ILogger<DefaultSessionRepository> _logger;
 
-        public DefaultSessionRepository(DbConnectionHelper dbConnection, ILogger<DefaultUserRepository> logger)
-        {
-            _dbConnection = dbConnection;
-            _logger = logger;
-        }
+		public DefaultSessionRepository(DbConnectionHelper dbConnection, ILogger<DefaultSessionRepository> logger) 
+		{
+			//TODO: Agregar asserts a todos los execute para verificar que no se pasen variables nulas
 
-        public static UserSession ConvertReaderToSession(SqlDataReader reader)
-        {
-            return new UserSession
-            {
-                SessionID = reader.GetGuid(reader.GetOrdinal(Constants.Tables.UserSession.IdColumnName)),
-                UserID = reader.GetGuid(reader.GetOrdinal(Constants.Tables.UserSession.UserIdColumnName)),
-                CreatedAt = reader.GetDateTimeOffset(reader.GetOrdinal(Constants.Tables.UserSession.CreatedAtColumnName)),
-                ExpiresAt = reader.IsDBNull(reader.GetOrdinal(Constants.Tables.UserSession.ExpiresAtColumnName)) ? null : reader.GetDateTimeOffset(reader.GetOrdinal(Constants.Tables.UserSession.ExpiresAtColumnName)),
-                SessionInfo = reader.IsDBNull(reader.GetOrdinal(Constants.Tables.UserSession.SessionInfoColumnName)) ? null : reader.GetString(reader.GetOrdinal(Constants.Tables.UserSession.SessionInfoColumnName))
-            };
-        }
+			_dbConnection = dbConnection;
+			_logger			= logger;
+		}
 
-        public async Task<OperationResult> CreateSessionAsync(UserSession newSession)
-        {
-            // Build the insert statement dynamically based on non-null values
-            var columns = new List<string>
-            {
-                Constants.Tables.UserSession.IdColumnName,
-                Constants.Tables.UserSession.UserIdColumnName,
-                Constants.Tables.UserSession.CreatedAtColumnName
-            };
-            var values = new List<string>
-            {
-                "NEWID()",
-                "@UserId",
-                "@CreatedAt"
-            };
-            var sessionParameters = new Dictionary<string, object>
-            {
-                { "@UserId", newSession.UserID },
-                { "@CreatedAt", newSession.CreatedAt }
-            };
+		public static UserSession ConvertReaderToUserSession(SqlDataReader reader) => new UserSession
+		{
+			SessionId	= reader.GetGuid(reader.GetOrdinal(IdColumnName)),
+			UserId		= reader.GetGuid(reader.GetOrdinal(UserIdColumnName)),
+			CreatedAt	= reader.GetDateTimeOffset(reader.GetOrdinal(CreatedAtColumnName)),
+			ExpiresAt	= reader.GetDateTimeOffset(reader.GetOrdinal(ExpiresAtColumnName)),
+			SessionInfo = reader.IsDBNull(reader.GetOrdinal(SessionInfoColumnName)) ? null : reader.GetString(reader.GetOrdinal(SessionInfoColumnName))
+		};
 
-            if (newSession.ExpiresAt != null)
-            {
-                columns.Add(Constants.Tables.UserSession.ExpiresAtColumnName);
-                values.Add("@ExpiresAt");
-                sessionParameters.Add("@ExpiresAt", newSession.ExpiresAt);
-            }
-            if (newSession.SessionInfo != null)
-            {
-                columns.Add(Constants.Tables.UserSession.SessionInfoColumnName);
-                values.Add("@SessionInfo");
-                sessionParameters.Add("@SessionInfo", newSession.SessionInfo);
-            }
+		public async Task<OperationResult> CreateSessionAsync(UserSession newSession)
+		{
+			return (await _dbConnection.ExecuteAsync(
+					sql: @$"INSERT INTO {TableName} ({IdColumnName}, {UserIdColumnName}, {CreatedAtColumnName}, {ExpiresAtColumnName}, {SessionInfoColumnName})
+						VALUES (@SessionId, @UserId, @CreatedAt, @ExpiresAt, @SessionInfo)",
+					parameters: new Dictionary<string, object>
+						{
+							{ "@SessionId",		newSession.SessionId   },
+							{ "@UserId",        newSession.UserId},
+							{ "@CreatedAt",		newSession.CreatedAt},
+							{ "@ExpiresAt",		newSession.ExpiresAt},
+							{ "@SessionInfo",   newSession.SessionInfo}
+						}
+					)).Match<OperationResult>(
+						onValue: (rowsAffected) => rowsAffected > 0 ? Success() : Failure("No changes were made"),
+						onError: (error) => Failure(error)
+					);
+		}
 
-            // Insert the new session - capture the new SessionId created at the database
-            var insertSessionSql = $@"
-                INSERT INTO {Constants.Tables.UserSession.TableName} 
-                ({string.Join(", ", columns)})
-                OUTPUT INSERTED.{Constants.Tables.UserSession.IdColumnName}
-                VALUES 
-                ({string.Join(", ", values)});";
+		public async Task<OptionalResult<IList<UserSession>>> GetActiveSessionsForUserAsync(Guid userId)
+		{
+			return (await _dbConnection.ExecuteReaderAsync(
+					sql: @$"SELECT * FROM {TableName} AS s
+							WHERE s.{UserIdColumnName} = @UserId 
+							AND s.{ExpiresAtColumnName} > GETUTCDATE()",
+					converter: ConvertReaderToUserSession,
+					parameters: new Dictionary<string, object>
+					{
+						{ "@UserId", userId }
+					}
+				)).Match<OptionalResult<IList<UserSession>>>(
+					onValue: (sessions) => sessions.Any() ? Value<IList<UserSession>>(sessions) : NoValue<IList<UserSession>>(),
+					onError: (error) => Error<IList<UserSession>>(error)
+				);
+		}
 
-            var sessionCreationResultId = (await _dbConnection.ExecuteScalarAsync<Guid>(insertSessionSql, sessionParameters))
-                .Match(
-                    onValue: (newId) => {
-                        return newId;
-                    },
-                    onEmpty: () => {
-                        _logger.LogError($"Session creation returned no result for session {newSession}.");
-                        throw new Exception("Session creation returned no result.");
-                    },
-                    onError: (error) => {
-                        _logger.LogError(error, $"Error creating session {newSession}.");
-                        throw new Exception($"Error creating session. {error}");
-                    });
+		public async Task<OptionalResult<IList<UserSession>>> GetAllSessionsForUserAsync(Guid userId)
+		{
+			return (await _dbConnection.ExecuteReaderAsync(
+				sql: @$"SELECT * FROM {TableName} AS s
+						WHERE s.{UserIdColumnName} = @UserId",
+				converter: ConvertReaderToUserSession,
+				parameters: new Dictionary<string, object>
+					{
+						{ "@UserId", userId }
+					}
+				)).Match<OptionalResult<IList<UserSession>>>(
+					onValue: (sessions) => sessions.Any() ? Value<IList<UserSession>>(sessions) : NoValue<IList<UserSession>>(),
+					onError: (error) => Error<IList<UserSession>>(error)
+				);
+		}
 
-            newSession.SessionID = sessionCreationResultId;
+		public async Task<OptionalResult<(UserSession session, ApplicationUser user)>> GetSessionAsync(Guid sessionId)
+		{
+			ApplicationUser? user	= null;
+			UserSession? session	= null;
 
-            return Success();
-        }
+			var result = await _dbConnection.ExecuteReaderSingleAsync(
+				sql: $@"SELECT  s.{IdColumnName}, 
+								s.{UserIdColumnName}, 
+								s.{CreatedAtColumnName}, 
+								s.{ExpiresAtColumnName}, 
+								s.{SessionInfoColumnName},
+								u.{Constants.Tables.ApplicationUser.UserIdColumnName}, 
+								u.{Constants.Tables.ApplicationUser.NameColumnName}, 
+								u.{Constants.Tables.ApplicationUser.NormalizedNameColumnName}, 
+								u.{Constants.Tables.ApplicationUser.EmailColumnName}, 
+								u.{Constants.Tables.ApplicationUser.NormalizedEmailColumnName}, 
+								u.{Constants.Tables.ApplicationUser.EmailConfirmedColumnName}, 
+								u.{Constants.Tables.ApplicationUser.PasswordHashColumnName}, 
+								u.{Constants.Tables.ApplicationUser.PasswordSaltColumnName}, 
+								u.{Constants.Tables.ApplicationUser.SecurityStampColumnName}
+					FROM {TableName} AS s
+					INNER JOIN {Constants.Tables.ApplicationUser.TableName} AS u ON u.{Constants.Tables.ApplicationUser.UserIdColumnName} = s.{UserIdColumnName}
+					WHERE s.{IdColumnName} = @SessionId",
+				converter: (reader) =>
+				{
+					user	= DefaultUserRepository.ConvertReaderToUser(reader);
+					session = ConvertReaderToUserSession(reader);
+					return true;
+				},
+				parameters: new Dictionary<string, object>
+				{
+					{ "@SessionId", sessionId   }
+				});
 
-        public async Task<OptionalResult<IList<UserSession>>> GetActiveSessionsByUserIdAsync(Guid userId)
-        {
-            // TODO: El tiempo actual deberia ser pasado como parametro? Actualmente se compara 
-            // con SYSDATETIMEOFFSET() del servidor SQL.
-            return await _dbConnection.ExecuteReaderAsync(
-                sql: $@"
-					SELECT *
-					FROM {Constants.Tables.UserSession.TableName}
-					WHERE {Constants.Tables.UserSession.UserIdColumnName} = @UserId
-					  AND ({Constants.Tables.UserSession.ExpiresAtColumnName} IS NULL OR {Constants.Tables.UserSession.ExpiresAtColumnName} > SYSDATETIMEOFFSET());",
-                converter: ConvertReaderToSession,
-                parameters: new Dictionary<string, object>
-                {
-                    { "@UserId", userId }
-                });
-        }
+			return result.Match<OptionalResult<(UserSession session, ApplicationUser user)>>(
+				onValue: (_) =>		Value((session!, user!)),
+				onError: (error) => Error<(UserSession session, ApplicationUser user)>(error),
+				onEmpty: () =>		NoValue<(UserSession session, ApplicationUser user)>()
+			);
+		}
 
-        public async Task<OptionalResult<UserSession>> GetSessionByIdAsync(Guid sessionId)
-        {
-            return await _dbConnection.ExecuteReaderSingleAsync(
-                sql: $"SELECT * FROM {Constants.Tables.UserSession.TableName} WHERE {Constants.Tables.UserSession.IdColumnName} = @SessionId;",
-                converter: ConvertReaderToSession,
-                parameters: new Dictionary<string, object>
-                {
-                    { "@SessionId", sessionId }
-                });
-        }
+		public async Task<OperationResult> UpdateSessionAsync(UserSession session)
+		{
+			return (await _dbConnection.ExecuteAsync(
+					sql: @$"UPDATE {TableName} 
+							SET {ExpiresAtColumnName}	= @ExpiresAt, 
+								{SessionInfoColumnName} = @SessionInfo
+							WHERE {IdColumnName} = @SessionId",
+					parameters: new Dictionary<string, object>
+						{
+							{ "@SessionId",		session.SessionId   },
+							{ "@ExpiresAt",		session.ExpiresAt},
+							{ "@SessionInfo",   session.SessionInfo}
+						}
+					)).Match<OperationResult>(
+						onValue: (rowsAffected) => rowsAffected > 0 ? Success() : Failure("No changes were made"),
+						onError: (error) => Failure(error)
+					);
+		}
 
-        public async Task<OperationResult> UpdateSessionAsync(UserSession updatedSession)
-        {
-            // Only ExpiresAt and SessionInfo can/should be updated
-            var setClauses = new List<string>();
-            var parameters = new Dictionary<string, object>
-            {
-                { "@SessionId", updatedSession.SessionID }
-            };
+		//TODO: Implementar funciones de revocacion de sesiones
+		public Task<OperationResult> RevokeAllSessionsAsync(Guid userId)
+		{
+			throw new NotImplementedException();
+		}
 
-            setClauses.Add($"{Constants.Tables.UserSession.ExpiresAtColumnName} = @ExpiresAt");
-            parameters.Add("@ExpiresAt", (object?)updatedSession.ExpiresAt ?? DBNull.Value);
-
-            setClauses.Add($"{Constants.Tables.UserSession.SessionInfoColumnName} = @SessionInfo");
-            parameters.Add("@SessionInfo", (object?)updatedSession.SessionInfo ?? DBNull.Value);
-
-            var sql = $@"
-                UPDATE {Constants.Tables.UserSession.TableName}
-                SET {string.Join(", ", setClauses)}
-                WHERE {Constants.Tables.UserSession.IdColumnName} = @SessionId;";
-
-            return (await _dbConnection.ExecuteAsync(sql, parameters)).Match<OperationResult>(
-                onValue: rowsAffected => rowsAffected > 0 ? Success() : Failure("No session found to update."),
-                onEmpty: () => Failure("No session found to update."),
-                onError: error => Failure(error)
-            );
-        }
-
-        public async Task<OperationResult> DeleteSessionAsync(Guid sessionId)
-        {
-            return (await _dbConnection.ExecuteAsync(
-                sql: $@"
-					DELETE FROM {Constants.Tables.UserSession.TableName}
-					WHERE {Constants.Tables.UserSession.IdColumnName} = @SessionId;",
-                parameters: new Dictionary<string, object>
-                {
-                    { "@SessionId", sessionId }
-                })).Match<OperationResult>(
-                    onValue: (rowsAffected) => rowsAffected > 0 ? Success() : Failure("No entries were deleted"),
-                    onEmpty: () => Failure(),
-                    onError: (error) => Failure($"Unable to delete session. {error}")
-                );
-        }
-    }
+		public Task<OperationResult> RevokeSessionAsync(Guid sessionId)
+		{
+			throw new NotImplementedException();
+		}
+	}
 }

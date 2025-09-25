@@ -1,80 +1,72 @@
 ﻿using GeneralReservationSystem.Application.Entities.Authentication;
-using GeneralReservationSystem.Application.Repositories.Interfaces;
-using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication;
+using GeneralReservationSystem.Infrastructure.Repositories;
+using GeneralReservationSystem.Infrastructure.Repositories.Interfaces;
+
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Authentication;
+
 using System.Security.Claims;
 
 namespace GeneralReservationSystem.Infrastructure.Middleware
 {
-    public class SessionMiddleware
-    {
-        private readonly RequestDelegate _next;
+	public class SessionMiddleware
+	{
+		private readonly RequestDelegate _next;
 
-        public SessionMiddleware(RequestDelegate next)
-        {
-            _next = next;
-        }
+		public SessionMiddleware(RequestDelegate next)
+		{
+			_next = next;
+		}
 
-        public async Task InvokeAsync(HttpContext context, ISessionRepository sessionRepository, IUserRepository userRepository)
-        {
-            if (context.Request.Cookies.TryGetValue(Constants.CookieNames.SessionID, out var sessionIDCookieValue)
-                && Guid.TryParse(sessionIDCookieValue, out Guid sessionId))
-            {
-                (await sessionRepository.GetSessionByIdAsync(sessionId))
-                .IfValue(async (userSession) =>
-                {
-                    if (userSession.ExpiresAt < DateTime.UtcNow)
-                    {
-                        (await sessionRepository.DeleteSessionAsync(sessionId))
-                        .IfFailure((error) => throw new Exception($"Error while deleting expired session: {error}"));
-                        context.Response.Cookies.Delete(Constants.CookieNames.SessionID);
-                    }
-                    else
-                    {
-                        (await userRepository.GetByGuidAsync(userSession.UserID))
-                        .IfValue(async (user) =>
-                        {
-                            (await userRepository.GetUserRolesAsync(userSession.UserID))
-                            .IfValue((roles) =>
-                            {
-                                // Roles can be empty, a user might not have any roles assigned
-                                if (roles == null)
-                                    roles = new List<ApplicationRole>();
+		public async Task InvokeAsync(HttpContext context, IServiceProvider serviceProvider)
+		{
+			var sessionRepository = serviceProvider.GetService<ISessionRepository>();
+			var logger 			  = serviceProvider.GetService<ILogger<SessionMiddleware>>();
 
-                                var claims = new List<Claim>
-                                {
-                                    new Claim(ClaimTypes.Name, user.UserName),
-                                    new Claim(ClaimTypes.Email, user.Email),
-                                    new Claim("EmailConfirmed", user.EmailConfirmed.ToString()),
-                                    new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString())
-                                };
+			if (sessionRepository == null)
+			{
+				throw new Exception($"Unable to get {nameof(ISessionRepository)} service");
+			}
 
-                                foreach (var role in roles)
-                                    claims.Add(new Claim(ClaimTypes.Role, role.Name));
+			if (context.Request.Cookies.TryGetValue(Constants.CookieNames.SessionID, out var sessionIDCookieValue)
+				&& Guid.TryParse(sessionIDCookieValue, out Guid sessionId))
+			{
+				
+				(await sessionRepository.GetSessionAsync(sessionId))
+					.Match(
+						onValue: async sessionWithUser =>
+						{
+							//TODO: Agregar roles del usuario
 
-                                var userClaims = new ClaimsIdentity(claims, "Session");
-                                var userIdentity = new ClaimsPrincipal(userClaims);
+							var (session, user) = sessionWithUser;
 
-                                context.User = userIdentity;
-                            })
-                            .IfEmpty(() => throw new Exception($"Roles not found for user: {user.UserId}"))
-                            .IfError((error) => throw new Exception($"Error while retrieving roles for user: {error}"));
-                        })
-                        // TODO: Log this. It's weird that a session exists without a user. It shouldn't happen.
-                        .IfEmpty(() => throw new Exception($"User not found: {userSession.UserID}"))
-                        .IfError((error) => throw new Exception($"Error while retrieving user: {error}"));
-                    }
-                }).IfEmpty(() =>
-                {
-                    context.Response.Cookies.Delete(Constants.CookieNames.SessionID);
-                })
-                .IfError((error) =>
-                {
-                    throw new Exception($"Error while validating the session: {error}");
-                });
-            }
+							if (session.ExpiresAt < DateTimeOffset.UtcNow)
+								return; //Sesion expirada, no autenticamos al usuario
 
-            await _next(context);
-        }
-    }
+							var claims = new List<Claim>
+							{
+								new Claim(ClaimTypes.Name, user.UserName),
+								new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString())
+							};
+
+							var userClaims		= new ClaimsIdentity(claims, "Session");
+							var userIdentity	= new ClaimsPrincipal(userClaims);
+
+							await context.SignInAsync(
+								Constants.AuthenticationScheme, 
+								userIdentity, 
+								new AuthenticationProperties { IsPersistent = true, ExpiresUtc = DateTimeOffset.UtcNow.AddDays(1) });
+
+							logger.LogDebug($"User Authenticated: {user.UserName}");	
+						},
+						onEmpty: () => { /* No session found; proceed without setting user */ },
+						onError: error => { /* Log the error if necessary */ }
+					);			
+			}
+
+			await _next(context);
+		}
+	}
 }
