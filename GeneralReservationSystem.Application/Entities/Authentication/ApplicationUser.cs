@@ -2,13 +2,13 @@ namespace GeneralReservationSystem.Application.Entities.Authentication
 {
     public class ApplicationUser
     {
-        public Guid UserId { get; set; }
+        public Guid UserId { get; set; } = Guid.NewGuid();
         public string UserName { get; set; } = string.Empty;
         public string NormalizedUserName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string NormalizedEmail { get; set; } = string.Empty;
 
-        public bool EmailConfirmed { get; set; }
+        public bool EmailConfirmed { get; set; } = false;
 
         public byte[] PasswordHash { get; set; } = Array.Empty<byte>();
 

@@ -2,14 +2,14 @@ services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: sqlserver_container
-    ports:
-      - "1433:1433"
+    #ports: # Uncomment if you want to access SQL Server from outside the Docker network
+    #  - "1433:1433"
     environment:
-      - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=SuperSa1234
+      - ACCEPT_EULA=${ACCEPT_EULA}
+      - MSSQL_SA_PASSWORD=${SA_PASSWORD}
     volumes:
       - sql_data:/var/opt/mssql
-      - ./db-init.sql:/docker-entrypoint-initdb.d/db-init.sql
+      - ./db-init.sql:/docker-entrypoint-initdb.d/db-init.sql      
     command: >
         /bin/bash -c "/opt/mssql/bin/sqlservr & 
         echo 'Esperando a que SQL Server arranque...' && 

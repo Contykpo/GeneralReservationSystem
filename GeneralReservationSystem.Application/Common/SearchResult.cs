@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace GeneralReservationSystem.Infrastructure.Common
+namespace GeneralReservationSystem.Application.Common
 {
 	public abstract record SearchResult<TValue> : OptionalResult<TValue>
 	{

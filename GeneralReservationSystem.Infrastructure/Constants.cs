@@ -8,6 +8,8 @@ namespace GeneralReservationSystem.Infrastructure
 {
 	public static class Constants
 	{
+		public const string AuthenticationScheme = "GeneralReservationSystemCookieScheme";
+
 		public static class CookieNames
 		{
 			public const string SessionID = "grs_session_id";
@@ -23,7 +25,7 @@ namespace GeneralReservationSystem.Infrastructure
 			public static class ApplicationUser
 			{
 				public const string TableName					= "ApplicationUser";
-				public const string UserIdColumnName			= "Id";
+				public const string UserIdColumnName			= "UserId";
 				public const string NameColumnName				= "UserName";
 				public const string NormalizedNameColumnName	= "NormalizedUserName";
 				public const string EmailColumnName				= "Email";
@@ -38,13 +40,13 @@ namespace GeneralReservationSystem.Infrastructure
 				public const string TableName					= "ApplicationRole";
 				public const string NameColumnName				= "ApplicationRole";
 				public const string NormalizedNameColumnName	= "ApplicationRole";
-				public const string RoleIdColumnName			= "Id";
+				public const string RoleIdColumnName			= "RoleId";
 			}
 
 			public static class UserSession
 			{
 				public const string TableName				= "UserSession";
-				public const string IdColumnName			= "Id";
+				public const string IdColumnName			= "SessionId";
 				public const string UserIdColumnName		= "UserId";
 				public const string CreatedAtColumnName		= "CreatedAt";
 				public const string ExpiresAtColumnName		= "ExpiresAt";

@@ -41,7 +41,7 @@ GO
 IF OBJECT_ID(N'ApplicationUser', 'U') IS NULL
 BEGIN
     CREATE TABLE ApplicationUser (
-        Id UNIQUEIDENTIFIER NOT NULL PRIMARY KEY,
+        UserId UNIQUEIDENTIFIER NOT NULL PRIMARY KEY,
         UserName NVARCHAR(256) NOT NULL,
         NormalizedUserName NVARCHAR(256) NOT NULL,
         Email NVARCHAR(256) NULL,
@@ -59,7 +59,7 @@ GO
 IF OBJECT_ID(N'ApplicationRole', 'U') IS NULL
 BEGIN
     CREATE TABLE ApplicationRole (
-        Id UNIQUEIDENTIFIER NOT NULL PRIMARY KEY,
+        RoleId UNIQUEIDENTIFIER NOT NULL PRIMARY KEY,
         Name NVARCHAR(256) NOT NULL,
         NormalizedName NVARCHAR(256) NOT NULL
     );
@@ -77,11 +77,11 @@ BEGIN
         RoleId UNIQUEIDENTIFIER NOT NULL,
 
         CONSTRAINT FK_UserRole_User FOREIGN KEY(UserId)
-            REFERENCES ApplicationUser(Id)
+            REFERENCES ApplicationUser(UserId)
             ON DELETE CASCADE,
 
         CONSTRAINT FK_UserRole_Role FOREIGN KEY(RoleId)
-            REFERENCES ApplicationRole(Id)
+            REFERENCES ApplicationRole(RoleId)
             ON DELETE CASCADE,
 
         CONSTRAINT PK_UserRole PRIMARY KEY(UserId, RoleId)
@@ -93,14 +93,14 @@ GO
 IF OBJECT_ID(N'UserSession', 'U') IS NULL
 BEGIN
     CREATE TABLE UserSession (
-        Id UNIQUEIDENTIFIER NOT NULL PRIMARY KEY,
+        SessionId UNIQUEIDENTIFIER NOT NULL PRIMARY KEY,
         UserId UNIQUEIDENTIFIER NOT NULL,
         CreatedAt DATETIMEOFFSET NOT NULL,
         ExpiresAt DATETIMEOFFSET,
         SessionInfo NVARCHAR(1024),
 
         CONSTRAINT FK_UserSession_User FOREIGN KEY(UserId)
-            REFERENCES ApplicationUser(Id)
+            REFERENCES ApplicationUser(UserId)
             ON DELETE CASCADE
     );
 END

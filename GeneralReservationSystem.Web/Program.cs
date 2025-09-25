@@ -1,16 +1,18 @@
-using FluentValidation;
-using GeneralReservationSystem.Infrastructure;
-using GeneralReservationSystem.Infrastructure.Middleware;
 using GeneralReservationSystem.Web.Components;
 using GeneralReservationSystem.Web.Components.Account;
+using GeneralReservationSystem.Web.Data;
+using GeneralReservationSystem.Infrastructure;
+using GeneralReservationSystem.Infrastructure.Middleware;
+using GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations;
+using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication;
+
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication;
+
 using MudBlazor.Services;
-using System.Reflection;
 
-using GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations;
-using GeneralReservationSystem.Infrastructure.Repositories.Interfaces;
-
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,8 +20,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 
 builder.Services.AddMudServices();
-
-builder.Services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
 //builder.Services.AddCascadingAuthenticationState();
 //builder.Services.AddScoped<IdentityUserAccessor>();
@@ -35,6 +35,20 @@ builder.Services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
 builder.Services.AddSingleton<DbConnectionHelper>();
 builder.Services.AddScoped<IUserRepository, DefaultUserRepository>();
+builder.Services.AddScoped<ISessionRepository, DefaultSessionRepository>();
+
+builder.Services.AddAuthentication(Constants.AuthenticationScheme)
+    .AddCookie(Constants.AuthenticationScheme, options =>
+    {
+        options.LoginPath           = "/";
+        options.LogoutPath          = "/";
+        options.ExpireTimeSpan      = TimeSpan.FromHours(1);
+        options.Cookie.SameSite     = Microsoft.AspNetCore.Http.SameSiteMode.Strict;
+        options.Cookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.Always;
+        options.Cookie.Name         = Constants.CookieNames.SessionID;
+	});
+
+builder.Services.AddAuthorization();
 
 //builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
 //    .AddEntityFrameworkStores<ApplicationDbContext>()
@@ -45,13 +59,13 @@ builder.Services.AddScoped<IUserRepository, DefaultUserRepository>();
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-builder.Services.AddHttpContextAccessor();
-
 builder.WebHost.UseKestrel(o =>
         o.ListenAnyIP(5000)
     );
 
 var app = builder.Build();
+
+app.UseMiddleware<SessionMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -67,11 +81,40 @@ else
 
 app.UseHttpsRedirection();
 
+
 app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 
-app.UseMiddleware<SessionMiddleware>();
+// Add additional endpoints required by the Identity /Account Razor components.
+app.MapAdditionalIdentityEndpoints();
+
+app.MapGet("/teraLogin", httpContext =>
+{
+    var sessionId = httpContext.Request.Query["sessionId"];
+    
+    if (Guid.TryParse(sessionId, out var sessionGuid))
+    {
+        httpContext.Response.Cookies.Append(
+            Constants.CookieNames.SessionID,
+            sessionGuid.ToString(),
+            new CookieOptions
+            {
+                HttpOnly    = true,
+                Secure      = true,
+                SameSite    = SameSiteMode.Strict,
+                Expires     = DateTimeOffset.UtcNow.AddHours(1)
+            });
+
+        httpContext.Response.Redirect("/");
+	}
+    else
+    {
+        httpContext.Response.StatusCode = 400;
+	}
+
+    return Task.CompletedTask;
+});
 
 app.Run();

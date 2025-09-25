@@ -1,11 +1,13 @@
-﻿@page "/counter"
+﻿@using GeneralReservationSystem.Application.Entities.Authentication
+@using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication
+@using System.Text
+
+@page "/counter"
 @rendermode InteractiveServer
-
-@using GeneralReservationSystem.Application.Entities.Authentication
-@using GeneralReservationSystem.Infrastructure.Repositories.Interfaces
-
 @inject IUserRepository UserRepository
-@* @inject ISessionRepository SessionRepository *@
+@inject ISessionRepository SessionRepository
+@inject NavigationManager navManager
+@inject ILogger<Counter> Logger
 
 <PageTitle>Counter</PageTitle>
 
@@ -24,7 +26,7 @@
 @code
 {
 
-    private string contenido;
+    private string contenido = string.Empty;
     private int currentCount = 0;
 
     protected override async Task OnInitializedAsync()
@@ -35,16 +37,17 @@
             if (!exists)
             {
                 var contyk = new ApplicationUser
-                {
-                    UserId = Guid.NewGuid(),
-                    Email = "ILUV@JESUS.com",
-                    EmailConfirmed = true,
-                    UserName = "contykpo",
-                    NormalizedUserName = "CONTYKPO",
-                    NormalizedEmail = "ILUV@JESUS.COM",
-                    PasswordHash = System.Text.Encoding.UTF8.GetBytes("LORDJESUS"),
-                    SecurityStamp = Guid.NewGuid()
-                };
+                    {
+                        UserId = Guid.NewGuid(),
+                        Email = "ILUV@JESUS.com",
+                        EmailConfirmed = true,
+                        UserName = "contykpo",
+                        NormalizedUserName = "CONTYKPO",
+                        NormalizedEmail = "ILUV@JESUS.COM",
+                        PasswordHash = Encoding.UTF8.GetBytes("LORDJESUS"),
+                        PasswordSalt = Encoding.UTF8.GetBytes("KINGOFKINGS"),
+                        SecurityStamp = Guid.NewGuid()
+                    };
 
                 await UserRepository.CreateUserAsync(contyk, new ApplicationRole[] { });
             }
@@ -55,8 +58,8 @@
             {
                 var newContykSession = new UserSession
                 {
-                    UserID = user.UserId,
-                    SessionID = Guid.NewGuid(),
+                    UserId = user.UserId,
+                    SessionId = Guid.NewGuid(),
                     ExpiresAt = DateTime.UtcNow.AddHours(12),
                     CreatedAt = DateTime.UtcNow,
                     SessionInfo = "Contykpo's session"

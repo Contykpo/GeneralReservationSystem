@@ -1,59 +1,72 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Claims;
-using System.Text;
-using System.Threading.Tasks;
+﻿using GeneralReservationSystem.Application.Entities.Authentication;
+using GeneralReservationSystem.Application.Repositories;
+using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication;
 
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Authentication;
 
-using GeneralReservationSystem.Application.Entities.Authentication;
-using System.Diagnostics;
+using System.Security.Claims;
 
 namespace GeneralReservationSystem.Infrastructure.Middleware
 {
 	public class SessionMiddleware
 	{
-		private readonly DbConnectionHelper db;
-		private readonly RequestDelegate next;
+		private readonly RequestDelegate _next;
 
-		public SessionMiddleware(RequestDelegate _next, DbConnectionHelper _db)
+		public SessionMiddleware(RequestDelegate next)
 		{
-			db = _db;
-			next = _next;
+			_next = next;
 		}
 
-		public async Task InvokeAsync(HttpContext context)
+		public async Task InvokeAsync(HttpContext context, IServiceProvider serviceProvider)
 		{
-			if(context.Request.Cookies.TryGetValue(Constants.CookieNames.SessionID, out var sessionIDCookieValue)
-				&& Guid.TryParse(sessionIDCookieValue, out Guid sessionId))
+			var sessionRepository = serviceProvider.GetService<ISessionRepository>();
+			var logger 			  = serviceProvider.GetService<ILogger<SessionMiddleware>>();
+
+			if (sessionRepository == null)
 			{
-				//TODO: Query a la base de datos para obtener la sesion, el usuario y sus roles
-
-				//TODO: Validar sesion valida
-
-				Debug.Assert(false);
-
-				ApplicationUser user = new();
-
-				List<ApplicationRole> roles = new();
-
-				var claims = new List<Claim>
-				{
-					new Claim(ClaimTypes.Name, user.UserName),
-					new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString())
-				};
-
-				foreach (var role in roles)
-					claims.Add(new Claim(ClaimTypes.Role, role.Name));
-
-				var userClaims		= new ClaimsIdentity(claims, "Session");
-				var userIdentity	= new ClaimsPrincipal(userClaims);
-
-				context.User = userIdentity;				
+				throw new Exception($"Unable to get {nameof(ISessionRepository)} service");
 			}
 
-			await next(context);
+			if (context.Request.Cookies.TryGetValue(Constants.CookieNames.SessionID, out var sessionIDCookieValue)
+				&& Guid.TryParse(sessionIDCookieValue, out Guid sessionId))
+			{
+				
+				(await sessionRepository.GetSessionAsync(sessionId))
+					.Match(
+						onValue: async sessionWithUser =>
+						{
+							//TODO: Agregar roles del usuario
+
+							var (session, user) = sessionWithUser;
+
+							if (session.ExpiresAt < DateTimeOffset.UtcNow)
+								return; //Sesion expirada, no autenticamos al usuario
+
+							var claims = new List<Claim>
+							{
+								new Claim(ClaimTypes.Name, user.UserName),
+								new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString())
+							};
+
+							var userClaims		= new ClaimsIdentity(claims, "Session");
+							var userIdentity	= new ClaimsPrincipal(userClaims);
+
+							await context.SignInAsync(
+								Constants.AuthenticationScheme, 
+								userIdentity, 
+								new AuthenticationProperties { IsPersistent = true, ExpiresUtc = DateTimeOffset.UtcNow.AddDays(1) });
+
+							logger.LogDebug($"User Authenticated: {user.UserName}");	
+						},
+						onEmpty: () => { /* No session found; proceed without setting user */ },
+						onError: error => { /* Log the error if necessary */ }
+					);			
+			}
+
+			await _next(context);
 		}
 	}
 }

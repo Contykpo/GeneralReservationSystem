@@ -1,10 +1,10 @@
-﻿using GeneralReservationSystem.Infrastructure.Common;
+﻿using GeneralReservationSystem.Application.Common;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-using static GeneralReservationSystem.Infrastructure.Common.OperationResult;
-using static GeneralReservationSystem.Infrastructure.Common.OptionalResult<object>;
+using static GeneralReservationSystem.Application.Common.OperationResult;
+using static GeneralReservationSystem.Application.Common.OptionalResult<object>;
 
 namespace GeneralReservationSystem.Infrastructure
 {
@@ -72,6 +72,48 @@ namespace GeneralReservationSystem.Infrastructure
 
                 return Error<int>($"Error al ejecutar comando SQL");
 			}
+        }
+
+        public async Task<OptionalResult<T>> ExecuteScalarAsync<T>(string sql, Dictionary<string, object>? parameters = null)
+        {
+            try
+            {
+                using var connection = new SqlConnection(_connectionString);
+
+                await connection.OpenAsync();
+
+                return await ExecuteScalarAsync<T>(sql, connection, parameters);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error al crear conexion con la base de datos");
+                return Error<T>($"Error al crear conexion con la base de datos");
+            }
+        }
+
+        public async Task<OptionalResult<T>> ExecuteScalarAsync<T>(string sql, SqlConnection connection, Dictionary<string, object>? parameters = null, SqlTransaction? transaction = null)
+        {
+            try
+            {
+                using var command = CreateCommand(sql, connection, parameters, transaction);
+
+                var result = await command.ExecuteScalarAsync();
+
+                // Convert the result to T and wrap in Value<T>
+                if (result == null || result is DBNull)
+                    return NoValue<T>();
+
+                return Value((T)Convert.ChangeType(result, typeof(T)));
+            }
+            catch (Exception ex)
+            {
+                //En release no logueamos parametros por seguridad
+                _logger.LogError(ex, $"Error al ejecutar comando SQL: {sql}");
+
+                _logger.LogDebug($"Error al ejecutar comando SQL: {sql} con parametros: {parameters}");
+
+                return Error<T>($"Error al ejecutar comando SQL");
+            }
         }
 
         public async Task<OptionalResult<IList<T>>> ExecuteReaderAsync<T>(string sql, Func<SqlDataReader, T> converter, Dictionary<string, object>? parameters = null)
