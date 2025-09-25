@@ -14,7 +14,7 @@ services:
         /bin/bash -c "/opt/mssql/bin/sqlservr & 
         echo 'Esperando a que SQL Server arranque...' && 
         sleep 15 && 
-        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P ${SA_PASSWORD} -C -i /docker-entrypoint-initdb.d/db-init.sql &&
+        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P SuperSa1234 -C -i /docker-entrypoint-initdb.d/db-init.sql &&
         wait"
 
   generalreservationsystem.web:  
@@ -23,16 +23,10 @@ services:
       context: .
       dockerfile: GeneralReservationSystem.Web/Dockerfile
     ports:
-      - "80:${ASPNETCORE_HTTP_PORTS:-8080}"
-      - "443:${ASPNETCORE_HTTPS_PORTS:-8081}"
+      - "5000:5000"
     depends_on:
       - sqlserver
     environment:
-      - ConnectionStrings__DefaultConnection=Server=${SQL_HOST}:${SQL_PORT};Database=${SQL_DB};User Id=${SQL_USER};Password=${SQL_PASSWORD};TrustServerCertificate=True
-      - SQL_HOST=${SQL_HOST}
-      - SQL_PORT=${SQL_PORT}
-      - SQL_DB=${SQL_DB}
-      - SQL_USER=${SQL_USER}
-      - SQL_PASSWORD=${SQL_PASSWORD}
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=AppDb;User Id=sa;Password=SuperSa1234;TrustServerCertificate=True
 volumes:
   sql_data:

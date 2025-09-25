@@ -13,7 +13,7 @@ using System.Transactions;
 
 using static GeneralReservationSystem.Application.Common.OperationResult;
 
-namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations.Authentication
+namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations
 {
     public class DefaultRoleRepository : IRoleRepository
     {

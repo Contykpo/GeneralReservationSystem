@@ -1,14 +1,14 @@
 ﻿using Microsoft.Data.SqlClient;
 
 using GeneralReservationSystem.Application.Entities.Authentication;
-using GeneralReservationSystem.Infrastructure.Repositories.Interfaces;
+using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication;
 
-using GeneralReservationSystem.Infrastructure.Common;
+using GeneralReservationSystem.Application.Common;
 
 using Microsoft.Extensions.Logging;
 
-using static GeneralReservationSystem.Infrastructure.Common.OperationResult;
-using static GeneralReservationSystem.Infrastructure.Common.OptionalResult<object>;
+using static GeneralReservationSystem.Application.Common.OperationResult;
+using static GeneralReservationSystem.Application.Common.OptionalResult<object>;
 
 using static GeneralReservationSystem.Infrastructure.Constants.Tables.ApplicationUser;
 

@@ -2,12 +2,12 @@
 using Microsoft.Data.SqlClient;
 
 using GeneralReservationSystem.Application.Entities.Authentication;
-using GeneralReservationSystem.Infrastructure.Common;
-using GeneralReservationSystem.Infrastructure.Repositories.Interfaces;
+using GeneralReservationSystem.Application.Common;
+using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication;
 
 using static GeneralReservationSystem.Infrastructure.Constants.Tables.UserSession;
-using static GeneralReservationSystem.Infrastructure.Common.OperationResult;
-using static GeneralReservationSystem.Infrastructure.Common.OptionalResult<object>;
+using static GeneralReservationSystem.Application.Common.OperationResult;
+using static GeneralReservationSystem.Application.Common.OptionalResult<object>;
 
 
 namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations
@@ -39,7 +39,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 			return (await _dbConnection.ExecuteAsync(
 					sql: @$"INSERT INTO {TableName} ({IdColumnName}, {UserIdColumnName}, {CreatedAtColumnName}, {ExpiresAtColumnName}, {SessionInfoColumnName})
 						VALUES (@SessionId, @UserId, @CreatedAt, @ExpiresAt, @SessionInfo)",
-					parameters: new Dictionary<string, object>
+					parameters: new Dictionary<string, object?>
 						{
 							{ "@SessionId",		newSession.SessionId   },
 							{ "@UserId",        newSession.UserId},
@@ -134,7 +134,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 							SET {ExpiresAtColumnName}	= @ExpiresAt, 
 								{SessionInfoColumnName} = @SessionInfo
 							WHERE {IdColumnName} = @SessionId",
-					parameters: new Dictionary<string, object>
+					parameters: new Dictionary<string, object?>
 						{
 							{ "@SessionId",		session.SessionId   },
 							{ "@ExpiresAt",		session.ExpiresAt},

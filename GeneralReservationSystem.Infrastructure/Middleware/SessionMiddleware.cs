@@ -1,6 +1,6 @@
 ﻿using GeneralReservationSystem.Application.Entities.Authentication;
-using GeneralReservationSystem.Infrastructure.Repositories;
-using GeneralReservationSystem.Infrastructure.Repositories.Interfaces;
+using GeneralReservationSystem.Application.Repositories;
+using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;

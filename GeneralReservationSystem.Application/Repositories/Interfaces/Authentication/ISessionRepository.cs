@@ -1,8 +1,8 @@
 ﻿using GeneralReservationSystem.Application.Entities.Authentication;
 
-using GeneralReservationSystem.Infrastructure.Common;
+using GeneralReservationSystem.Application.Common;
 
-namespace GeneralReservationSystem.Infrastructure.Repositories.Interfaces
+namespace GeneralReservationSystem.Application.Repositories.Interfaces.Authentication
 {
 	/// <summary>
 	/// Define la interfaz para el acceso y manipulación de sesiones de usuario.

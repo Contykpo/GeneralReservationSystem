@@ -4,7 +4,7 @@ using GeneralReservationSystem.Web.Data;
 using GeneralReservationSystem.Infrastructure;
 using GeneralReservationSystem.Infrastructure.Middleware;
 using GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations;
-using GeneralReservationSystem.Infrastructure.Repositories.Interfaces;
+using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication;
 
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -90,7 +90,7 @@ app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
 
-app.MapGet("/teraLogin", async (httpContext) =>
+app.MapGet("/teraLogin", httpContext =>
 {
     var sessionId = httpContext.Request.Query["sessionId"];
     
@@ -113,6 +113,8 @@ app.MapGet("/teraLogin", async (httpContext) =>
     {
         httpContext.Response.StatusCode = 400;
 	}
+
+    return Task.CompletedTask;
 });
 
 app.Run();
