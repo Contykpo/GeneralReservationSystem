@@ -9,7 +9,7 @@ services:
       - MSSQL_SA_PASSWORD=SuperSa1234
     volumes:
       - sql_data:/var/opt/mssql
-      - ./db-init.sql:/docker-entrypoint-initdb.d/db-init.sql
+      - ./db-init.sql:/docker-entrypoint-initdb.d/db-init.sql      
     command: >
         /bin/bash -c "/opt/mssql/bin/sqlservr & 
         echo 'Esperando a que SQL Server arranque...' && 

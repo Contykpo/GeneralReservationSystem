@@ -1,18 +1,18 @@
 using GeneralReservationSystem.Web.Components;
 using GeneralReservationSystem.Web.Components.Account;
 using GeneralReservationSystem.Web.Data;
-
 using GeneralReservationSystem.Infrastructure;
 using GeneralReservationSystem.Infrastructure.Middleware;
-
-using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.AspNetCore.Identity;
-
-using MudBlazor.Services;
-
 using GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations;
 using GeneralReservationSystem.Infrastructure.Repositories.Interfaces;
 
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication;
+
+using MudBlazor.Services;
+
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,6 +35,20 @@ builder.Services.AddMudServices();
 
 builder.Services.AddSingleton<DbConnectionHelper>();
 builder.Services.AddScoped<IUserRepository, DefaultUserRepository>();
+builder.Services.AddScoped<ISessionRepository, DefaultSessionRepository>();
+
+builder.Services.AddAuthentication(Constants.AuthenticationScheme)
+    .AddCookie(Constants.AuthenticationScheme, options =>
+    {
+        options.LoginPath           = "/";
+        options.LogoutPath          = "/";
+        options.ExpireTimeSpan      = TimeSpan.FromHours(1);
+        options.Cookie.SameSite     = Microsoft.AspNetCore.Http.SameSiteMode.Strict;
+        options.Cookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.Always;
+        options.Cookie.Name         = Constants.CookieNames.SessionID;
+	});
+
+builder.Services.AddAuthorization();
 
 //builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
 //    .AddEntityFrameworkStores<ApplicationDbContext>()
@@ -50,6 +64,8 @@ builder.WebHost.UseKestrel(o =>
     );
 
 var app = builder.Build();
+
+app.UseMiddleware<SessionMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -74,6 +90,29 @@ app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
 
-app.UseMiddleware<SessionMiddleware>();
+app.MapGet("/teraLogin", async (httpContext) =>
+{
+    var sessionId = httpContext.Request.Query["sessionId"];
+    
+    if (Guid.TryParse(sessionId, out var sessionGuid))
+    {
+        httpContext.Response.Cookies.Append(
+            Constants.CookieNames.SessionID,
+            sessionGuid.ToString(),
+            new CookieOptions
+            {
+                HttpOnly    = true,
+                Secure      = true,
+                SameSite    = SameSiteMode.Strict,
+                Expires     = DateTimeOffset.UtcNow.AddHours(1)
+            });
+
+        httpContext.Response.Redirect("/");
+	}
+    else
+    {
+        httpContext.Response.StatusCode = 400;
+	}
+});
 
 app.Run();

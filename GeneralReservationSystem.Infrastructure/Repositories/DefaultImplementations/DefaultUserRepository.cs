@@ -10,6 +10,8 @@ using Microsoft.Extensions.Logging;
 using static GeneralReservationSystem.Infrastructure.Common.OperationResult;
 using static GeneralReservationSystem.Infrastructure.Common.OptionalResult<object>;
 
+using static GeneralReservationSystem.Infrastructure.Constants.Tables.ApplicationUser;
+
 namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations
 {
 	public class DefaultUserRepository : IUserRepository
@@ -27,18 +29,18 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 		{
 			return new ApplicationUser
 			{
-				UserId				= reader.GetGuid(reader.GetOrdinal(Constants.Tables.ApplicationUser.UserIdColumnName)),
-				SecurityStamp		= reader.GetGuid(reader.GetOrdinal(Constants.Tables.ApplicationUser.SecurityStampColumnName)),
+				UserId				= reader.GetGuid(reader.GetOrdinal(UserIdColumnName)),
+				SecurityStamp		= reader.GetGuid(reader.GetOrdinal(SecurityStampColumnName)),
 
-				UserName			= reader.GetString(reader.GetOrdinal(Constants.Tables.ApplicationUser.NameColumnName)),
-				NormalizedUserName	= reader.GetString(reader.GetOrdinal(Constants.Tables.ApplicationUser.NormalizedNameColumnName)),
-				Email				= reader.GetString(reader.GetOrdinal(Constants.Tables.ApplicationUser.EmailColumnName)),
-				NormalizedEmail		= reader.GetString(reader.GetOrdinal(Constants.Tables.ApplicationUser.NormalizedEmailColumnName)),
+				UserName			= reader.GetString(reader.GetOrdinal(NameColumnName)),
+				NormalizedUserName	= reader.GetString(reader.GetOrdinal(NormalizedNameColumnName)),
+				Email				= reader.GetString(reader.GetOrdinal(EmailColumnName)),
+				NormalizedEmail		= reader.GetString(reader.GetOrdinal(NormalizedEmailColumnName)),
 
-				EmailConfirmed		= reader.GetBoolean(reader.GetOrdinal(Constants.Tables.ApplicationUser.EmailConfirmedColumnName)),
+				EmailConfirmed		= reader.GetBoolean(reader.GetOrdinal(EmailConfirmedColumnName)),
 				
-				PasswordHash		= (byte[])reader[Constants.Tables.ApplicationUser.PasswordHashColumnName],
-				PasswordSalt		= (byte[])reader[Constants.Tables.ApplicationUser.PasswordSaltColumnName],
+				PasswordHash		= (byte[])reader[PasswordHashColumnName],
+				PasswordSalt		= (byte[])reader[PasswordSaltColumnName],
 			};
 		}
 
@@ -55,14 +57,14 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 		public async Task<OptionalResult<IList<ApplicationUser>>> GetAllAsync()
 		{
 			return await _dbConnection.ExecuteReaderAsync<ApplicationUser>(
-				sql: $"SELECT * FROM {Constants.Tables.ApplicationUser.TableName};",
+				sql: $"SELECT * FROM {TableName};",
 				converter: ConvertReaderToUser);
 		}
 
 		public async Task<OptionalResult<ApplicationUser>> GetByEmailAsync(string email)
 		{
 			return await _dbConnection.ExecuteReaderSingleAsync<ApplicationUser>(
-				sql: $"SELECT * FROM {Constants.Tables.ApplicationUser.TableName} WHERE {Constants.Tables.ApplicationUser.NormalizedEmailColumnName} = @Email;",
+				sql: $"SELECT * FROM {TableName} WHERE {NormalizedEmailColumnName} = @Email;",
 				converter: ConvertReaderToUser,
 				parameters: new Dictionary<string, object>
 				{
@@ -73,7 +75,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 		public async Task<OptionalResult<ApplicationUser>> GetByGuidAsync(Guid guid)
 		{
 			return await _dbConnection.ExecuteReaderSingleAsync<ApplicationUser>(
-				sql:		$"SELECT * FROM {Constants.Tables.ApplicationUser.TableName} WHERE {Constants.Tables.ApplicationUser.UserIdColumnName} = @UserId;",
+				sql:		$"SELECT * FROM {TableName} WHERE {UserIdColumnName} = @UserId;",
 				converter:	ConvertReaderToUser,
 				parameters: new Dictionary<string, object>
 				{
@@ -101,8 +103,8 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 			return await _dbConnection.ExecuteReaderAsync<ApplicationUser>(
 				sql: $@"
 					SELECT u.*
-					FROM {Constants.Tables.ApplicationUser.TableName} AS u
-					INNER JOIN {Constants.Tables.UserRole.TableName} AS ur ON u.{Constants.Tables.ApplicationUser.UserIdColumnName} = ur.{Constants.Tables.UserRole.UserIdColumnName}
+					FROM {TableName} AS u
+					INNER JOIN {Constants.Tables.UserRole.TableName} AS ur ON u.{UserIdColumnName} = ur.{Constants.Tables.UserRole.UserIdColumnName}
 					INNER JOIN {Constants.Tables.ApplicationRole.TableName} AS r ON ur.{Constants.Tables.UserRole.RoleIdColumnName} = r.{Constants.Tables.ApplicationRole.RoleIdColumnName}
 					WHERE r.{Constants.Tables.ApplicationRole.NormalizedNameColumnName} = @RoleName;",
 				converter: ConvertReaderToUser,
@@ -141,16 +143,16 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 				//TODO: Considerar si insertar id del usuario directamente o si dejar que la base de datos lo genere
 				// Insert the new user
 				var insertUserSql = $@"
-					INSERT INTO {Constants.Tables.ApplicationUser.TableName} 
-					(	{Constants.Tables.ApplicationUser.UserIdColumnName}, 
-						{Constants.Tables.ApplicationUser.NameColumnName}, 
-						{Constants.Tables.ApplicationUser.NormalizedNameColumnName}, 
-						{Constants.Tables.ApplicationUser.EmailColumnName}, 
-						{Constants.Tables.ApplicationUser.NormalizedEmailColumnName}, 
-						{Constants.Tables.ApplicationUser.EmailConfirmedColumnName}, 
-						{Constants.Tables.ApplicationUser.PasswordHashColumnName}, 
-						{Constants.Tables.ApplicationUser.PasswordSaltColumnName}, 
-						{Constants.Tables.ApplicationUser.SecurityStampColumnName}
+					INSERT INTO {TableName} 
+					(	{UserIdColumnName}, 
+						{NameColumnName}, 
+						{NormalizedNameColumnName}, 
+						{EmailColumnName}, 
+						{NormalizedEmailColumnName}, 
+						{EmailConfirmedColumnName}, 
+						{PasswordHashColumnName}, 
+						{PasswordSaltColumnName}, 
+						{SecurityStampColumnName}
 					)
 					VALUES 
 					(@UserId, @UserName, @NormalizedUserName, @Email, @NormalizedEmail, @EmailConfirmed, @PasswordHash, @PasswordSalt, @SecurityStamp);";
@@ -236,7 +238,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 		public async Task<OptionalResult<bool>> ExistsWithEmailAsync(string email)
 		{
 			return (await _dbConnection.ExecuteReaderSingleAsync<int>(
-				sql:		$"SELECT COUNT(1) FROM {Constants.Tables.ApplicationUser.TableName} WHERE {Constants.Tables.ApplicationUser.NormalizedEmailColumnName} = @Email;",
+				sql:		$"SELECT COUNT(1) FROM {TableName} WHERE {NormalizedEmailColumnName} = @Email;",
 				converter:	reader => reader.GetInt32(0),
 				parameters: new Dictionary<string, object>
 				{
@@ -279,17 +281,17 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 		{
 			return (await _dbConnection.ExecuteAsync(
 				sql: $@"
-					UPDATE {Constants.Tables.ApplicationUser.TableName}
+					UPDATE {TableName}
 					SET 
-						{Constants.Tables.ApplicationUser.NameColumnName}				= @UserName,
-						{Constants.Tables.ApplicationUser.NormalizedNameColumnName}		= @NormalizedUserName,
-						{Constants.Tables.ApplicationUser.EmailColumnName}				= @Email,
-						{Constants.Tables.ApplicationUser.NormalizedEmailColumnName}	= @NormalizedEmail,
-						{Constants.Tables.ApplicationUser.EmailConfirmedColumnName}		= @EmailConfirmed,
-						{Constants.Tables.ApplicationUser.PasswordHashColumnName}		= @PasswordHash,
-						{Constants.Tables.ApplicationUser.PasswordSaltColumnName}		= @PasswordSalt,
-						{Constants.Tables.ApplicationUser.SecurityStampColumnName}		= @SecurityStamp
-					WHERE {Constants.Tables.ApplicationUser.UserIdColumnName}			= @UserId;",
+						{NameColumnName}				= @UserName,
+						{NormalizedNameColumnName}		= @NormalizedUserName,
+						{EmailColumnName}				= @Email,
+						{NormalizedEmailColumnName}		= @NormalizedEmail,
+						{EmailConfirmedColumnName}		= @EmailConfirmed,
+						{PasswordHashColumnName}		= @PasswordHash,
+						{PasswordSaltColumnName}		= @PasswordSalt,
+						{SecurityStampColumnName}		= @SecurityStamp
+					WHERE {UserIdColumnName}			= @UserId;",
 				parameters: new Dictionary<string, object>
 				{
 					{ "@UserId",                user.UserId },
