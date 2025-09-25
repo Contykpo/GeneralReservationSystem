@@ -4,8 +4,6 @@
 <MudPaper Elevation="0">
     <MudNavMenu Bordered="true">
         <MudNavLink Href="/">Inicio</MudNavLink>
-        <MudNavLink Href="/counter">Contador</MudNavLink>
-        <MudNavLink Href="/weather">Clima</MudNavLink>
 
         <AuthorizeView>
             <Authorized>
@@ -13,7 +11,6 @@
                 <MudNavLink Href="/Account/Logout"><AntiforgeryToken />Logout</MudNavLink>
             </Authorized>
             <NotAuthorized>
-                <MudNavLink Href="/auth">Ingresar</MudNavLink>
                 <MudNavLink Href="/Account/Register">Registrarse</MudNavLink>
                 <MudNavLink Href="/Account/Login">Loguearse</MudNavLink>
             </NotAuthorized>

@@ -68,7 +68,7 @@
 
             var passwordHasher = new Helpers.PasswordHashingHelper<ApplicationUser>();
 
-            var result = UserRepository.GetByEmailAsync(loginUserData.EmailAddress.ToUpperInvariant()).Result;
+            var result = await UserRepository.GetByEmailAsync(loginUserData.EmailAddress.ToUpperInvariant());
             result.IfValue(loginUser =>
             {
                 var verificationResult = passwordHasher.VerifyHashedPassword(loginUser, System.Text.Encoding.UTF8.GetString(loginUser.PasswordHash), loginUserData.Password);

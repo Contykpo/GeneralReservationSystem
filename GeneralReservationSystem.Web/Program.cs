@@ -3,7 +3,6 @@ using GeneralReservationSystem.Infrastructure;
 using GeneralReservationSystem.Infrastructure.Middleware;
 using GeneralReservationSystem.Web.Components;
 using GeneralReservationSystem.Web.Components.Account;
-using GeneralReservationSystem.Web.Data;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using MudBlazor.Services;
@@ -46,6 +45,8 @@ builder.Services.AddScoped<IUserRepository, DefaultUserRepository>();
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
+builder.Services.AddHttpContextAccessor();
+
 builder.WebHost.UseKestrel(o =>
         o.ListenAnyIP(5000)
     );
@@ -66,14 +67,10 @@ else
 
 app.UseHttpsRedirection();
 
-
 app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
-
-// Add additional endpoints required by the Identity /Account Razor components.
-app.MapAdditionalIdentityEndpoints();
 
 app.UseMiddleware<SessionMiddleware>();
 
