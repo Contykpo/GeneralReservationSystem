@@ -1,0 +1,34 @@
+BEGIN TRANSACTION;
+
+-- Migration identifier (unique per script)
+DECLARE @MigrationNameIdentifier NVARCHAR(256) = '0_example_migration';
+
+-- Check if this migration was already applied
+IF NOT EXISTS (SELECT 1 FROM __migrations WHERE MigrationName = @MigrationNameIdentifier)
+BEGIN
+
+    -- These checks may be omitted as the migration is intended to be idempotent via the __migrations table.
+    -- But this is an extra safeguard.
+    IF OBJECT_ID(N'Users', 'U') IS NULL
+    BEGIN
+        CREATE TABLE Users (
+            Id INT IDENTITY PRIMARY KEY,
+            Username NVARCHAR(100) NOT NULL UNIQUE,
+            Email NVARCHAR(255) NOT NULL UNIQUE,
+            CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+        );
+    END
+
+    -- Add a column safely
+    IF COL_LENGTH('Users', 'LastLogin') IS NULL
+    BEGIN
+        ALTER TABLE Users ADD LastLogin DATETIME2 NULL;
+    END
+
+    -- ========================
+    -- Record migration
+    -- ========================
+    INSERT INTO __migrations (MigrationName) VALUES (@MigrationNameIdentifier);
+END
+
+COMMIT TRANSACTION;

@@ -7,6 +7,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Source", "Source", "{02EA68
 	ProjectSection(SolutionItems) = preProject
 		.env = .env
 		db-init.sql = db-init.sql
+		apply-migrations.sh = apply-migrations.sh
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeneralReservationSystem.Infrastructure", "GeneralReservationSystem.Infrastructure\GeneralReservationSystem.Infrastructure.csproj", "{D795CC22-FB8F-4EF7-B234-263995402503}"
