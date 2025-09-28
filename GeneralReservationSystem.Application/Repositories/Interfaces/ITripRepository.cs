@@ -17,8 +17,7 @@ namespace GeneralReservationSystem.Application.Repositories.Interfaces
     public interface ITripRepository
     {
         Task<OptionalResult<Trip>> GetByIdAsync(int id);
-        Task<OptionalResult<IList<Trip>>> GetAllAsync();
-        Task<OptionalResult<IList<TripDetailsDto>>> SearchPagedAsync(int pageIndex, int pageSize,
+        Task<SearchResult<IList<TripDetailsDto>>> SearchPagedAsync(int pageIndex, int pageSize,
             string? DepartureName = null, string? DepartureCity = null, string? destinationName = null, string? destinationCity = null,
             DateTime? startDate = null, DateTime? endDate = null, bool onlyWithAvailableSeats = true, TripSearchSortBy? sortBy = null,
             bool descending = false); // NOTE: Ideally, search should be in a service layer, but 

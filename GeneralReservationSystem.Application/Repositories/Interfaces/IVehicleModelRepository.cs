@@ -11,7 +11,7 @@ namespace GeneralReservationSystem.Application.Repositories.Interfaces
 
     public interface IVehicleModelRepository
     {
-        Task<OptionalResult<IList<VehicleModel>>> SearchAsync(int pageIndex, int pageSize, string? name = null, string? manufacturer = null,
+        Task<SearchResult<IList<VehicleModel>>> SearchAsync(int pageIndex, int pageSize, string? name = null, string? manufacturer = null,
             VehicleModelSearchSortBy? sortBy = null, bool descending = false); // NOTE: Ideally, search should be in a service layer, but 
                                                                                // we don't use an ORM. This is simpler.
         Task<OptionalResult<VehicleModel>> GetByIdAsync(int id);

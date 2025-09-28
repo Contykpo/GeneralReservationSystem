@@ -7,13 +7,12 @@ namespace GeneralReservationSystem.Application.Repositories.Interfaces
 {
     public interface IReservationRepository
     {
-        Task<OptionalResult<IList<AvailableSeatDto>>> GetAvailablePagedAsync(int pageIndex, int pageSize,
+        Task<SearchResult<IList<AvailableSeatDto>>> GetAvailablePagedAsync(int pageIndex, int pageSize,
             int tripId); // NOTE: Ideally, search should be in a service layer, but 
                          // we don't use an ORM. This is simpler.
-
-        Task<OptionalResult<IList<SeatReservationDto>>> GetReservedSeatsForTripPagedAsync(int pageIndex, int pageSize, int tripId); 
+        Task<SearchResult<IList<SeatReservationDto>>> GetReservedSeatsForTripPagedAsync(int pageIndex, int pageSize, int tripId); 
         // NOTE: Ideally, search should be in a service layer, but we don't use an ORM. This is simpler.
-        Task<OptionalResult<IList<SeatReservationDto>>> GetReservedSeatsForUserPagedAsync(int pageIndex, int pageSize, int userId, int? tripId);
+        Task<SearchResult<IList<SeatReservationDto>>> GetReservedSeatsForUserPagedAsync(int pageIndex, int pageSize, int userId, int? tripId);
         // NOTE: Ideally, search should be in a service layer, but we don't use an ORM. This is simpler.
         Task<OptionalResult<Seat>> GetSeatByIdAsync(Reservation reservation);
         Task<OptionalResult<Trip>> GetTripByIdAsync(Reservation reservation);

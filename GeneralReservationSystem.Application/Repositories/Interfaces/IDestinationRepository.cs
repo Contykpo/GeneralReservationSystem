@@ -16,7 +16,7 @@ namespace GeneralReservationSystem.Application.Repositories.Interfaces
     {
         Task<OptionalResult<IList<Destination>>> GetAllAsync();
         // NOTE: Ideally, search should be in a service layer, but we don't use an ORM. This is simpler.
-        Task<OptionalResult<IList<Destination>>> SearchAsync(int pageIndex, int pageSize, string? name = null, string? code = null,
+        Task<SearchResult<IList<Destination>>> SearchAsync(int pageIndex, int pageSize, string? name = null, string? code = null,
             string? city = null, string? region = null, string? country = null, DestinationSearchSortBy? sortBy = null, bool descending = false);
         Task<OptionalResult<Destination>> GetByIdAsync(int id);
         Task<OperationResult> AddAsync(Destination destination);
