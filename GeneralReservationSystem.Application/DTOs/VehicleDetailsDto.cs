@@ -1,6 +1,6 @@
 ﻿namespace GeneralReservationSystem.Application.DTOs
 {
-    public class VehicleSearchResult
+    public class VehicleDetailsDto
     {
         public int VehicleId { get; set; }
         public required int VehicleModelId { get; set; }

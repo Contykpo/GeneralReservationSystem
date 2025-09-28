@@ -6,11 +6,10 @@ using System.Threading.Tasks;
 
 namespace GeneralReservationSystem.Application.DTOs
 {
-    public class DetailedReservation
+    public class AvailableSeatDto
     {
         public required int TripId { get; set; }
         public required int SeatId { get; set; }
-        public required int UserId { get; set; }
         public required int Row { get; set; }
         public required int Column { get; set; }
         public required bool IsAtWindow { get; set; } = false;
