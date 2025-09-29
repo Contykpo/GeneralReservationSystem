@@ -1,7 +1,7 @@
 using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication;
 using GeneralReservationSystem.Infrastructure;
 using GeneralReservationSystem.Infrastructure.Middleware;
-using GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations;
+using GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations.Authentication;
 using GeneralReservationSystem.Web.Components;
 using GeneralReservationSystem.Web.Components.Account;
 using GeneralReservationSystem.Web.Data;

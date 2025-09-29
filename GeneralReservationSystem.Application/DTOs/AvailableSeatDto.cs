@@ -17,5 +17,6 @@ namespace GeneralReservationSystem.Application.DTOs
         public required bool IsInFront { get; set; } = false;
         public required bool IsInBack { get; set; } = false;
         public required bool IsAccessible { get; set; } = false;
+        public required int VehicleModelId { get; set; }
     }
 }

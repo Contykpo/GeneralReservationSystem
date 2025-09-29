@@ -10,7 +10,7 @@ using static GeneralReservationSystem.Application.Common.OperationResult;
 using static GeneralReservationSystem.Application.Common.OptionalResult<object>;
 
 
-namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations
+namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations.Authentication
 {
 	public class DefaultSessionRepository : ISessionRepository
 	{

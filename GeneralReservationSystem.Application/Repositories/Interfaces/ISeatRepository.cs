@@ -1,5 +1,5 @@
-﻿using GeneralReservationSystem.Application.Entities;
-using GeneralReservationSystem.Application.Common;
+﻿using GeneralReservationSystem.Application.Common;
+using GeneralReservationSystem.Application.Entities;
 
 namespace GeneralReservationSystem.Application.Repositories.Interfaces
 {

@@ -1,5 +1,7 @@
 ﻿using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.Entities;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace GeneralReservationSystem.Application.Repositories.Interfaces
 {
@@ -14,9 +16,7 @@ namespace GeneralReservationSystem.Application.Repositories.Interfaces
 
     public interface IDestinationRepository
     {
-        Task<OptionalResult<IList<Destination>>> GetAllAsync();
-        // NOTE: Ideally, search should be in a service layer, but we don't use an ORM. This is simpler.
-        Task<SearchResult<IList<Destination>>> SearchAsync(int pageIndex, int pageSize, string? name = null, string? code = null,
+        Task<OptionalResult<IList<Destination>>> SearchPagedAsync(int pageIndex, int pageSize, string? name = null, string? code = null,
             string? city = null, string? region = null, string? country = null, DestinationSearchSortBy? sortBy = null, bool descending = false);
         Task<OptionalResult<Destination>> GetByIdAsync(int id);
         Task<OperationResult> AddAsync(Destination destination);

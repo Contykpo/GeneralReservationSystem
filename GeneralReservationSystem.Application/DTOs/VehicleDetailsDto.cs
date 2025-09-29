@@ -1,4 +1,6 @@
-﻿namespace GeneralReservationSystem.Application.DTOs
+﻿using System;
+
+namespace GeneralReservationSystem.Application.DTOs
 {
     public class VehicleDetailsDto
     {
@@ -8,5 +10,7 @@
         public required string Status { get; set; }
         public required string ModelName { get; set; }
         public required string Manufacturer { get; set; }
+        public required string Color { get; set; }
+        public required DateTime ManufactureDate { get; set; }
     }
 }

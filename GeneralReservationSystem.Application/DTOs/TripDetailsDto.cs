@@ -1,4 +1,6 @@
-﻿namespace GeneralReservationSystem.Application.DTOs
+﻿using System;
+
+namespace GeneralReservationSystem.Application.DTOs
 {
     public class TripDetailsDto
     {

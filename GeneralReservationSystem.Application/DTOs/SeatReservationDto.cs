@@ -8,6 +8,7 @@ namespace GeneralReservationSystem.Application.DTOs
 {
     public class SeatReservationDto
     {
+        public required int ReservationId { get; set; }
         public required int TripId { get; set; }
         public required int SeatId { get; set; }
         public required int UserId { get; set; }
@@ -18,5 +19,6 @@ namespace GeneralReservationSystem.Application.DTOs
         public required bool IsInFront { get; set; } = false;
         public required bool IsInBack { get; set; } = false;
         public required bool IsAccessible { get; set; } = false;
+        public required DateTime ReservedAt { get; set; }
     }
 }

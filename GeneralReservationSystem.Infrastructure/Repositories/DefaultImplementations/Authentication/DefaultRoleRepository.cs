@@ -3,17 +3,10 @@ using GeneralReservationSystem.Application.Entities.Authentication;
 using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.WebSockets;
-using System.Text;
-using System.Threading.Tasks;
-using System.Transactions;
 
 using static GeneralReservationSystem.Application.Common.OperationResult;
 
-namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations
+namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations.Authentication
 {
     public class DefaultRoleRepository : IRoleRepository
     {
@@ -57,14 +50,17 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 
             var roleCreationResultId = (await _dbConnection.ExecuteScalarAsync<Guid>(insertRoleSql, roleParameters))
                 .Match(
-                    onValue: (newId) => {
+                    onValue: (newId) =>
+                    {
                         return newId;
                     },
-                    onEmpty: () => {
+                    onEmpty: () =>
+                    {
                         _logger.LogError($"Role creation returned no result for role {role}.");
                         throw new Exception("Role creation returned no result.");
                     },
-                    onError: (error) => {
+                    onError: (error) =>
+                    {
                         _logger.LogError(error, $"Error creating role {role}.");
                         throw new Exception($"Error creating role. {error}");
                     });
