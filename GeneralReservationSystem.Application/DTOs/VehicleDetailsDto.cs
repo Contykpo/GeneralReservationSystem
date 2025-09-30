@@ -10,7 +10,5 @@ namespace GeneralReservationSystem.Application.DTOs
         public required string Status { get; set; }
         public required string ModelName { get; set; }
         public required string Manufacturer { get; set; }
-        public required string Color { get; set; }
-        public required DateTime ManufactureDate { get; set; }
     }
 }

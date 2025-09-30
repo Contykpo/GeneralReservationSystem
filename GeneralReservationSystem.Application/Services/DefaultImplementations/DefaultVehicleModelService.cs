@@ -7,7 +7,7 @@ using GeneralReservationSystem.Application.Services.Interfaces;
 using GeneralReservationSystem.Application.DTOs;
 using static GeneralReservationSystem.Application.Common.OperationResult;
 
-namespace GeneralReservationSystem.Application.Services
+namespace GeneralReservationSystem.Application.Services.DefaultImplementations
 {
     public class DefaultVehicleModelService : IVehicleModelService
     {
@@ -27,14 +27,14 @@ namespace GeneralReservationSystem.Application.Services
 
         public async Task<OperationResult> AddVehicleModelAsync(CreateVehicleModelDto vehicleModelDto)
         {
-            // Business rule: No duplicate seat locations (Row, Column) allowed
-            var seatLocations = new HashSet<(int Row, int Column)>();
+            // Business rule: No duplicate seat locations (SeatRow, SeatColumn) allowed
+            var seatLocations = new HashSet<(int SeatRow, int SeatColumn)>();
             foreach (var seat in vehicleModelDto.Seats)
             {
-                var location = (seat.Row, seat.Column);
+                var location = (seat.SeatRow, seat.SeatColumn);
                 if (!seatLocations.Add(location))
                 {
-                    return Failure($"Duplicate seat location detected at Row {seat.Row}, Column {seat.Column}.");
+                    return Failure($"Duplicate seat location detected at SeatRow {seat.SeatRow}, SeatColumn {seat.SeatColumn}.");
                 }
             }
 
@@ -46,8 +46,8 @@ namespace GeneralReservationSystem.Application.Services
             var seats = vehicleModelDto.Seats.Select(s => new Seat
             {
                 VehicleModelId = 0, // Will be set after VehicleModel is created
-                Row = s.Row,
-                Column = s.Column,
+                SeatRow = s.SeatRow,
+                SeatColumn = s.SeatColumn,
                 IsAtWindow = s.IsAtWindow,
                 IsAtAisle = s.IsAtAisle,
                 IsInFront = s.IsInFront,

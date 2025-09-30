@@ -9,12 +9,12 @@ namespace GeneralReservationSystem.Application.DTOs
         public int VehicleModelId { get; set; }
 
         [Required]
-        [Range(1, int.MaxValue, ErrorMessage = "Row must be at least 1.")]
-        public int Row { get; set; }
+        [Range(1, int.MaxValue, ErrorMessage = "SeatRow must be at least 1.")]
+        public int SeatRow { get; set; }
 
         [Required]
-        [Range(1, int.MaxValue, ErrorMessage = "Column must be at least 1.")]
-        public int Column { get; set; }
+        [Range(1, int.MaxValue, ErrorMessage = "SeatColumn must be at least 1.")]
+        public int SeatColumn { get; set; }
 
         public bool IsAtWindow { get; set; } = false;
         public bool IsAtAisle { get; set; } = false;
@@ -26,12 +26,12 @@ namespace GeneralReservationSystem.Application.DTOs
     public class CreateSeatForVehicleModelDto
     {
         [Required]
-        [Range(1, int.MaxValue, ErrorMessage = "Row must be at least 1.")]
-        public int Row { get; set; }
+        [Range(1, int.MaxValue, ErrorMessage = "SeatRow must be at least 1.")]
+        public int SeatRow { get; set; }
 
         [Required]
-        [Range(1, int.MaxValue, ErrorMessage = "Column must be at least 1.")]
-        public int Column { get; set; }
+        [Range(1, int.MaxValue, ErrorMessage = "SeatColumn must be at least 1.")]
+        public int SeatColumn { get; set; }
 
         public bool IsAtWindow { get; set; } = false;
         public bool IsAtAisle { get; set; } = false;

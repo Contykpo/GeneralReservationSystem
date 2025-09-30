@@ -1,12 +1,10 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using GeneralReservationSystem.Application.Repositories.Interfaces;
-using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Common;
-using GeneralReservationSystem.Application.Services.Interfaces;
 using GeneralReservationSystem.Application.DTOs;
+using GeneralReservationSystem.Application.Entities;
+using GeneralReservationSystem.Application.Repositories.Interfaces;
+using GeneralReservationSystem.Application.Services.Interfaces;
 
-namespace GeneralReservationSystem.Application.Services
+namespace GeneralReservationSystem.Application.Services.DefaultImplementations
 {
     public class DefaultDriverService : IDriverService
     {
@@ -19,7 +17,7 @@ namespace GeneralReservationSystem.Application.Services
 
         public async Task<OptionalResult<IList<Driver>>> SearchDriversAsync(int pageIndex, int pageSize, string? firstName = null,
             string? lastName = null, string? licenseNumber = null, string? phoneNumber = null,
-            GeneralReservationSystem.Application.Repositories.Interfaces.DriverSearchSortBy? sortBy = null, bool descending = false)
+            DriverSearchSortBy? sortBy = null, bool descending = false)
         {
             return await _driverRepository.SearchPagedAsync(pageIndex, pageSize, firstName, lastName, licenseNumber, phoneNumber, sortBy, descending);
         }
@@ -36,7 +34,7 @@ namespace GeneralReservationSystem.Application.Services
         public Task<OperationResult> AddDriverAsync(CreateDriverDto driverDto)
         {
             if (!int.TryParse(driverDto.IdentificationNumber, out int identificationNumber))
-                throw new ArgumentException("IdentificationNumber must be a valid 8-digit number.");
+                throw new ArgumentException("El número de identificación debe ser un número válido de 8 dígitos.");
 
             var driver = new Driver
             {

@@ -28,7 +28,7 @@ services:
     depends_on:
       - sqlserver
     environment:
-      - ConnectionStrings__DefaultConnection=Server=${SQL_HOST}:${SQL_PORT};Database=${SQL_DB};User Id=${SQL_USER};Password=${SQL_PASSWORD};TrustServerCertificate=True
+      - ConnectionStrings__DefaultConnection=Server=${SQL_HOST},${SQL_PORT};Database=${SQL_DB};User Id=${SQL_USER};Password=${SQL_PASSWORD};TrustServerCertificate=True
       - SQL_HOST=${SQL_HOST}
       - SQL_PORT=${SQL_PORT}
       - SQL_DB=${SQL_DB}

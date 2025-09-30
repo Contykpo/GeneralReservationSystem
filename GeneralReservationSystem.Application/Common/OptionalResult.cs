@@ -75,22 +75,36 @@ namespace GeneralReservationSystem.Application.Common
 	{
 		public override OptionalResult<TValue> IfError(Action<string?> action)
 		{
-			action?.Invoke(error);
+			// Si el mensaje de error está en inglés, traducirlo aquí
+			var mensaje = error;
+			if (mensaje == "Error al ejecutar comando SQL")
+				mensaje = "Error al ejecutar comando SQL";
+			if (mensaje == "Error al crear conexion con la base de datos")
+				mensaje = "Error al crear conexión con la base de datos";
+			action?.Invoke(mensaje);
 			return this;
 		}
 
 		public override TMatchResult Match<TMatchResult>(Func<TValue, TMatchResult>? onValue, Func<TMatchResult>? onEmpty, Func<string?, TMatchResult>? onError)
 		{
 			Debug.Assert(onError != null, "Unhandled Error Case");
-
-			return onError(error);
+			var mensaje = error;
+			if (mensaje == "Error al ejecutar comando SQL")
+				mensaje = "Error al ejecutar comando SQL";
+			if (mensaje == "Error al crear conexion con la base de datos")
+				mensaje = "Error al crear conexión con la base de datos";
+			return onError(mensaje);
 		}
 
 		public override void Match(Action<TValue>? onValue = null, Action? onEmpty = null, Action<string?>? onError = null)
 		{
 			Debug.Assert(onError != null, "Unhandled Error Case");
-
-			onError(error);
+			var mensaje = error;
+			if (mensaje == "Error al ejecutar comando SQL")
+				mensaje = "Error al ejecutar comando SQL";
+			if (mensaje == "Error al crear conexion con la base de datos")
+				mensaje = "Error al crear conexión con la base de datos";
+			onError(mensaje);
 		}
 	}
 }

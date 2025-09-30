@@ -9,11 +9,11 @@ namespace GeneralReservationSystem.Application.Entities
     public class Trip
     {
         public int TripId { get; set; }
-        public required int VehicleId { get; set; }
-        public required int DepartureId { get; set; }
-        public required int DestinationId { get; set; }
-        public required int DriverId { get; set; }
-        public required DateTime DepartureTime { get; set; }
-        public required DateTime ArrivalTime { get; set; }
+        public int VehicleId { get; set; }
+        public int DepartureId { get; set; }
+        public int DestinationId { get; set; }
+        public int DriverId { get; set; }
+        public DateTime DepartureTime { get; set; }
+        public DateTime ArrivalTime { get; set; }
     }
 }

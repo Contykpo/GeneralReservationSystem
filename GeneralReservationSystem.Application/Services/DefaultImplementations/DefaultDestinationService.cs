@@ -6,7 +6,7 @@ using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.Services.Interfaces;
 using GeneralReservationSystem.Application.DTOs;
 
-namespace GeneralReservationSystem.Application.Services
+namespace GeneralReservationSystem.Application.Services.DefaultImplementations
 {
     public class DefaultDestinationService : IDestinationService
     {

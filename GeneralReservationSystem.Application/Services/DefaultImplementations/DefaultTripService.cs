@@ -5,7 +5,7 @@ using GeneralReservationSystem.Application.Repositories.Interfaces;
 using GeneralReservationSystem.Application.Services.Interfaces;
 using static GeneralReservationSystem.Application.Common.OperationResult;
 
-namespace GeneralReservationSystem.Application.Services
+namespace GeneralReservationSystem.Application.Services.DefaultImplementations
 {
     public class DefaultTripService : ITripService
     {
@@ -31,16 +31,16 @@ namespace GeneralReservationSystem.Application.Services
 
         public async Task<OperationResult> AddAsync(CreateTripDto tripDto)
         {
-            // Business rule: Departure and Destination must be different
-            if (tripDto.DepartureId == tripDto.DestinationId)
+            // Business rule: DepartureId and DestinationId must be valid and not equal
+            if (tripDto.DepartureId <= 0 || tripDto.DestinationId <= 0 || tripDto.DepartureId == tripDto.DestinationId)
             {
-                return Failure("Departure and destination must be different.");
+                return Failure("El origen y el destino deben ser válidos y diferentes.");
             }
 
             // Business rule: DepartureTime must be before ArrivalTime
             if (tripDto.DepartureTime >= tripDto.ArrivalTime)
             {
-                return Failure("Departure time must be before arrival time.");
+                return Failure("La hora de salida debe ser anterior a la hora de llegada.");
             }
 
             // Business rule: Driver must exist and license must not be expired at DepartureTime and ArrivalTime
@@ -48,12 +48,12 @@ namespace GeneralReservationSystem.Application.Services
                 onValue: driver =>
                 {
                     if (driver.LicenseExpiryDate < tripDto.DepartureTime)
-                        return Failure("Driver's license will be expired at the time of departure.");
+                        return Failure("La licencia del conductor estará vencida en la hora de salida.");
                     if (driver.LicenseExpiryDate < tripDto.ArrivalTime)
-                        return Failure("Driver's license will be expired before arrival time.");
+                        return Failure("La licencia del conductor estará vencida antes de la llegada.");
                     return null;
                 },
-                onEmpty: () => Failure("Driver not found."),
+                onEmpty: () => Failure("No se encontró el conductor."),
                 onError: error => Failure(error)
             );
 
@@ -68,17 +68,14 @@ namespace GeneralReservationSystem.Application.Services
                 {
                     foreach (var trip in trips)
                     {
-                        // Check for overlap:
-                        // (StartDate1 <= EndDate2) and (StartDate2 <= EndDate1)
-                        // https://stackoverflow.com/questions/325933/determine-whether-two-date-ranges-overlap
                         if (tripDto.DepartureTime <= trip.ArrivalTime && trip.DepartureTime <= tripDto.ArrivalTime)
                         {
-                            return Failure("Driver is not available during the selected trip time.");
+                            return Failure("El conductor no está disponible durante el horario seleccionado.");
                         }
                     }
                     return null;
                 },
-                onEmpty: () => null, // No trips, so driver is available
+                onEmpty: () => null,
                 onError: error => Failure(error)
             );
 
@@ -92,10 +89,10 @@ namespace GeneralReservationSystem.Application.Services
                 onValue: vehicle =>
                 {
                     if (vehicle.Status != "Available")
-                        return Failure("Vehicle is not available.");
+                        return Failure("El vehículo no está disponible.");
                     return null;
                 },
-                onEmpty: () => Failure("Vehicle not found."),
+                onEmpty: () => Failure("No se encontró el vehículo."),
                 onError: error => Failure(error)
             );
 
@@ -110,17 +107,14 @@ namespace GeneralReservationSystem.Application.Services
                 {
                     foreach (var trip in trips)
                     {
-                        // Check for overlap:
-                        // (StartDate1 <= EndDate2) and (StartDate2 <= EndDate1)
-                        // https://stackoverflow.com/questions/325933/determine-whether-two-date-ranges-overlap
                         if (tripDto.DepartureTime <= trip.ArrivalTime && trip.DepartureTime <= tripDto.ArrivalTime)
                         {
-                            return Failure("Vehicle is not available during the selected trip time.");
+                            return Failure("El vehículo no está disponible durante el horario seleccionado.");
                         }
                     }
                     return null;
                 },
-                onEmpty: () => null, // No trips, so vehicle is available
+                onEmpty: () => null,
                 onError: error => Failure(error)
             );
 

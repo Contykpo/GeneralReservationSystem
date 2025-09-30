@@ -1,22 +1,35 @@
 ﻿<MudPaper Elevation="0">
     <MudNavMenu Bordered="true">
+        <!-- General navigation -->
         <MudNavLink Href="/">Inicio</MudNavLink>
+        <MudNavLink Href="/TripSearch">Buscar Viajes</MudNavLink>
+        <MudNavLink Href="/User/Dashboard">Panel de Usuario</MudNavLink>
+        <MudNavLink Href="/User/Reservations">Mis Reservas</MudNavLink>
 
+        <!-- Admin section, only for authorized users -->
         <AuthorizeView>
             <Authorized>
+                <MudDivider Class="my-2" />
+                <MudText Typo="Typo.subtitle2" Class="ml-2">Administración</MudText>
+                <MudNavLink Href="/Admin/Dashboard">Panel de Administrador</MudNavLink>
+                <MudNavLink Href="/Admin/Users">Gestión de Usuarios</MudNavLink>
+                <MudNavLink Href="/Admin/Drivers">Gestión de Conductores</MudNavLink>
+                <MudNavLink Href="/Admin/VehicleModels">Gestión de Modelos de Vehículo</MudNavLink>
+                <MudNavLink Href="/Admin/Vehicles">Gestión de Vehículos</MudNavLink>
+                <MudNavLink Href="/Admin/Destinations">Gestión de Destinos</MudNavLink>
+                <MudNavLink Href="/Admin/Trips">Gestión de Viajes</MudNavLink>
+                <MudNavLink Href="/Admin/Reservations">Gestión de Reservas</MudNavLink>
+                <MudDivider Class="my-2" />
                 <MudNavLink Href="/Account/Manage">@context.User.Identity?.Name</MudNavLink>
-                <MudNavLink Href="/Account/Logout"><AntiforgeryToken />Logout</MudNavLink>
+                <MudNavLink Href="/Account/Logout"><AntiforgeryToken />Cerrar sesión</MudNavLink>
             </Authorized>
             <NotAuthorized>
-                <MudNavLink Href="/counter">Contador</MudNavLink>
                 <MudNavLink Href="/Account/Register">Registrarse</MudNavLink>
                 <MudNavLink Href="/Account/Login">Loguearse</MudNavLink>
             </NotAuthorized>
         </AuthorizeView>
-
     </MudNavMenu>
 </MudPaper>
-
 
 @code
 {

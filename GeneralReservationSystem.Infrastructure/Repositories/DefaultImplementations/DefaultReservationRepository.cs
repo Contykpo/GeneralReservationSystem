@@ -26,7 +26,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 
         public async Task<OptionalResult<IList<AvailableSeatDto>>> GetAvailablePagedAsync(int pageIndex, int pageSize, int tripId)
         {
-            var sql = "SELECT * FROM AvailableSeats WHERE TripId = @TripId OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+            var sql = "SELECT * FROM TripAvailableSeats WHERE TripId = @TripId ORDER BY SeatId OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
             var parameters = new Dictionary<string, object>
             {
                 { "@TripId", tripId },
@@ -39,8 +39,8 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
                 {
                     TripId = reader.GetInt32(reader.GetOrdinal("TripId")),
                     SeatId = reader.GetInt32(reader.GetOrdinal("SeatId")),
-                    Row = reader.GetInt32(reader.GetOrdinal("Row")),
-                    Column = reader.GetInt32(reader.GetOrdinal("Column")),
+                    SeatRow = reader.GetInt32(reader.GetOrdinal("SeatRow")),
+                    SeatColumn = reader.GetInt32(reader.GetOrdinal("SeatColumn")),
                     IsAtWindow = reader.GetBoolean(reader.GetOrdinal("IsAtWindow")),
                     IsAtAisle = reader.GetBoolean(reader.GetOrdinal("IsAtAisle")),
                     IsInFront = reader.GetBoolean(reader.GetOrdinal("IsInFront")),
@@ -54,7 +54,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 
         public async Task<OptionalResult<IList<SeatReservationDto>>> GetReservedSeatsForTripPagedAsync(int pageIndex, int pageSize, int tripId)
         {
-            var sql = "SELECT * FROM ReservedSeats WHERE TripId = @TripId OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+            var sql = "SELECT * FROM Reservation WHERE TripId = @TripId OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
             var parameters = new Dictionary<string, object>
             {
                 { "@TripId", tripId },
@@ -68,9 +68,9 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
                     ReservationId = reader.GetInt32(reader.GetOrdinal("ReservationId")),
                     TripId = reader.GetInt32(reader.GetOrdinal("TripId")),
                     SeatId = reader.GetInt32(reader.GetOrdinal("SeatId")),
-                    UserId = reader.GetInt32(reader.GetOrdinal("UserId")),
-                    Row = reader.GetInt32(reader.GetOrdinal("Row")),
-                    Column = reader.GetInt32(reader.GetOrdinal("Column")),
+                    UserId = reader.GetGuid(reader.GetOrdinal("UserId")),
+                    SeatRow = reader.GetInt32(reader.GetOrdinal("SeatRow")),
+                    SeatColumn = reader.GetInt32(reader.GetOrdinal("SeatColumn")),
                     IsAtWindow = reader.GetBoolean(reader.GetOrdinal("IsAtWindow")),
                     IsAtAisle = reader.GetBoolean(reader.GetOrdinal("IsAtAisle")),
                     IsInFront = reader.GetBoolean(reader.GetOrdinal("IsInFront")),
@@ -82,9 +82,9 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
             );
         }
 
-        public async Task<OptionalResult<IList<SeatReservationDto>>> GetReservedSeatsForUserPagedAsync(int pageIndex, int pageSize, int userId, int? tripId)
+        public async Task<OptionalResult<IList<SeatReservationDto>>> GetReservedSeatsForUserPagedAsync(int pageIndex, int pageSize, Guid userId, int? tripId)
         {
-            var sql = "SELECT * FROM ReservedSeats WHERE UserId = @UserId";
+            var sql = "SELECT * FROM Reservation WHERE UserId = @UserId";
             var parameters = new Dictionary<string, object>
             {
                 { "@UserId", userId },
@@ -100,9 +100,9 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
                     ReservationId = reader.GetInt32(reader.GetOrdinal("ReservationId")),
                     TripId = reader.GetInt32(reader.GetOrdinal("TripId")),
                     SeatId = reader.GetInt32(reader.GetOrdinal("SeatId")),
-                    UserId = reader.GetInt32(reader.GetOrdinal("UserId")),
-                    Row = reader.GetInt32(reader.GetOrdinal("Row")),
-                    Column = reader.GetInt32(reader.GetOrdinal("Column")),
+                    UserId = reader.GetGuid(reader.GetOrdinal("UserId")),
+                    SeatRow = reader.GetInt32(reader.GetOrdinal("SeatRow")),
+                    SeatColumn = reader.GetInt32(reader.GetOrdinal("SeatColumn")),
                     IsAtWindow = reader.GetBoolean(reader.GetOrdinal("IsAtWindow")),
                     IsAtAisle = reader.GetBoolean(reader.GetOrdinal("IsAtAisle")),
                     IsInFront = reader.GetBoolean(reader.GetOrdinal("IsInFront")),
@@ -126,7 +126,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
                     { "@ReservedAt", DateTime.UtcNow }
                 }
             )).Match<OperationResult>(
-                onValue: rowsAffected => rowsAffected > 0 ? Success() : Failure("No changes were made"),
+                onValue: rowsAffected => rowsAffected > 0 ? Success() : Failure("No se realizaron cambios"),
                 onError: error => Failure(error)
             );
         }
@@ -142,7 +142,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
                     { "@UserId", reservation.UserId }
                 }
             )).Match<OperationResult>(
-                onValue: rowsAffected => rowsAffected > 0 ? Success() : Failure("No entries were deleted"),
+                onValue: rowsAffected => rowsAffected > 0 ? Success() : Failure("No se eliminaron entradas"),
                 onError: error => Failure(error)
             );
         }

@@ -15,5 +15,6 @@
     </None>
     <None Include="docker-compose.yml" />
     <None Include=".dockerignore" />
+    <None Include="Migrations\1_reservation_schemas.sql" />
   </ItemGroup>
 </Project>

@@ -11,9 +11,9 @@ namespace GeneralReservationSystem.Application.DTOs
         public required int ReservationId { get; set; }
         public required int TripId { get; set; }
         public required int SeatId { get; set; }
-        public required int UserId { get; set; }
-        public required int Row { get; set; }
-        public required int Column { get; set; }
+        public required Guid UserId { get; set; }
+        public required int SeatRow { get; set; }
+        public required int SeatColumn { get; set; }
         public required bool IsAtWindow { get; set; } = false;
         public required bool IsAtAisle { get; set; } = false;
         public required bool IsInFront { get; set; } = false;

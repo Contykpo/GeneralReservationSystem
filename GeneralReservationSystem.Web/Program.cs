@@ -16,8 +16,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
-
 builder.Services.AddMudServices();
+
+// Register all default repositories via DI extension
+builder.Services.AddInfrastructureRepositories();
 
 //builder.Services.AddCascadingAuthenticationState();
 //builder.Services.AddScoped<IdentityUserAccessor>();
@@ -30,10 +32,6 @@ builder.Services.AddMudServices();
 //        options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
 //    })
 //    .AddIdentityCookies();
-
-builder.Services.AddSingleton<DbConnectionHelper>();
-builder.Services.AddScoped<IUserRepository, DefaultUserRepository>();
-builder.Services.AddScoped<ISessionRepository, DefaultSessionRepository>();
 
 builder.Services.AddAuthentication(Constants.AuthenticationScheme)
     .AddCookie(Constants.AuthenticationScheme, options =>

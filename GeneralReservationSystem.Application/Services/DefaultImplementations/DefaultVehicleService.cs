@@ -6,7 +6,7 @@ using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.Services.Interfaces;
 
-namespace GeneralReservationSystem.Application.Services
+namespace GeneralReservationSystem.Application.Services.DefaultImplementations
 {
     public class DefaultVehicleService : IVehicleService
     {

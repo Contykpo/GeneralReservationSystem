@@ -5,7 +5,7 @@ using GeneralReservationSystem.Application.Repositories.Interfaces;
 using GeneralReservationSystem.Application.Services.Interfaces;
 using static GeneralReservationSystem.Application.Common.OperationResult;
 
-namespace GeneralReservationSystem.Application.Services
+namespace GeneralReservationSystem.Application.Services.DefaultImplementations
 {
     public class DefaultReservationService : IReservationService
     {
@@ -40,7 +40,7 @@ namespace GeneralReservationSystem.Application.Services
             );
         }
 
-        public async Task<OptionalResult<IList<SeatReservationDto>>> GetReservedSeatsForUserAsync(int pageIndex, int pageSize, int userId, int? tripId)
+        public async Task<OptionalResult<IList<SeatReservationDto>>> GetReservedSeatsForUserAsync(int pageIndex, int pageSize, Guid userId, int? tripId)
         {
             return (await _reservationRepository.GetReservedSeatsForUserPagedAsync(pageIndex, pageSize, userId, tripId)).Match<OptionalResult<IList<SeatReservationDto>>>(
                 onValue: value => OptionalResult<IList<SeatReservationDto>>.Value(value),
@@ -58,14 +58,14 @@ namespace GeneralReservationSystem.Application.Services
                     {
                         if (seat.VehicleModelId != vehicle.VehicleModelId)
                         {
-                            return Failure("The selected seat does not belong to the vehicle model assigned to this trip.");
+                            return Failure("El asiento seleccionado no pertenece al modelo de vehículo asignado a este viaje.");
                         }
                         return null;
                     },
-                    onEmpty: () => Failure("Seat for the reservation not found."),
+                    onEmpty: () => Failure("No se encontró el asiento para la reserva."),
                     onError: error => Failure(error)
                 ),
-                onEmpty: () => Failure("Vehicle for the trip not found."),
+                onEmpty: () => Failure("No se encontró el vehículo para el viaje."),
                 onError: error => Failure(error)
             );
 

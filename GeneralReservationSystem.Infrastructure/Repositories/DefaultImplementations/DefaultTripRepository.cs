@@ -21,7 +21,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
         public async Task<OptionalResult<Trip>> GetByIdAsync(int id)
         {
             return await _dbConnection.ExecuteReaderSingleAsync<Trip>(
-                sql: "SELECT * FROM Trips WHERE TripId = @TripId;",
+                sql: "SELECT * FROM Trip WHERE TripId = @TripId;",
                 converter: reader => new Trip
                 {
                     TripId = reader.GetInt32(reader.GetOrdinal("TripId")),
@@ -36,7 +36,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
             );
         }
 
-        public async Task<OptionalResult<IList<TripDetailsDto>>> SearchPagedAsync(int pageIndex, int pageSize, string? DepartureName = null, string? DepartureCity = null, string? destinationName = null, string? destinationCity = null, DateTime? startDate = null, DateTime? endDate = null, bool onlyWithAvailableSeats = true, TripSearchSortBy? sortBy = null, bool descending = false)
+        public async Task<OptionalResult<IList<TripDetailsDto>>> SearchPagedAsync(int pageIndex, int pageSize, string? DepartureName = null, string? DepartureCity = null, string? destinationName = null, string? destinationCity = null, DateTime? startDate = null, DateTime? endDate = null, bool onlyWithAvailableSeat = true, TripSearchSortBy? sortBy = null, bool descending = false)
         {
             // TODO: This 1=1 trick is a bit hacky, consider using a proper management of optional filters.
             var sql = "SELECT * FROM TripDetailsView WHERE 1=1";
@@ -47,7 +47,14 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
             if (!string.IsNullOrEmpty(destinationCity)) { sql += " AND DestinationCity LIKE @DestinationCity"; parameters.Add("@DestinationCity", $"%{destinationCity}%"); }
             if (startDate.HasValue) { sql += " AND DepartureTime >= @StartDate"; parameters.Add("@StartDate", startDate.Value); }
             if (endDate.HasValue) { sql += " AND ArrivalTime <= @EndDate"; parameters.Add("@EndDate", endDate.Value); }
-            if (sortBy.HasValue) { sql += $" ORDER BY {sortBy.Value}{(descending ? " DESC" : " ASC")}"; }
+            if (sortBy.HasValue)
+            {
+                sql += $" ORDER BY {sortBy.Value}{(descending ? " DESC" : " ASC")}";
+            }
+            else
+            {
+                sql += " ORDER BY TripId ASC";
+            }
             sql += " OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
             parameters.Add("@Offset", pageIndex * pageSize);
             parameters.Add("@PageSize", pageSize);
@@ -79,10 +86,60 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
             );
         }
 
+        public async Task<OperationResult> AddAsync(Trip trip)
+        {
+            return (await _dbConnection.ExecuteAsync(
+                sql: "INSERT INTO Trip (VehicleId, DepartureId, DestinationId, DriverId, DepartureTime, ArrivalTime) VALUES (@VehicleId, @DepartureId, @DestinationId, @DriverId, @DepartureTime, @ArrivalTime);",
+                parameters: new Dictionary<string, object>
+                {
+                    { "@VehicleId", trip.VehicleId },
+                    { "@DepartureId", trip.DepartureId },
+                    { "@DestinationId", trip.DestinationId },
+                    { "@DriverId", trip.DriverId },
+                    { "@DepartureTime", trip.DepartureTime },
+                    { "@ArrivalTime", trip.ArrivalTime }
+                }
+            )).Match<OperationResult>(
+                onValue: rowsAffected => rowsAffected > 0 ? Success() : Failure("No changes were made"),
+                onError: error => Failure(error)
+            );
+        }
+
+        public async Task<OperationResult> UpdateAsync(Trip trip)
+        {
+            return (await _dbConnection.ExecuteAsync(
+                sql: "UPDATE Trip SET VehicleId = @VehicleId, DepartureId = @DepartureId, DestinationId = @DestinationId, DriverId = @DriverId, DepartureTime = @DepartureTime, ArrivalTime = @ArrivalTime WHERE TripId = @TripId;",
+                parameters: new Dictionary<string, object>
+                {
+                    { "@TripId", trip.TripId },
+                    { "@VehicleId", trip.VehicleId },
+                    { "@DepartureId", trip.DepartureId },
+                    { "@DestinationId", trip.DestinationId },
+                    { "@DriverId", trip.DriverId },
+                    { "@DepartureTime", trip.DepartureTime },
+                    { "@ArrivalTime", trip.ArrivalTime }
+                }
+            )).Match<OperationResult>(
+                onValue: rowsAffected => rowsAffected > 0 ? Success() : Failure("No changes were made"),
+                onError: error => Failure(error)
+            );
+        }
+
+        public async Task<OperationResult> DeleteAsync(int id)
+        {
+            return (await _dbConnection.ExecuteAsync(
+                sql: "DELETE FROM Trip WHERE TripId = @TripId;",
+                parameters: new Dictionary<string, object> { { "@TripId", id } }
+            )).Match<OperationResult>(
+                onValue: rowsAffected => rowsAffected > 0 ? Success() : Failure("No entries were deleted"),
+                onError: error => Failure(error)
+            );
+        }
+
         public async Task<OptionalResult<Driver>> GetDriverByIdAsync(int id)
         {
             return await _dbConnection.ExecuteReaderSingleAsync<Driver>(
-                sql: "SELECT * FROM Drivers WHERE DriverId = @DriverId;",
+                sql: "SELECT * FROM Driver WHERE DriverId = @DriverId;",
                 converter: reader => new Driver
                 {
                     DriverId = reader.GetInt32(reader.GetOrdinal("DriverId")),
@@ -99,7 +156,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
         public async Task<OptionalResult<Vehicle>> GetVehicleByIdAsync(int id)
         {
             return await _dbConnection.ExecuteReaderSingleAsync<Vehicle>(
-                sql: "SELECT * FROM Vehicles WHERE VehicleId = @VehicleId;",
+                sql: "SELECT * FROM Vehicle WHERE VehicleId = @VehicleId;",
                 converter: reader => new Vehicle
                 {
                     VehicleId = reader.GetInt32(reader.GetOrdinal("VehicleId")),
@@ -108,102 +165,6 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
                     Status = reader.GetString(reader.GetOrdinal("Status"))
                 },
                 parameters: new Dictionary<string, object> { { "@VehicleId", id } }
-            );
-        }
-
-        public async Task<OptionalResult<Destination>> GetDepartureByIdAsync(int id)
-        {
-            return await _dbConnection.ExecuteReaderSingleAsync<Destination>(
-                sql: "SELECT * FROM Destinations WHERE DestinationId = @DestinationId;",
-                converter: reader => new Destination
-                {
-                    DestinationId = reader.GetInt32(reader.GetOrdinal("DestinationId")),
-                    Name = reader.GetString(reader.GetOrdinal("Name")),
-                    Code = reader.GetString(reader.GetOrdinal("Code")),
-                    City = reader.GetString(reader.GetOrdinal("City")),
-                    Region = reader.GetString(reader.GetOrdinal("Region")),
-                    Country = reader.GetString(reader.GetOrdinal("Country")),
-                    NormalizedName = reader.GetString(reader.GetOrdinal("NormalizedName")),
-                    NormalizedCode = reader.GetString(reader.GetOrdinal("NormalizedCode")),
-                    NormalizedCity = reader.GetString(reader.GetOrdinal("NormalizedCity")),
-                    NormalizedRegion = reader.GetString(reader.GetOrdinal("NormalizedRegion")),
-                    NormalizedCountry = reader.GetString(reader.GetOrdinal("NormalizedCountry")),
-                    TimeZone = TimeZoneInfo.FindSystemTimeZoneById(reader.GetString(reader.GetOrdinal("TimeZone")))
-                },
-                parameters: new Dictionary<string, object> { { "@DestinationId", id } }
-            );
-        }
-
-        public async Task<OptionalResult<Destination>> GetDestinationByIdAsync(int id)
-        {
-            return await _dbConnection.ExecuteReaderSingleAsync<Destination>(
-                sql: "SELECT * FROM Destinations WHERE DestinationId = @DestinationId;",
-                converter: reader => new Destination
-                {
-                    DestinationId = reader.GetInt32(reader.GetOrdinal("DestinationId")),
-                    Name = reader.GetString(reader.GetOrdinal("Name")),
-                    Code = reader.GetString(reader.GetOrdinal("Code")),
-                    City = reader.GetString(reader.GetOrdinal("City")),
-                    Region = reader.GetString(reader.GetOrdinal("Region")),
-                    Country = reader.GetString(reader.GetOrdinal("Country")),
-                    NormalizedName = reader.GetString(reader.GetOrdinal("NormalizedName")),
-                    NormalizedCode = reader.GetString(reader.GetOrdinal("NormalizedCode")),
-                    NormalizedCity = reader.GetString(reader.GetOrdinal("NormalizedCity")),
-                    NormalizedRegion = reader.GetString(reader.GetOrdinal("NormalizedRegion")),
-                    NormalizedCountry = reader.GetString(reader.GetOrdinal("NormalizedCountry")),
-                    TimeZone = TimeZoneInfo.FindSystemTimeZoneById(reader.GetString(reader.GetOrdinal("TimeZone")))
-                },
-                parameters: new Dictionary<string, object> { { "@DestinationId", id } }
-            );
-        }
-
-        public async Task<OperationResult> AddAsync(Trip trip)
-        {
-            return (await _dbConnection.ExecuteAsync(
-                sql: "INSERT INTO Trips (DepartureId, DestinationId, VehicleId, DriverId, DepartureTime, ArrivalTime) VALUES (@DepartureId, @DestinationId, @VehicleId, @DriverId, @DepartureTime, @ArrivalTime);",
-                parameters: new Dictionary<string, object>
-                {
-                    { "@DepartureId", trip.DepartureId },
-                    { "@DestinationId", trip.DestinationId },
-                    { "@VehicleId", trip.VehicleId },
-                    { "@DriverId", trip.DriverId },
-                    { "@DepartureTime", trip.DepartureTime },
-                    { "@ArrivalTime", trip.ArrivalTime }
-                }
-            )).Match<OperationResult>(
-                onValue: rowsAffected => rowsAffected > 0 ? Success() : Failure("No changes were made"),
-                onError: error => Failure(error)
-            );
-        }
-
-        public async Task<OperationResult> UpdateAsync(Trip trip)
-        {
-            return (await _dbConnection.ExecuteAsync(
-                sql: "UPDATE Trips SET DepartureId = @DepartureId, DestinationId = @DestinationId, VehicleId = @VehicleId, DriverId = @DriverId, DepartureTime = @DepartureTime, ArrivalTime = @ArrivalTime WHERE TripId = @TripId;",
-                parameters: new Dictionary<string, object>
-                {
-                    { "@TripId", trip.TripId },
-                    { "@DepartureId", trip.DepartureId },
-                    { "@DestinationId", trip.DestinationId },
-                    { "@VehicleId", trip.VehicleId },
-                    { "@DriverId", trip.DriverId },
-                    { "@DepartureTime", trip.DepartureTime },
-                    { "@ArrivalTime", trip.ArrivalTime }
-                }
-            )).Match<OperationResult>(
-                onValue: rowsAffected => rowsAffected > 0 ? Success() : Failure("No changes were made"),
-                onError: error => Failure(error)
-            );
-        }
-
-        public async Task<OperationResult> DeleteAsync(int id)
-        {
-            return (await _dbConnection.ExecuteAsync(
-                sql: "DELETE FROM Trips WHERE TripId = @TripId;",
-                parameters: new Dictionary<string, object> { { "@TripId", id } }
-            )).Match<OperationResult>(
-                onValue: rowsAffected => rowsAffected > 0 ? Success() : Failure("No entries were deleted"),
-                onError: error => Failure(error)
             );
         }
     }

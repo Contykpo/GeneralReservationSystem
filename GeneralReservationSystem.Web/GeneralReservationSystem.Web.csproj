@@ -24,4 +24,8 @@
     <ProjectReference Include="..\GeneralReservationSystem.Infrastructure\GeneralReservationSystem.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Components\Ticket\Pages\" />
+  </ItemGroup>
+
 </Project>

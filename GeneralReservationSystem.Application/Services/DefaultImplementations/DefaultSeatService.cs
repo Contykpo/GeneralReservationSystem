@@ -4,7 +4,7 @@ using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.Services.Interfaces;
 using GeneralReservationSystem.Application.DTOs;
 
-namespace GeneralReservationSystem.Application.Services
+namespace GeneralReservationSystem.Application.Services.DefaultImplementations
 {
     public class DefaultSeatService : ISeatService
     {
@@ -23,8 +23,8 @@ namespace GeneralReservationSystem.Application.Services
             var seat = new Seat
             {
                 VehicleModelId = seatDto.VehicleModelId,
-                Row = seatDto.Row,
-                Column = seatDto.Column,
+                SeatRow = seatDto.SeatRow,
+                SeatColumn = seatDto.SeatColumn,
                 IsAtWindow = seatDto.IsAtWindow,
                 IsAtAisle = seatDto.IsAtAisle,
                 IsInFront = seatDto.IsInFront,
@@ -39,8 +39,8 @@ namespace GeneralReservationSystem.Application.Services
             var seats = seatDtos.Select(seatDto => new Seat
             {
                 VehicleModelId = seatDto.VehicleModelId,
-                Row = seatDto.Row,
-                Column = seatDto.Column,
+                SeatRow = seatDto.SeatRow,
+                SeatColumn = seatDto.SeatColumn,
                 IsAtWindow = seatDto.IsAtWindow,
                 IsAtAisle = seatDto.IsAtAisle,
                 IsInFront = seatDto.IsInFront,

@@ -30,7 +30,15 @@ namespace GeneralReservationSystem.Application.Common
 	{
 		public override OperationResult IfFailure(Action<string?> action)
 		{
-			action?.Invoke(ErrorMessage);
+			// Si el mensaje de error está en inglés, traducirlo aquí
+			var mensaje = ErrorMessage;
+			if (mensaje == "Error al ejecutar transaccion SQL")
+				mensaje = "Error al ejecutar transacción SQL";
+			if (mensaje == "Error al ejecutar comando SQL")
+				mensaje = "Error al ejecutar comando SQL";
+			if (mensaje == "Error al crear conexion con la base de datos")
+				mensaje = "Error al crear conexión con la base de datos";
+			action?.Invoke(mensaje);
 			return this;
 		}
 	}

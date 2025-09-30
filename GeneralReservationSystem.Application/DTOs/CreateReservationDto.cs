@@ -13,7 +13,6 @@ namespace GeneralReservationSystem.Application.DTOs
         public int SeatId { get; set; }
 
         [Required]
-        [Range(1, int.MaxValue, ErrorMessage = "UserId must be a positive integer.")]
-        public int UserId { get; set; }
+        public Guid UserId { get; set; }
     }
 }

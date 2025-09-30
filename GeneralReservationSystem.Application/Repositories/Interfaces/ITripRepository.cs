@@ -23,8 +23,6 @@ namespace GeneralReservationSystem.Application.Repositories.Interfaces
             bool descending = false);
         Task<OptionalResult<Driver>> GetDriverByIdAsync(int id);
         Task<OptionalResult<Vehicle>> GetVehicleByIdAsync(int id);
-        Task<OptionalResult<Destination>> GetDepartureByIdAsync(int id);
-        Task<OptionalResult<Destination>> GetDestinationByIdAsync(int id);
         Task<OperationResult> AddAsync(Trip trip);
         Task<OperationResult> UpdateAsync(Trip trip);
         Task<OperationResult> DeleteAsync(int id);

@@ -20,13 +20,13 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
         public async Task<OptionalResult<Seat>> GetByIdAsync(int id)
         {
             return await _dbConnection.ExecuteReaderSingleAsync<Seat>(
-                sql: "SELECT * FROM Seats WHERE SeatId = @SeatId;",
+                sql: "SELECT * FROM Seat WHERE SeatId = @SeatId;",
                 converter: reader => new Seat
                 {
                     SeatId = reader.GetInt32(reader.GetOrdinal("SeatId")),
                     VehicleModelId = reader.GetInt32(reader.GetOrdinal("VehicleModelId")),
-                    Row = reader.GetInt32(reader.GetOrdinal("Row")),
-                    Column = reader.GetInt32(reader.GetOrdinal("Column")),
+                    SeatRow = reader.GetInt32(reader.GetOrdinal("SeatRow")),
+                    SeatColumn = reader.GetInt32(reader.GetOrdinal("SeatColumn")),
                     IsAtWindow = reader.GetBoolean(reader.GetOrdinal("IsAtWindow")),
                     IsAtAisle = reader.GetBoolean(reader.GetOrdinal("IsAtAisle")),
                     IsInFront = reader.GetBoolean(reader.GetOrdinal("IsInFront")),
@@ -40,12 +40,12 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
         public async Task<OperationResult> AddAsync(Seat seat)
         {
             return (await _dbConnection.ExecuteAsync(
-                sql: "INSERT INTO Seats (VehicleModelId, Row, Column, IsAtWindow, IsAtAisle, IsInFront, IsInBack, IsAccessible) VALUES (@VehicleModelId, @Row, @Column, @IsAtWindow, @IsAtAisle, @IsInFront, @IsInBack, @IsAccessible);",
+                sql: "INSERT INTO Seat (VehicleModelId, SeatRow, SeatColumn, IsAtWindow, IsAtAisle, IsInFront, IsInBack, IsAccessible) VALUES (@VehicleModelId, @SeatRow, @SeatColumn, @IsAtWindow, @IsAtAisle, @IsInFront, @IsInBack, @IsAccessible);",
                 parameters: new Dictionary<string, object>
                 {
                     { "@VehicleModelId", seat.VehicleModelId },
-                    { "@Row", seat.Row },
-                    { "@Column", seat.Column },
+                    { "@SeatRow", seat.SeatRow },
+                    { "@SeatColumn", seat.SeatColumn },
                     { "@IsAtWindow", seat.IsAtWindow },
                     { "@IsAtAisle", seat.IsAtAisle },
                     { "@IsInFront", seat.IsInFront },
@@ -53,7 +53,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
                     { "@IsAccessible", seat.IsAccessible }
                 }
             )).Match<OperationResult>(
-                onValue: rowsAffected => rowsAffected > 0 ? Success() : Failure("No changes were made"),
+                onValue: rowsAffected => rowsAffected > 0 ? Success() : Failure("No se realizaron cambios"),
                 onError: error => Failure(error)
             );
         }
@@ -66,19 +66,19 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
                 var result = await AddAsync(seat);
                 if (result is Success) totalAffected++;
             }
-            return totalAffected > 0 ? Success() : Failure("No seats were added");
+            return totalAffected > 0 ? Success() : Failure("No se agregaron asientos");
         }
 
         public async Task<OperationResult> UpdateAsync(Seat seat)
         {
             return (await _dbConnection.ExecuteAsync(
-                sql: "UPDATE Seats SET VehicleModelId = @VehicleModelId, Row = @Row, Column = @Column, IsAtWindow = @IsAtWindow, IsAtAisle = @IsAtAisle, IsInFront = @IsInFront, IsInBack = @IsInBack, IsAccessible = @IsAccessible WHERE SeatId = @SeatId;",
+                sql: "UPDATE Seat SET VehicleModelId = @VehicleModelId, SeatRow = @SeatRow, SeatColumn = @SeatColumn, IsAtWindow = @IsAtWindow, IsAtAisle = @IsAtAisle, IsInFront = @IsInFront, IsInBack = @IsInBack, IsAccessible = @IsAccessible WHERE SeatId = @SeatId;",
                 parameters: new Dictionary<string, object>
                 {
                     { "@SeatId", seat.SeatId },
                     { "@VehicleModelId", seat.VehicleModelId },
-                    { "@Row", seat.Row },
-                    { "@Column", seat.Column },
+                    { "@SeatRow", seat.SeatRow },
+                    { "@SeatColumn", seat.SeatColumn },
                     { "@IsAtWindow", seat.IsAtWindow },
                     { "@IsAtAisle", seat.IsAtAisle },
                     { "@IsInFront", seat.IsInFront },
@@ -86,7 +86,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
                     { "@IsAccessible", seat.IsAccessible }
                 }
             )).Match<OperationResult>(
-                onValue: rowsAffected => rowsAffected > 0 ? Success() : Failure("No changes were made"),
+                onValue: rowsAffected => rowsAffected > 0 ? Success() : Failure("No se realizaron cambios"),
                 onError: error => Failure(error)
             );
         }
@@ -99,16 +99,16 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
                 var result = await UpdateAsync(seat);
                 if (result is Success) totalAffected++;
             }
-            return totalAffected > 0 ? Success() : Failure("No seats were updated");
+            return totalAffected > 0 ? Success() : Failure("No se actualizaron asientos");
         }
 
         public async Task<OperationResult> DeleteAsync(int id)
         {
             return (await _dbConnection.ExecuteAsync(
-                sql: "DELETE FROM Seats WHERE SeatId = @SeatId;",
+                sql: "DELETE FROM Seat WHERE SeatId = @SeatId;",
                 parameters: new Dictionary<string, object> { { "@SeatId", id } }
             )).Match<OperationResult>(
-                onValue: rowsAffected => rowsAffected > 0 ? Success() : Failure("No entries were deleted"),
+                onValue: rowsAffected => rowsAffected > 0 ? Success() : Failure("No se eliminaron entradas"),
                 onError: error => Failure(error)
             );
         }
@@ -121,7 +121,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
                 var result = await DeleteAsync(id);
                 if (result is Success) totalAffected++;
             }
-            return totalAffected > 0 ? Success() : Failure("No seats were deleted");
+            return totalAffected > 0 ? Success() : Failure("No se eliminaron asientos");
         }
     }
 }
