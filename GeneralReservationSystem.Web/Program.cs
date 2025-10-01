@@ -18,8 +18,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 builder.Services.AddMudServices();
 
-// Register all default repositories via DI extension
-builder.Services.AddInfrastructureRepositories();
+// Register all services and default repositories via DI extension
+builder.Services.AddInfrastructure();
 
 //builder.Services.AddCascadingAuthenticationState();
 //builder.Services.AddScoped<IdentityUserAccessor>();

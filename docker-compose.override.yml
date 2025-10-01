@@ -10,3 +10,14 @@ services:
     volumes:
       - ${HOME}/.microsoft/usersecrets:/root/.microsoft/usersecrets:ro
       - ${HOME}/.aspnet/https:/root/.aspnet/https:ro
+  generalreservationsystem.api:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8082
+      - ASPNETCORE_HTTPS_PORTS=8083
+    ports:
+      - "8082"
+      - "8083"
+    volumes:
+      - ${HOME}/.microsoft/usersecrets:/root/.microsoft/usersecrets:ro
+      - ${HOME}/.aspnet/https:/root/.aspnet/https:ro
