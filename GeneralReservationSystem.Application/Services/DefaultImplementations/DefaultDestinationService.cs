@@ -17,7 +17,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             _destinationRepository = destinationRepository;
         }
 
-        public async Task<OptionalResult<IList<Destination>>> SearchDestinationsAsync(int pageIndex, int pageSize, string? name = null, string? code = null,
+        public async Task<OptionalResult<PagedResult<Destination>>> SearchDestinationsAsync(int pageIndex, int pageSize, string? name = null, string? code = null,
             string? city = null, string? region = null, string? country = null, GeneralReservationSystem.Application.Repositories.Interfaces.DestinationSearchSortBy? sortBy = null, bool descending = false)
         {
             return await _destinationRepository.SearchPagedAsync(pageIndex, pageSize, name, code, city, region, country, sortBy, descending);
@@ -48,8 +48,28 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             return _destinationRepository.AddAsync(destination);
         }
 
-        public Task<OperationResult> UpdateDestinationAsync(Destination destination)
-            => _destinationRepository.UpdateAsync(destination);
+        public Task<OperationResult> UpdateDestinationAsync(UpdateDestinationDto destinationDto)
+        {
+            string Normalize(string value) =>
+                string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim().ToUpperInvariant();
+
+            var destination = new Destination
+            {
+                DestinationId = destinationDto.Id,
+                Name = destinationDto.Name,
+                Code = destinationDto.Code,
+                City = destinationDto.City,
+                Region = destinationDto.Region,
+                Country = destinationDto.Country,
+                NormalizedName = Normalize(destinationDto.Name),
+                NormalizedCode = Normalize(destinationDto.Code),
+                NormalizedCity = Normalize(destinationDto.City),
+                NormalizedRegion = Normalize(destinationDto.Region),
+                NormalizedCountry = Normalize(destinationDto.Country),
+                TimeZone = destinationDto.TimeZone
+            };
+            return _destinationRepository.UpdateAsync(destination);
+        }
 
         public Task<OperationResult> DeleteDestinationAsync(int id)
             => _destinationRepository.DeleteAsync(id);

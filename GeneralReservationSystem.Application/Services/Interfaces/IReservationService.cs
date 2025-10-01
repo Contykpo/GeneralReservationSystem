@@ -9,9 +9,9 @@ namespace GeneralReservationSystem.Application.Services.Interfaces
 {
     public interface IReservationService
     {
-        Task<OptionalResult<IList<AvailableSeatDto>>> GetAvailableSeatsAsync(int pageIndex, int pageSize, int tripId);
-        Task<OptionalResult<IList<SeatReservationDto>>> GetReservedSeatsForTripAsync(int pageIndex, int pageSize, int tripId);
-        Task<OptionalResult<IList<SeatReservationDto>>> GetReservedSeatsForUserAsync(int pageIndex, int pageSize, Guid userId, int? tripId);
+        Task<OptionalResult<PagedResult<AvailableSeatDto>>> GetAvailableSeatsAsync(int pageIndex, int pageSize, int tripId);
+        Task<OptionalResult<PagedResult<SeatReservationDto>>> GetReservedSeatsForTripAsync(int pageIndex, int pageSize, int tripId);
+        Task<OptionalResult<PagedResult<SeatReservationDto>>> GetReservedSeatsForUserAsync(int pageIndex, int pageSize, Guid userId, int? tripId);
         Task<OperationResult> AddReservationAsync(CreateReservationDto reservationDto);
         Task<OperationResult> DeleteReservationAsync(Reservation reservation);
     }

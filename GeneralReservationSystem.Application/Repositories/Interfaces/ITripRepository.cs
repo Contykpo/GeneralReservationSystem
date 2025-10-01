@@ -17,7 +17,7 @@ namespace GeneralReservationSystem.Application.Repositories.Interfaces
     public interface ITripRepository
     {
         Task<OptionalResult<Trip>> GetByIdAsync(int id);
-        Task<OptionalResult<IList<TripDetailsDto>>> SearchPagedAsync(int pageIndex, int pageSize,
+        Task<OptionalResult<PagedResult<TripDetailsDto>>> SearchPagedAsync(int pageIndex, int pageSize,
             string? DepartureName = null, string? DepartureCity = null, string? destinationName = null, string? destinationCity = null,
             DateTime? startDate = null, DateTime? endDate = null, bool onlyWithAvailableSeats = true, TripSearchSortBy? sortBy = null,
             bool descending = false);

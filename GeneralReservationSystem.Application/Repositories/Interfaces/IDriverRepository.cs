@@ -14,7 +14,7 @@ namespace GeneralReservationSystem.Application.Repositories.Interfaces
 
     public interface IDriverRepository
     {
-        Task<OptionalResult<IList<Driver>>> SearchPagedAsync(int pageIndex, int pageSize, string? firstName = null,
+        Task<OptionalResult<PagedResult<Driver>>> SearchPagedAsync(int pageIndex, int pageSize, string? firstName = null,
             string? lastName = null, string? licenseNumber = null, string? phoneNumber = null,
             DriverSearchSortBy? sortBy = null, bool descending = false);
         Task<OptionalResult<Driver>> GetByIdAsync(int id);

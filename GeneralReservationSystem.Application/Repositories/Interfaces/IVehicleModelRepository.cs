@@ -11,7 +11,7 @@ namespace GeneralReservationSystem.Application.Repositories.Interfaces
 
     public interface IVehicleModelRepository
     {
-        Task<OptionalResult<IList<VehicleModel>>> SearchPagedAsync(int pageIndex, int pageSize, string? name = null, string? manufacturer = null,
+        Task<OptionalResult<PagedResult<VehicleModel>>> SearchPagedAsync(int pageIndex, int pageSize, string? name = null, string? manufacturer = null,
             VehicleModelSearchSortBy? sortBy = null, bool descending = false);
         Task<OptionalResult<VehicleModel>> GetByIdAsync(int id);
         Task<OperationResult> AddAsync(VehicleModel vehicleModel, IEnumerable<Seat> seats);

@@ -30,13 +30,16 @@ namespace GeneralReservationSystem.Application.Common
 	{
 		public override OperationResult IfFailure(Action<string?> action)
 		{
-			// Si el mensaje de error está en inglés, traducirlo aquí
-			var mensaje = ErrorMessage;
-			if (mensaje == "Error al ejecutar transaccion SQL")
+            // NOTA/TODO: Esto esconde errores de constraints de la base de datos. Hay que manejarlo
+            // mejor en una capa superior. Si se esconden esos errores, el usuario recibe un mensaje críptico
+            // y no sabe qué hacer con esa información.
+            // Si el mensaje de error está en inglés, traducirlo aquí
+            var mensaje = ErrorMessage;
+			if (mensaje == "Error while executing SQL transaction")
 				mensaje = "Error al ejecutar transacción SQL";
-			if (mensaje == "Error al ejecutar comando SQL")
+			if (mensaje == "Error while executing SQL command")
 				mensaje = "Error al ejecutar comando SQL";
-			if (mensaje == "Error al crear conexion con la base de datos")
+			if (mensaje == "Error while creating SQL connection")
 				mensaje = "Error al crear conexión con la base de datos";
 			action?.Invoke(mensaje);
 			return this;

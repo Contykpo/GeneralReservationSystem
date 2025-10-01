@@ -10,43 +10,29 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
     public class DefaultReservationService : IReservationService
     {
         private readonly IReservationRepository _reservationRepository;
-        private readonly IVehicleRepository _vehicleRepository;
         private readonly ISeatRepository _seatRepository;
         private readonly ITripRepository _tripRepository;
 
-        public DefaultReservationService(IReservationRepository reservationRepository, IVehicleRepository vehicleRepository, ISeatRepository seatRepository, ITripRepository tripRepository)
+        public DefaultReservationService(IReservationRepository reservationRepository, ISeatRepository seatRepository, ITripRepository tripRepository)
         {
             _reservationRepository = reservationRepository;
-            _vehicleRepository = vehicleRepository;
             _seatRepository = seatRepository;
             _tripRepository = tripRepository;
         }
 
-        public async Task<OptionalResult<IList<AvailableSeatDto>>> GetAvailableSeatsAsync(int pageIndex, int pageSize, int tripId)
+        public async Task<OptionalResult<PagedResult<AvailableSeatDto>>> GetAvailableSeatsAsync(int pageIndex, int pageSize, int tripId)
         {
-            return (await _reservationRepository.GetAvailablePagedAsync(pageIndex, pageSize, tripId)).Match<OptionalResult<IList<AvailableSeatDto>>>(
-                onValue: value => OptionalResult<IList<AvailableSeatDto>>.Value(value),
-                onEmpty: () => OptionalResult<IList<AvailableSeatDto>>.NoValue<IList<AvailableSeatDto>>(),
-                onError: error => OptionalResult<IList<AvailableSeatDto>>.Error<IList<AvailableSeatDto>>(error)
-            );
+            return await _reservationRepository.GetAvailablePagedAsync(pageIndex, pageSize, tripId);
         }
 
-        public async Task<OptionalResult<IList<SeatReservationDto>>> GetReservedSeatsForTripAsync(int pageIndex, int pageSize, int tripId)
+        public async Task<OptionalResult<PagedResult<SeatReservationDto>>> GetReservedSeatsForTripAsync(int pageIndex, int pageSize, int tripId)
         {
-            return (await _reservationRepository.GetReservedSeatsForTripPagedAsync(pageIndex, pageSize, tripId)).Match<OptionalResult<IList<SeatReservationDto>>>(
-                onValue: value => OptionalResult<IList<SeatReservationDto>>.Value(value),
-                onEmpty: () => OptionalResult<IList<SeatReservationDto>>.NoValue<IList<SeatReservationDto>>(),
-                onError: error => OptionalResult<IList<SeatReservationDto>>.Error<IList<SeatReservationDto>>(error)
-            );
+            return await _reservationRepository.GetReservedSeatsForTripPagedAsync(pageIndex, pageSize, tripId);
         }
 
-        public async Task<OptionalResult<IList<SeatReservationDto>>> GetReservedSeatsForUserAsync(int pageIndex, int pageSize, Guid userId, int? tripId)
+        public async Task<OptionalResult<PagedResult<SeatReservationDto>>> GetReservedSeatsForUserAsync(int pageIndex, int pageSize, Guid userId, int? tripId)
         {
-            return (await _reservationRepository.GetReservedSeatsForUserPagedAsync(pageIndex, pageSize, userId, tripId)).Match<OptionalResult<IList<SeatReservationDto>>>(
-                onValue: value => OptionalResult<IList<SeatReservationDto>>.Value(value),
-                onEmpty: () => OptionalResult<IList<SeatReservationDto>>.NoValue<IList<SeatReservationDto>>(),
-                onError: error => OptionalResult<IList<SeatReservationDto>>.Error<IList<SeatReservationDto>>(error)
-            );
+            return await _reservationRepository.GetReservedSeatsForUserPagedAsync(pageIndex, pageSize, userId, tripId);
         }
 
         public async Task<OperationResult> AddReservationAsync(CreateReservationDto reservationDto)

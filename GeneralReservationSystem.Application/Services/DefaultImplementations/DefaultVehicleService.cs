@@ -23,7 +23,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         public Task<OptionalResult<VehicleModel>> GetModelByIdAsync(int id)
             => _vehicleRepository.GetModelByIdAsync(id);
 
-        public async Task<OptionalResult<IList<VehicleDetailsDto>>> SearchVehiclesAsync(int pageIndex, int pageSize, string? modelName = null,
+        public async Task<OptionalResult<PagedResult<VehicleDetailsDto>>> SearchVehiclesAsync(int pageIndex, int pageSize, string? modelName = null,
             string? manufacturer = null, string? licensePlate = null, GeneralReservationSystem.Application.Repositories.Interfaces.VehicleSearchSortBy? sortBy = null,
             bool descending = false)
         {
@@ -41,8 +41,17 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             return _vehicleRepository.AddAsync(vehicle);
         }
 
-        public Task<OperationResult> UpdateVehicleAsync(Vehicle vehicle)
-            => _vehicleRepository.UpdateAsync(vehicle);
+        public Task<OperationResult> UpdateVehicleAsync(UpdateVehicleDto vehicleDto)
+        {
+            var vehicle = new Vehicle
+            {
+                VehicleId = vehicleDto.Id,
+                VehicleModelId = vehicleDto.VehicleModelId,
+                LicensePlate = vehicleDto.LicensePlate,
+                Status = vehicleDto.Status
+            };
+            return _vehicleRepository.UpdateAsync(vehicle);
+        }
 
         public Task<OperationResult> DeleteVehicleAsync(int id)
             => _vehicleRepository.DeleteAsync(id);

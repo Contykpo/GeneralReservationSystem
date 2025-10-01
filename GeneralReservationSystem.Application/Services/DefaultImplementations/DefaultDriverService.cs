@@ -15,7 +15,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             _driverRepository = driverRepository;
         }
 
-        public async Task<OptionalResult<IList<Driver>>> SearchDriversAsync(int pageIndex, int pageSize, string? firstName = null,
+        public async Task<OptionalResult<PagedResult<Driver>>> SearchDriversAsync(int pageIndex, int pageSize, string? firstName = null,
             string? lastName = null, string? licenseNumber = null, string? phoneNumber = null,
             DriverSearchSortBy? sortBy = null, bool descending = false)
         {
@@ -47,8 +47,22 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             return _driverRepository.AddAsync(driver);
         }
 
-        public Task<OperationResult> UpdateDriverAsync(Driver driver)
-            => _driverRepository.UpdateAsync(driver);
+        public Task<OperationResult> UpdateDriverAsync(UpdateDriverDto driverDto)
+        {
+            if (!int.TryParse(driverDto.IdentificationNumber, out int identificationNumber))
+                throw new ArgumentException("El número de identificación debe ser un número válido de 8 dígitos.");
+
+            var driver = new Driver
+            {
+                DriverId = driverDto.Id,
+                IdentificationNumber = identificationNumber,
+                FirstName = driverDto.FirstName,
+                LastName = driverDto.LastName,
+                LicenseNumber = driverDto.LicenseNumber,
+                LicenseExpiryDate = driverDto.LicenseExpiryDate
+            };
+            return _driverRepository.UpdateAsync(driver);
+        }
 
         public Task<OperationResult> DeleteDriverAsync(int id)
             => _driverRepository.DeleteAsync(id);

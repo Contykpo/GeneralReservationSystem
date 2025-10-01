@@ -74,12 +74,15 @@ namespace GeneralReservationSystem.Application.Common
 	public record ErrorValue<TValue>(string? error) : OptionalResult<TValue>
 	{
 		public override OptionalResult<TValue> IfError(Action<string?> action)
-		{
-			// Si el mensaje de error está en inglés, traducirlo aquí
-			var mensaje = error;
-			if (mensaje == "Error al ejecutar comando SQL")
+        {
+            // NOTA/TODO: Esto esconde errores de constraints de la base de datos. Hay que manejarlo
+            // mejor en una capa superior. Si se esconden esos errores, el usuario recibe un mensaje críptico
+            // y no sabe qué hacer con esa información.
+            // Si el mensaje de error está en inglés, traducirlo aquí
+            var mensaje = error;
+			if (mensaje == "Error while executing SQL command")
 				mensaje = "Error al ejecutar comando SQL";
-			if (mensaje == "Error al crear conexion con la base de datos")
+			if (mensaje == "Error while creating SQL connection")
 				mensaje = "Error al crear conexión con la base de datos";
 			action?.Invoke(mensaje);
 			return this;
@@ -89,9 +92,9 @@ namespace GeneralReservationSystem.Application.Common
 		{
 			Debug.Assert(onError != null, "Unhandled Error Case");
 			var mensaje = error;
-			if (mensaje == "Error al ejecutar comando SQL")
+			if (mensaje == "Error while executing SQL command")
 				mensaje = "Error al ejecutar comando SQL";
-			if (mensaje == "Error al crear conexion con la base de datos")
+			if (mensaje == "Error while creating SQL connection")
 				mensaje = "Error al crear conexión con la base de datos";
 			return onError(mensaje);
 		}
@@ -100,9 +103,9 @@ namespace GeneralReservationSystem.Application.Common
 		{
 			Debug.Assert(onError != null, "Unhandled Error Case");
 			var mensaje = error;
-			if (mensaje == "Error al ejecutar comando SQL")
+			if (mensaje == "Error al while executing SQL command")
 				mensaje = "Error al ejecutar comando SQL";
-			if (mensaje == "Error al crear conexion con la base de datos")
+			if (mensaje == "Error while creating SQL connection")
 				mensaje = "Error al crear conexión con la base de datos";
 			onError(mensaje);
 		}

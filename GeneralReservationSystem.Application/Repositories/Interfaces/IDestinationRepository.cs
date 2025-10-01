@@ -16,7 +16,7 @@ namespace GeneralReservationSystem.Application.Repositories.Interfaces
 
     public interface IDestinationRepository
     {
-        Task<OptionalResult<IList<Destination>>> SearchPagedAsync(int pageIndex, int pageSize, string? name = null, string? code = null,
+        Task<OptionalResult<PagedResult<Destination>>> SearchPagedAsync(int pageIndex, int pageSize, string? name = null, string? code = null,
             string? city = null, string? region = null, string? country = null, DestinationSearchSortBy? sortBy = null, bool descending = false);
         Task<OptionalResult<Destination>> GetByIdAsync(int id);
         Task<OperationResult> AddAsync(Destination destination);

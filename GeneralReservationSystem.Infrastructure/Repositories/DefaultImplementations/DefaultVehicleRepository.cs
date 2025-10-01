@@ -49,24 +49,39 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
             );
         }
 
-        public async Task<OptionalResult<IList<VehicleDetailsDto>>> SearchPagedAsync(int pageIndex, int pageSize, string? modelName = null, string? manufacturer = null, string? licensePlate = null, VehicleSearchSortBy? sortBy = null, bool descending = false)
+        public async Task<OptionalResult<PagedResult<VehicleDetailsDto>>> SearchPagedAsync(int pageIndex, int pageSize, string? modelName = null, string? manufacturer = null, string? licensePlate = null, VehicleSearchSortBy? sortBy = null, bool descending = false)
         {
-            var sql = "SELECT v.VehicleId, v.VehicleModelId, v.LicensePlate, v.Status, vm.Name AS ModelName, vm.Manufacturer FROM Vehicle v INNER JOIN VehicleModel vm ON v.VehicleModelId = vm.VehicleModelId WHERE 1=1";
+            var baseSql = "FROM Vehicle v INNER JOIN VehicleModel vm ON v.VehicleModelId = vm.VehicleModelId WHERE 1=1";
             var parameters = new Dictionary<string, object>();
-            if (!string.IsNullOrEmpty(modelName)) { sql += " AND vm.Name LIKE @ModelName"; parameters.Add("@ModelName", $"%{modelName}%"); }
-            if (!string.IsNullOrEmpty(manufacturer)) { sql += " AND vm.Manufacturer LIKE @Manufacturer"; parameters.Add("@Manufacturer", $"%{manufacturer}%"); }
-            if (!string.IsNullOrEmpty(licensePlate)) { sql += " AND v.LicensePlate LIKE @LicensePlate"; parameters.Add("@LicensePlate", $"%{licensePlate}%"); }
-            if (sortBy.HasValue) { 
-                sql += $" ORDER BY {sortBy.Value}{(descending ? " DESC" : " ASC")}"; 
-            } else
-            {
-                sql += "ORDER BY VehicleId ASC";
-            }
-            sql += " OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
-            parameters.Add("@Offset", pageIndex * pageSize);
-            parameters.Add("@PageSize", pageSize);
-            return await _dbConnection.ExecuteReaderAsync<VehicleDetailsDto>(
-                sql: sql,
+            if (!string.IsNullOrEmpty(modelName)) { baseSql += " AND vm.Name LIKE @ModelName"; parameters.Add("@ModelName", $"%{modelName}%"); }
+            if (!string.IsNullOrEmpty(manufacturer)) { baseSql += " AND vm.Manufacturer LIKE @Manufacturer"; parameters.Add("@Manufacturer", $"%{manufacturer}%"); }
+            if (!string.IsNullOrEmpty(licensePlate)) { baseSql += " AND v.LicensePlate LIKE @LicensePlate"; parameters.Add("@LicensePlate", $"%{licensePlate}%"); }
+
+            // 1. Get total count
+            var countSql = $"SELECT COUNT(*) {baseSql}";
+            int totalCount = 0;
+            bool errorOccurred = false;
+            string? errorMsg = null;
+            (await _dbConnection.ExecuteScalarAsync<int>(countSql, parameters)).Match(
+                onValue: v => totalCount = v,
+                onEmpty: () => { totalCount = 0; },
+                onError: err => { errorOccurred = true; errorMsg = err; }
+            );
+            if (errorOccurred)
+                return OptionalResult<PagedResult<VehicleDetailsDto>>.Error<PagedResult<VehicleDetailsDto>>(errorMsg);
+
+            // 2. Get paged items
+            var selectSql = $"SELECT v.VehicleId, v.VehicleModelId, v.LicensePlate, v.Status, vm.Name AS ModelName, vm.Manufacturer {baseSql}";
+            if (sortBy.HasValue)
+                selectSql += $" ORDER BY {sortBy.Value}{(descending ? " DESC" : " ASC")}";
+            else
+                selectSql += " ORDER BY VehicleId ASC";
+            selectSql += " OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+            parameters["@Offset"] = pageIndex * pageSize;
+            parameters["@PageSize"] = pageSize;
+
+            var itemsResult = await _dbConnection.ExecuteReaderAsync<VehicleDetailsDto>(
+                sql: selectSql,
                 converter: reader => new VehicleDetailsDto
                 {
                     VehicleId = reader.GetInt32(reader.GetOrdinal("VehicleId")),
@@ -77,6 +92,24 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
                     Manufacturer = reader.GetString(reader.GetOrdinal("Manufacturer"))
                 },
                 parameters: parameters
+            );
+
+            return itemsResult.Match<OptionalResult<PagedResult<VehicleDetailsDto>>>(
+                onValue: items => OptionalResult<PagedResult<VehicleDetailsDto>>.Value(new PagedResult<VehicleDetailsDto>
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    PageNumber = pageIndex,
+                    PageSize = pageSize
+                }),
+                onEmpty: () => OptionalResult<PagedResult<VehicleDetailsDto>>.Value(new PagedResult<VehicleDetailsDto>
+                {
+                    Items = new List<VehicleDetailsDto>(),
+                    TotalCount = totalCount,
+                    PageNumber = pageIndex,
+                    PageSize = pageSize
+                }),
+                onError: err => OptionalResult<PagedResult<VehicleDetailsDto>>.Error<PagedResult<VehicleDetailsDto>>(err)
             );
         }
 

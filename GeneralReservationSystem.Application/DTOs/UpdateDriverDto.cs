@@ -2,8 +2,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace GeneralReservationSystem.Application.DTOs
 {
-    public class CreateDriverDto
+    public class UpdateDriverDto
     {
+        [Required(ErrorMessage = "El identificador es obligatorio.")]
+        public int Id { get; set; }
+
         [Required(ErrorMessage = "El número de identificación es obligatorio.")]
         [RegularExpression(@"^\d{8}$", ErrorMessage = "El número de identificación debe tener exactamente 8 dígitos.")]
         public string IdentificationNumber { get; set; } = string.Empty;

@@ -2,8 +2,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace GeneralReservationSystem.Application.DTOs
 {
-    public class CreateDestinationDto
+    public class UpdateDestinationDto
     {
+        [Required(ErrorMessage = "El identificador es obligatorio.")]
+        public int Id { get; set; }
+
         [Required(ErrorMessage = "El nombre es obligatorio.")]
         [StringLength(100, MinimumLength = 2, ErrorMessage = "El nombre debe tener entre 2 y 100 caracteres.")]
         [RegularExpression(@"^[\p{L}\s'-]+$", ErrorMessage = "El nombre solo puede contener letras, espacios, apóstrofes o guiones.")]

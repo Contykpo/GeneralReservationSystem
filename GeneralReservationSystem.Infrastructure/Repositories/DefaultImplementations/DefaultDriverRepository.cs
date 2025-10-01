@@ -17,26 +17,40 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
             _logger = logger;
         }
 
-        public async Task<OptionalResult<IList<Driver>>> SearchPagedAsync(int pageIndex, int pageSize, string? firstName = null, string? lastName = null, string? licenseNumber = null, string? phoneNumber = null, DriverSearchSortBy? sortBy = null, bool descending = false)
+        public async Task<OptionalResult<PagedResult<Driver>>> SearchPagedAsync(int pageIndex, int pageSize, string? firstName = null, string? lastName = null, string? licenseNumber = null, string? phoneNumber = null, DriverSearchSortBy? sortBy = null, bool descending = false)
         {
-            var sql = "SELECT * FROM Driver WHERE 1=1";
+            var baseSql = "FROM Driver WHERE 1=1";
             var parameters = new Dictionary<string, object>();
-            if (!string.IsNullOrEmpty(firstName)) { sql += " AND FirstName LIKE @FirstName"; parameters.Add("@FirstName", $"%{firstName}%"); }
-            if (!string.IsNullOrEmpty(lastName)) { sql += " AND LastName LIKE @LastName"; parameters.Add("@LastName", $"%{lastName}%"); }
-            if (!string.IsNullOrEmpty(licenseNumber)) { sql += " AND LicenseNumber LIKE @LicenseNumber"; parameters.Add("@LicenseNumber", $"%{licenseNumber}%"); }
+            if (!string.IsNullOrEmpty(firstName)) { baseSql += " AND FirstName LIKE @FirstName"; parameters.Add("@FirstName", $"%{firstName}%"); }
+            if (!string.IsNullOrEmpty(lastName)) { baseSql += " AND LastName LIKE @LastName"; parameters.Add("@LastName", $"%{lastName}%"); }
+            if (!string.IsNullOrEmpty(licenseNumber)) { baseSql += " AND LicenseNumber LIKE @LicenseNumber"; parameters.Add("@LicenseNumber", $"%{licenseNumber}%"); }
+            // phoneNumber is not used in the table, but you can add a filter if needed
+
+            // 1. Get total count
+            var countSql = $"SELECT COUNT(*) {baseSql}";
+            int totalCount = 0;
+            bool errorOccurred = false;
+            string? errorMsg = null;
+            (await _dbConnection.ExecuteScalarAsync<int>(countSql, parameters)).Match(
+                onValue: v => totalCount = v,
+                onEmpty: () => { totalCount = 0; },
+                onError: err => { errorOccurred = true; errorMsg = err; }
+            );
+            if (errorOccurred)
+                return OptionalResult<PagedResult<Driver>>.Error<PagedResult<Driver>>(errorMsg);
+
+            // 2. Get paged items
+            var selectSql = $"SELECT * {baseSql}";
             if (sortBy.HasValue)
-            {
-                sql += $" ORDER BY {sortBy.Value}{(descending ? " DESC" : " ASC")}";
-            }
+                selectSql += $" ORDER BY {sortBy.Value}{(descending ? " DESC" : " ASC")}";
             else
-            {
-                sql += " ORDER BY DriverId ASC";
-            }
-            sql += " OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
-            parameters.Add("@Offset", pageIndex * pageSize);
-            parameters.Add("@PageSize", pageSize);
-            return await _dbConnection.ExecuteReaderAsync<Driver>(
-                sql: sql,
+                selectSql += " ORDER BY DriverId ASC";
+            selectSql += " OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+            parameters["@Offset"] = pageIndex * pageSize;
+            parameters["@PageSize"] = pageSize;
+
+            var itemsResult = await _dbConnection.ExecuteReaderAsync<Driver>(
+                sql: selectSql,
                 converter: reader => new Driver
                 {
                     DriverId = reader.GetInt32(reader.GetOrdinal("DriverId")),
@@ -47,6 +61,24 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
                     LicenseExpiryDate = reader.GetDateTime(reader.GetOrdinal("LicenseExpiryDate"))
                 },
                 parameters: parameters
+            );
+
+            return itemsResult.Match<OptionalResult<PagedResult<Driver>>>(
+                onValue: items => OptionalResult<PagedResult<Driver>>.Value(new PagedResult<Driver>
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    PageNumber = pageIndex,
+                    PageSize = pageSize
+                }),
+                onEmpty: () => OptionalResult<PagedResult<Driver>>.Value(new PagedResult<Driver>
+                {
+                    Items = new List<Driver>(),
+                    TotalCount = totalCount,
+                    PageNumber = pageIndex,
+                    PageSize = pageSize
+                }),
+                onError: err => OptionalResult<PagedResult<Driver>>.Error<PagedResult<Driver>>(err)
             );
         }
 

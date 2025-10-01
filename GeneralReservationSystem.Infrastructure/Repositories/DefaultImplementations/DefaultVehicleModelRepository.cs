@@ -31,25 +31,38 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
             ));
         }
 
-        public async Task<OptionalResult<IList<VehicleModel>>> SearchPagedAsync(int pageIndex, int pageSize, string? name = null, string? manufacturer = null, VehicleModelSearchSortBy? sortBy = null, bool descending = false)
+        public async Task<OptionalResult<PagedResult<VehicleModel>>> SearchPagedAsync(int pageIndex, int pageSize, string? name = null, string? manufacturer = null, VehicleModelSearchSortBy? sortBy = null, bool descending = false)
         {
-            var sql = "SELECT * FROM VehicleModel WHERE 1=1";
+            var baseSql = "FROM VehicleModel WHERE 1=1";
             var parameters = new Dictionary<string, object>();
-            if (!string.IsNullOrEmpty(name)) { sql += " AND Name LIKE @Name"; parameters.Add("@Name", $"%{name}%"); }
-            if (!string.IsNullOrEmpty(manufacturer)) { sql += " AND Manufacturer LIKE @Manufacturer"; parameters.Add("@Manufacturer", $"%{manufacturer}%"); }
+            if (!string.IsNullOrEmpty(name)) { baseSql += " AND Name LIKE @Name"; parameters.Add("@Name", $"%{name}%"); }
+            if (!string.IsNullOrEmpty(manufacturer)) { baseSql += " AND Manufacturer LIKE @Manufacturer"; parameters.Add("@Manufacturer", $"%{manufacturer}%"); }
+
+            // 1. Get total count
+            var countSql = $"SELECT COUNT(*) {baseSql}";
+            int totalCount = 0;
+            bool errorOccurred = false;
+            string? errorMsg = null;
+            (await _dbConnection.ExecuteScalarAsync<int>(countSql, parameters)).Match(
+                onValue: v => totalCount = v,
+                onEmpty: () => { totalCount = 0; },
+                onError: err => { errorOccurred = true; errorMsg = err; }
+            );
+            if (errorOccurred)
+                return OptionalResult<PagedResult<VehicleModel>>.Error<PagedResult<VehicleModel>>(errorMsg);
+
+            // 2. Get paged items
+            var selectSql = $"SELECT * {baseSql}";
             if (sortBy.HasValue)
-            {
-                sql += $" ORDER BY {sortBy.Value}{(descending ? " DESC" : " ASC")}";
-            }
+                selectSql += $" ORDER BY {sortBy.Value}{(descending ? " DESC" : " ASC")}";
             else
-            {
-                sql += " ORDER BY VehicleModelId ASC";
-            }
-            sql += " OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
-            parameters.Add("@Offset", pageIndex * pageSize);
-            parameters.Add("@PageSize", pageSize);
-            return (await _dbConnection.ExecuteReaderAsync<VehicleModel>(
-                sql: sql,
+                selectSql += " ORDER BY VehicleModelId ASC";
+            selectSql += " OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+            parameters["@Offset"] = pageIndex * pageSize;
+            parameters["@PageSize"] = pageSize;
+
+            var itemsResult = await _dbConnection.ExecuteReaderAsync<VehicleModel>(
+                sql: selectSql,
                 converter: reader => new VehicleModel
                 {
                     VehicleModelId = reader.GetInt32(reader.GetOrdinal("VehicleModelId")),
@@ -57,7 +70,25 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
                     Manufacturer = reader.GetString(reader.GetOrdinal("Manufacturer"))
                 },
                 parameters: parameters
-            ));
+            );
+
+            return itemsResult.Match<OptionalResult<PagedResult<VehicleModel>>>(
+                onValue: items => OptionalResult<PagedResult<VehicleModel>>.Value(new PagedResult<VehicleModel>
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    PageNumber = pageIndex,
+                    PageSize = pageSize
+                }),
+                onEmpty: () => OptionalResult<PagedResult<VehicleModel>>.Value(new PagedResult<VehicleModel>
+                {
+                    Items = new List<VehicleModel>(),
+                    TotalCount = totalCount,
+                    PageNumber = pageIndex,
+                    PageSize = pageSize
+                }),
+                onError: err => OptionalResult<PagedResult<VehicleModel>>.Error<PagedResult<VehicleModel>>(err)
+            );
         }
 
         public async Task<OptionalResult<VehicleModel>> GetByIdAsync(int id)

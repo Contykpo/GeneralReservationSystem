@@ -24,17 +24,32 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
             _logger = logger;
         }
 
-        public async Task<OptionalResult<IList<AvailableSeatDto>>> GetAvailablePagedAsync(int pageIndex, int pageSize, int tripId)
+        public async Task<OptionalResult<PagedResult<AvailableSeatDto>>> GetAvailablePagedAsync(int pageIndex, int pageSize, int tripId)
         {
-            var sql = "SELECT * FROM TripAvailableSeats WHERE TripId = @TripId ORDER BY SeatId OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+            var baseSql = "FROM TripAvailableSeats WHERE TripId = @TripId";
             var parameters = new Dictionary<string, object>
             {
-                { "@TripId", tripId },
-                { "@Offset", pageIndex * pageSize },
-                { "@PageSize", pageSize }
+                { "@TripId", tripId }
             };
-            return await _dbConnection.ExecuteReaderAsync<AvailableSeatDto>(
-                sql: sql,
+            // 1. Get total count
+            var countSql = $"SELECT COUNT(*) {baseSql}";
+            int totalCount = 0;
+            bool errorOccurred = false;
+            string? errorMsg = null;
+            (await _dbConnection.ExecuteScalarAsync<int>(countSql, parameters)).Match(
+                onValue: v => totalCount = v,
+                onEmpty: () => { totalCount = 0; },
+                onError: err => { errorOccurred = true; errorMsg = err; }
+            );
+            if (errorOccurred)
+                return OptionalResult<PagedResult<AvailableSeatDto>>.Error<PagedResult<AvailableSeatDto>>(errorMsg);
+
+            // 2. Get paged items
+            var selectSql = $"SELECT * {baseSql} ORDER BY SeatId OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+            parameters["@Offset"] = pageIndex * pageSize;
+            parameters["@PageSize"] = pageSize;
+            var itemsResult = await _dbConnection.ExecuteReaderAsync<AvailableSeatDto>(
+                sql: selectSql,
                 converter: reader => new AvailableSeatDto
                 {
                     TripId = reader.GetInt32(reader.GetOrdinal("TripId")),
@@ -50,19 +65,51 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
                 },
                 parameters: parameters
             );
+            return itemsResult.Match<OptionalResult<PagedResult<AvailableSeatDto>>>(
+                onValue: items => OptionalResult<PagedResult<AvailableSeatDto>>.Value(new PagedResult<AvailableSeatDto>
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    PageNumber = pageIndex,
+                    PageSize = pageSize
+                }),
+                onEmpty: () => OptionalResult<PagedResult<AvailableSeatDto>>.Value(new PagedResult<AvailableSeatDto>
+                {
+                    Items = new List<AvailableSeatDto>(),
+                    TotalCount = totalCount,
+                    PageNumber = pageIndex,
+                    PageSize = pageSize
+                }),
+                onError: err => OptionalResult<PagedResult<AvailableSeatDto>>.Error<PagedResult<AvailableSeatDto>>(err)
+            );
         }
 
-        public async Task<OptionalResult<IList<SeatReservationDto>>> GetReservedSeatsForTripPagedAsync(int pageIndex, int pageSize, int tripId)
+        public async Task<OptionalResult<PagedResult<SeatReservationDto>>> GetReservedSeatsForTripPagedAsync(int pageIndex, int pageSize, int tripId)
         {
-            var sql = "SELECT * FROM Reservation WHERE TripId = @TripId OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+            var baseSql = "FROM Reservation WHERE TripId = @TripId";
             var parameters = new Dictionary<string, object>
             {
-                { "@TripId", tripId },
-                { "@Offset", pageIndex * pageSize },
-                { "@PageSize", pageSize }
+                { "@TripId", tripId }
             };
-            return await _dbConnection.ExecuteReaderAsync<SeatReservationDto>(
-                sql: sql,
+            // 1. Get total count
+            var countSql = $"SELECT COUNT(*) {baseSql}";
+            int totalCount = 0;
+            bool errorOccurred = false;
+            string? errorMsg = null;
+            (await _dbConnection.ExecuteScalarAsync<int>(countSql, parameters)).Match(
+                onValue: v => totalCount = v,
+                onEmpty: () => { totalCount = 0; },
+                onError: err => { errorOccurred = true; errorMsg = err; }
+            );
+            if (errorOccurred)
+                return OptionalResult<PagedResult<SeatReservationDto>>.Error<PagedResult<SeatReservationDto>>(errorMsg);
+
+            // 2. Get paged items
+            var selectSql = $"SELECT * {baseSql} OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+            parameters["@Offset"] = pageIndex * pageSize;
+            parameters["@PageSize"] = pageSize;
+            var itemsResult = await _dbConnection.ExecuteReaderAsync<SeatReservationDto>(
+                sql: selectSql,
                 converter: reader => new SeatReservationDto
                 {
                     ReservationId = reader.GetInt32(reader.GetOrdinal("ReservationId")),
@@ -80,21 +127,52 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
                 },
                 parameters: parameters
             );
+            return itemsResult.Match<OptionalResult<PagedResult<SeatReservationDto>>>(
+                onValue: items => OptionalResult<PagedResult<SeatReservationDto>>.Value(new PagedResult<SeatReservationDto>
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    PageNumber = pageIndex,
+                    PageSize = pageSize
+                }),
+                onEmpty: () => OptionalResult<PagedResult<SeatReservationDto>>.Value(new PagedResult<SeatReservationDto>
+                {
+                    Items = new List<SeatReservationDto>(),
+                    TotalCount = totalCount,
+                    PageNumber = pageIndex,
+                    PageSize = pageSize
+                }),
+                onError: err => OptionalResult<PagedResult<SeatReservationDto>>.Error<PagedResult<SeatReservationDto>>(err)
+            );
         }
 
-        public async Task<OptionalResult<IList<SeatReservationDto>>> GetReservedSeatsForUserPagedAsync(int pageIndex, int pageSize, Guid userId, int? tripId)
+        public async Task<OptionalResult<PagedResult<SeatReservationDto>>> GetReservedSeatsForUserPagedAsync(int pageIndex, int pageSize, Guid userId, int? tripId)
         {
-            var sql = "SELECT * FROM Reservation WHERE UserId = @UserId";
+            var baseSql = "FROM Reservation WHERE UserId = @UserId";
             var parameters = new Dictionary<string, object>
             {
-                { "@UserId", userId },
-                { "@Offset", pageIndex * pageSize },
-                { "@PageSize", pageSize }
+                { "@UserId", userId }
             };
-            if (tripId.HasValue) { sql += " AND TripId = @TripId"; parameters.Add("@TripId", tripId.Value); }
-            sql += " OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
-            return await _dbConnection.ExecuteReaderAsync<SeatReservationDto>(
-                sql: sql,
+            if (tripId.HasValue) { baseSql += " AND TripId = @TripId"; parameters.Add("@TripId", tripId.Value); }
+            // 1. Get total count
+            var countSql = $"SELECT COUNT(*) {baseSql}";
+            int totalCount = 0;
+            bool errorOccurred = false;
+            string? errorMsg = null;
+            (await _dbConnection.ExecuteScalarAsync<int>(countSql, parameters)).Match(
+                onValue: v => totalCount = v,
+                onEmpty: () => { totalCount = 0; },
+                onError: err => { errorOccurred = true; errorMsg = err; }
+            );
+            if (errorOccurred)
+                return OptionalResult<PagedResult<SeatReservationDto>>.Error<PagedResult<SeatReservationDto>>(errorMsg);
+
+            // 2. Get paged items
+            var selectSql = $"SELECT * {baseSql} OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+            parameters["@Offset"] = pageIndex * pageSize;
+            parameters["@PageSize"] = pageSize;
+            var itemsResult = await _dbConnection.ExecuteReaderAsync<SeatReservationDto>(
+                sql: selectSql,
                 converter: reader => new SeatReservationDto
                 {
                     ReservationId = reader.GetInt32(reader.GetOrdinal("ReservationId")),
@@ -111,6 +189,23 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
                     ReservedAt = reader.GetDateTime(reader.GetOrdinal("ReservedAt"))
                 },
                 parameters: parameters
+            );
+            return itemsResult.Match<OptionalResult<PagedResult<SeatReservationDto>>>(
+                onValue: items => OptionalResult<PagedResult<SeatReservationDto>>.Value(new PagedResult<SeatReservationDto>
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    PageNumber = pageIndex,
+                    PageSize = pageSize
+                }),
+                onEmpty: () => OptionalResult<PagedResult<SeatReservationDto>>.Value(new PagedResult<SeatReservationDto>
+                {
+                    Items = new List<SeatReservationDto>(),
+                    TotalCount = totalCount,
+                    PageNumber = pageIndex,
+                    PageSize = pageSize
+                }),
+                onError: err => OptionalResult<PagedResult<SeatReservationDto>>.Error<PagedResult<SeatReservationDto>>(err)
             );
         }
 

@@ -36,30 +36,43 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
             );
         }
 
-        public async Task<OptionalResult<IList<TripDetailsDto>>> SearchPagedAsync(int pageIndex, int pageSize, string? DepartureName = null, string? DepartureCity = null, string? destinationName = null, string? destinationCity = null, DateTime? startDate = null, DateTime? endDate = null, bool onlyWithAvailableSeat = true, TripSearchSortBy? sortBy = null, bool descending = false)
+        public async Task<OptionalResult<PagedResult<TripDetailsDto>>> SearchPagedAsync(int pageIndex, int pageSize, string? DepartureName = null, string? DepartureCity = null, string? destinationName = null, string? destinationCity = null, DateTime? startDate = null, DateTime? endDate = null, bool onlyWithAvailableSeat = true, TripSearchSortBy? sortBy = null, bool descending = false)
         {
-            // TODO: This 1=1 trick is a bit hacky, consider using a proper management of optional filters.
-            var sql = "SELECT * FROM TripDetailsView WHERE 1=1";
+            var baseSql = "FROM TripDetailsView WHERE 1=1";
             var parameters = new Dictionary<string, object>();
-            if (!string.IsNullOrEmpty(DepartureName)) { sql += " AND DepartureName LIKE @DepartureName"; parameters.Add("@DepartureName", $"%{DepartureName}%"); }
-            if (!string.IsNullOrEmpty(DepartureCity)) { sql += " AND DepartureCity LIKE @DepartureCity"; parameters.Add("@DepartureCity", $"%{DepartureCity}%"); }
-            if (!string.IsNullOrEmpty(destinationName)) { sql += " AND DestinationName LIKE @DestinationName"; parameters.Add("@DestinationName", $"%{destinationName}%"); }
-            if (!string.IsNullOrEmpty(destinationCity)) { sql += " AND DestinationCity LIKE @DestinationCity"; parameters.Add("@DestinationCity", $"%{destinationCity}%"); }
-            if (startDate.HasValue) { sql += " AND DepartureTime >= @StartDate"; parameters.Add("@StartDate", startDate.Value); }
-            if (endDate.HasValue) { sql += " AND ArrivalTime <= @EndDate"; parameters.Add("@EndDate", endDate.Value); }
+            if (!string.IsNullOrEmpty(DepartureName)) { baseSql += " AND DepartureName LIKE @DepartureName"; parameters.Add("@DepartureName", $"%{DepartureName}%"); }
+            if (!string.IsNullOrEmpty(DepartureCity)) { baseSql += " AND DepartureCity LIKE @DepartureCity"; parameters.Add("@DepartureCity", $"%{DepartureCity}%"); }
+            if (!string.IsNullOrEmpty(destinationName)) { baseSql += " AND DestinationName LIKE @DestinationName"; parameters.Add("@DestinationName", $"%{destinationName}%"); }
+            if (!string.IsNullOrEmpty(destinationCity)) { baseSql += " AND DestinationCity LIKE @DestinationCity"; parameters.Add("@DestinationCity", $"%{destinationCity}%"); }
+            if (startDate.HasValue) { baseSql += " AND DepartureTime >= @StartDate"; parameters.Add("@StartDate", startDate.Value); }
+            if (endDate.HasValue) { baseSql += " AND ArrivalTime <= @EndDate"; parameters.Add("@EndDate", endDate.Value); }
+            // onlyWithAvailableSeat is not used in the query, but can be added as a filter if needed
+
+            // 1. Get total count
+            var countSql = $"SELECT COUNT(*) {baseSql}";
+            int totalCount = 0;
+            bool errorOccurred = false;
+            string? errorMsg = null;
+            (await _dbConnection.ExecuteScalarAsync<int>(countSql, parameters)).Match(
+                onValue: v => totalCount = v,
+                onEmpty: () => { totalCount = 0; },
+                onError: err => { errorOccurred = true; errorMsg = err; }
+            );
+            if (errorOccurred)
+                return OptionalResult<PagedResult<TripDetailsDto>>.Error<PagedResult<TripDetailsDto>>(errorMsg);
+
+            // 2. Get paged items
+            var selectSql = $"SELECT * {baseSql}";
             if (sortBy.HasValue)
-            {
-                sql += $" ORDER BY {sortBy.Value}{(descending ? " DESC" : " ASC")}";
-            }
+                selectSql += $" ORDER BY {sortBy.Value}{(descending ? " DESC" : " ASC")}";
             else
-            {
-                sql += " ORDER BY TripId ASC";
-            }
-            sql += " OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
-            parameters.Add("@Offset", pageIndex * pageSize);
-            parameters.Add("@PageSize", pageSize);
-            return await _dbConnection.ExecuteReaderAsync<TripDetailsDto>(
-                sql: sql,
+                selectSql += " ORDER BY TripId ASC";
+            selectSql += " OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+            parameters["@Offset"] = pageIndex * pageSize;
+            parameters["@PageSize"] = pageSize;
+
+            var itemsResult = await _dbConnection.ExecuteReaderAsync<TripDetailsDto>(
+                sql: selectSql,
                 converter: reader => new TripDetailsDto
                 {
                     TripId = reader.GetInt32(reader.GetOrdinal("TripId")),
@@ -83,6 +96,24 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
                     AvailableSeats = reader.GetInt32(reader.GetOrdinal("AvailableSeats"))
                 },
                 parameters: parameters
+            );
+
+            return itemsResult.Match<OptionalResult<PagedResult<TripDetailsDto>>>(
+                onValue: items => OptionalResult<PagedResult<TripDetailsDto>>.Value(new PagedResult<TripDetailsDto>
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    PageNumber = pageIndex,
+                    PageSize = pageSize
+                }),
+                onEmpty: () => OptionalResult<PagedResult<TripDetailsDto>>.Value(new PagedResult<TripDetailsDto>
+                {
+                    Items = new List<TripDetailsDto>(),
+                    TotalCount = totalCount,
+                    PageNumber = pageIndex,
+                    PageSize = pageSize
+                }),
+                onError: err => OptionalResult<PagedResult<TripDetailsDto>>.Error<PagedResult<TripDetailsDto>>(err)
             );
         }
 

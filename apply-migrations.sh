@@ -31,10 +31,10 @@ run_sql_file() {
 }
 
 wait_for_sqlserver() {
-    sleep 5
+    sleep 10
     echo "================================================================="
     echo "Waiting for SQL Server at $DB_HOST:$DB_PORT..."
-    until run_sql "SELECT 1;" >/dev/null 2>&1; do
+    until run_sql "SELECT 1;" false >/dev/null 2>&1; do
         sleep 2
         echo "Still waiting for SQL Server..."
     done
@@ -43,7 +43,7 @@ wait_for_sqlserver() {
 
 run_init_db() {
     echo "Running initial SQL script..."
-    run_sql_file "./db-init.sql"
+    run_sql_file "./db-init.sql" false
     echo "Database initialized."
 }
 

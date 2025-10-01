@@ -71,7 +71,11 @@ namespace GeneralReservationSystem.Infrastructure
 
                 _logger.LogDebug($"Error al ejecutar comando SQL: {sql} con parametros: {parameters}");
 
-                return Error<int>($"Error al ejecutar comando SQL");
+                // NOTA: Es útil devolver el mensaje de error SQL para poder devolver mensajes de error de
+                // constraint violations hacia el usuario.
+                // IMPORTANTE: El mensaje de error debe ser censurado en un servicio superior para evitar
+                // fugas de información sensible. 
+                return Error<int>($"Error al ejecutar comando SQL: {ex.Message}");
             }
         }
 

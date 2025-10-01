@@ -2,8 +2,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace GeneralReservationSystem.Application.DTOs
 {
-    public class CreateVehicleDto
+    public class UpdateVehicleDto
     {
+        [Required(ErrorMessage = "El identificador es obligatorio.")]
+        public int Id { get; set; }
+
         [Required(ErrorMessage = "El Id de modelo de vehículo es obligatorio.")]
         [Range(1, int.MaxValue, ErrorMessage = "El Id de modelo de vehículo debe ser un número positivo.")]
         public int VehicleModelId { get; set; }

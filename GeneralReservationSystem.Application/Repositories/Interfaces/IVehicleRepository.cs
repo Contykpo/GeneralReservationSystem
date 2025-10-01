@@ -17,7 +17,7 @@ namespace GeneralReservationSystem.Application.Repositories.Interfaces
         Task<OptionalResult<Vehicle>> GetByIdAsync(int id);
         Task<OptionalResult<VehicleModel>> GetModelByIdAsync(int id);
         Task<OptionalResult<IList<Trip>>> GetTripsByVehicleIdAsync(int id);
-        Task<OptionalResult<IList<VehicleDetailsDto>>> SearchPagedAsync(int pageIndex, int pageSize, string? modelName = null,
+        Task<OptionalResult<PagedResult<VehicleDetailsDto>>> SearchPagedAsync(int pageIndex, int pageSize, string? modelName = null,
             string? manufacturer = null, string? licensePlate = null, VehicleSearchSortBy? sortBy = null,
             bool descending = false);
         Task<OperationResult> AddAsync(Vehicle vehicle);

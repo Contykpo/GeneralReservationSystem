@@ -50,11 +50,39 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             return _seatRepository.AddMultipleAsync(seats);
         }
 
-        public Task<OperationResult> UpdateSeatAsync(Seat seat)
-            => _seatRepository.UpdateAsync(seat);
+        public Task<OperationResult> UpdateSeatAsync(UpdateSeatDto seatDto)
+        {
+            var seat = new Seat
+            {
+                SeatId = seatDto.Id,
+                VehicleModelId = seatDto.VehicleModelId,
+                SeatRow = seatDto.SeatRow,
+                SeatColumn = seatDto.SeatColumn,
+                IsAtWindow = seatDto.IsAtWindow,
+                IsAtAisle = seatDto.IsAtAisle,
+                IsInFront = seatDto.IsInFront,
+                IsInBack = seatDto.IsInBack,
+                IsAccessible = seatDto.IsAccessible
+            };
+            return _seatRepository.UpdateAsync(seat);
+        }
 
-        public Task<OperationResult> UpdateSeatsAsync(IEnumerable<Seat> seats)
-            => _seatRepository.UpdateMultipleAsync(seats);
+        public Task<OperationResult> UpdateSeatsAsync(IEnumerable<UpdateSeatDto> seatDtos)
+        {
+            var seats = seatDtos.Select(seatDto => new Seat
+            {
+                SeatId = seatDto.Id,
+                VehicleModelId = seatDto.VehicleModelId,
+                SeatRow = seatDto.SeatRow,
+                SeatColumn = seatDto.SeatColumn,
+                IsAtWindow = seatDto.IsAtWindow,
+                IsAtAisle = seatDto.IsAtAisle,
+                IsInFront = seatDto.IsInFront,
+                IsInBack = seatDto.IsInBack,
+                IsAccessible = seatDto.IsAccessible
+            });
+            return _seatRepository.UpdateMultipleAsync(seats);
+        }
 
         public Task<OperationResult> DeleteSeatAsync(int id)
             => _seatRepository.DeleteAsync(id);

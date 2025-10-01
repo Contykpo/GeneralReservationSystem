@@ -17,28 +17,41 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
             _logger = logger;
         }
 
-        public async Task<OptionalResult<IList<Destination>>> SearchPagedAsync(int pageIndex, int pageSize, string? name = null, string? code = null, string? city = null, string? region = null, string? country = null, DestinationSearchSortBy? sortBy = null, bool descending = false)
+        public async Task<OptionalResult<PagedResult<Destination>>> SearchPagedAsync(int pageIndex, int pageSize, string? name = null, string? code = null, string? city = null, string? region = null, string? country = null, DestinationSearchSortBy? sortBy = null, bool descending = false)
         {
-            var sql = "SELECT * FROM Destination WHERE 1=1";
+            var baseSql = "FROM Destination WHERE 1=1";
             var parameters = new Dictionary<string, object>();
-            if (!string.IsNullOrEmpty(name)) { sql += " AND Name LIKE @Name"; parameters.Add("@Name", $"%{name}%"); }
-            if (!string.IsNullOrEmpty(code)) { sql += " AND Code LIKE @Code"; parameters.Add("@Code", $"%{code}%"); }
-            if (!string.IsNullOrEmpty(city)) { sql += " AND City LIKE @City"; parameters.Add("@City", $"%{city}%"); }
-            if (!string.IsNullOrEmpty(region)) { sql += " AND Region LIKE @Region"; parameters.Add("@Region", $"%{region}%"); }
-            if (!string.IsNullOrEmpty(country)) { sql += " AND Country LIKE @Country"; parameters.Add("@Country", $"%{country}%"); }
+            if (!string.IsNullOrEmpty(name)) { baseSql += " AND Name LIKE @Name"; parameters.Add("@Name", $"%{name}%"); }
+            if (!string.IsNullOrEmpty(code)) { baseSql += " AND Code LIKE @Code"; parameters.Add("@Code", $"%{code}%"); }
+            if (!string.IsNullOrEmpty(city)) { baseSql += " AND City LIKE @City"; parameters.Add("@City", $"%{city}%"); }
+            if (!string.IsNullOrEmpty(region)) { baseSql += " AND Region LIKE @Region"; parameters.Add("@Region", $"%{region}%"); }
+            if (!string.IsNullOrEmpty(country)) { baseSql += " AND Country LIKE @Country"; parameters.Add("@Country", $"%{country}%"); }
+
+            // 1. Get total count
+            var countSql = $"SELECT COUNT(*) {baseSql}";
+            int totalCount = 0;
+            bool errorOccurred = false;
+            string? errorMsg = null;
+            (await _dbConnection.ExecuteScalarAsync<int>(countSql, parameters)).Match(
+                onValue: v => totalCount = v,
+                onEmpty: () => { totalCount = 0; },
+                onError: err => { errorOccurred = true; errorMsg = err; }
+            );
+            if (errorOccurred)
+                return OptionalResult<PagedResult<Destination>>.Error<PagedResult<Destination>>(errorMsg);
+
+            // 2. Get paged items
+            var selectSql = $"SELECT * {baseSql}";
             if (sortBy.HasValue)
-            {
-                sql += $" ORDER BY {sortBy.Value}{(descending ? " DESC" : " ASC")}";
-            }
+                selectSql += $" ORDER BY {sortBy.Value}{(descending ? " DESC" : " ASC")}";
             else
-            {
-                sql += " ORDER BY DestinationId ASC";
-            }
-            sql += " OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+                selectSql += " ORDER BY DestinationId ASC";
+            selectSql += " OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
             parameters.Add("@Offset", pageIndex * pageSize);
             parameters.Add("@PageSize", pageSize);
-            return await _dbConnection.ExecuteReaderAsync<Destination>(
-                sql: sql,
+
+            var itemsResult = await _dbConnection.ExecuteReaderAsync<Destination>(
+                sql: selectSql,
                 converter: reader => new Destination
                 {
                     DestinationId = reader.GetInt32(reader.GetOrdinal("DestinationId")),
@@ -55,6 +68,24 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
                     TimeZone = TimeZoneInfo.FindSystemTimeZoneById(reader.GetString(reader.GetOrdinal("TimeZone")))
                 },
                 parameters: parameters
+            );
+
+            return itemsResult.Match<OptionalResult<PagedResult<Destination>>>(
+                onValue: items => OptionalResult<PagedResult<Destination>>.Value(new PagedResult<Destination>
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    PageNumber = pageIndex,
+                    PageSize = pageSize
+                }),
+                onEmpty: () => OptionalResult<PagedResult<Destination>>.Value(new PagedResult<Destination>
+                {
+                    Items = new List<Destination>(),
+                    TotalCount = totalCount,
+                    PageNumber = pageIndex,
+                    PageSize = pageSize
+                }),
+                onError: err => OptionalResult<PagedResult<Destination>>.Error<PagedResult<Destination>>(err)
             );
         }
 
