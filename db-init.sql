@@ -37,6 +37,16 @@ BEGIN
 END
 GO
 
+-- Create migrations table
+IF OBJECT_ID(N'__migrations', 'U') IS NULL
+BEGIN
+    CREATE TABLE __migrations (
+        MigrationName NVARCHAR(256) NOT NULL PRIMARY KEY,
+        AppliedAt DATETIME2 NOT NULL DEFAULT SYSDATETIME()
+    );
+END
+GO
+
 -- Create ApplicationUser table
 IF OBJECT_ID(N'ApplicationUser', 'U') IS NULL
 BEGIN

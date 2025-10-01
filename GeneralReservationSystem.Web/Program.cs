@@ -1,25 +1,25 @@
+using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication;
+using GeneralReservationSystem.Infrastructure;
+using GeneralReservationSystem.Infrastructure.Middleware;
+using GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations.Authentication;
 using GeneralReservationSystem.Web.Components;
 using GeneralReservationSystem.Web.Components.Account;
 using GeneralReservationSystem.Web.Data;
-using GeneralReservationSystem.Infrastructure;
-using GeneralReservationSystem.Infrastructure.Middleware;
-using GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations;
-using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication;
-
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Authentication;
-
+using Microsoft.Extensions.Options;
 using MudBlazor.Services;
-
 using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
-
 builder.Services.AddMudServices();
+
+// Register all default repositories via DI extension
+builder.Services.AddInfrastructureRepositories();
 
 //builder.Services.AddCascadingAuthenticationState();
 //builder.Services.AddScoped<IdentityUserAccessor>();
@@ -32,10 +32,6 @@ builder.Services.AddMudServices();
 //        options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
 //    })
 //    .AddIdentityCookies();
-
-builder.Services.AddSingleton<DbConnectionHelper>();
-builder.Services.AddScoped<IUserRepository, DefaultUserRepository>();
-builder.Services.AddScoped<ISessionRepository, DefaultSessionRepository>();
 
 builder.Services.AddAuthentication(Constants.AuthenticationScheme)
     .AddCookie(Constants.AuthenticationScheme, options =>
@@ -61,9 +57,17 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddHttpContextAccessor();
 
-builder.WebHost.UseKestrel(o =>
-        o.ListenAnyIP(5000)
-    );
+builder.WebHost.UseKestrel(options =>
+{
+    var httpPort = Environment.GetEnvironmentVariable("ASPNETCORE_HTTP_PORTS") ?? "8080";
+    var httpsPort = Environment.GetEnvironmentVariable("ASPNETCORE_HTTPS_PORTS") ?? "8081";
+
+    options.ListenAnyIP(int.Parse(httpPort)); // HTTP
+    options.ListenAnyIP(int.Parse(httpsPort), listenOptions =>
+    {
+        listenOptions.UseHttps(); // HTTPS
+    });
+});
 
 var app = builder.Build();
 

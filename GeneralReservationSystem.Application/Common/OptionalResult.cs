@@ -74,23 +74,40 @@ namespace GeneralReservationSystem.Application.Common
 	public record ErrorValue<TValue>(string? error) : OptionalResult<TValue>
 	{
 		public override OptionalResult<TValue> IfError(Action<string?> action)
-		{
-			action?.Invoke(error);
+        {
+            // NOTA/TODO: Esto esconde errores de constraints de la base de datos. Hay que manejarlo
+            // mejor en una capa superior. Si se esconden esos errores, el usuario recibe un mensaje críptico
+            // y no sabe qué hacer con esa información.
+            // Si el mensaje de error está en inglés, traducirlo aquí
+            var mensaje = error;
+			if (mensaje == "Error while executing SQL command")
+				mensaje = "Error al ejecutar comando SQL";
+			if (mensaje == "Error while creating SQL connection")
+				mensaje = "Error al crear conexión con la base de datos";
+			action?.Invoke(mensaje);
 			return this;
 		}
 
 		public override TMatchResult Match<TMatchResult>(Func<TValue, TMatchResult>? onValue, Func<TMatchResult>? onEmpty, Func<string?, TMatchResult>? onError)
 		{
 			Debug.Assert(onError != null, "Unhandled Error Case");
-
-			return onError(error);
+			var mensaje = error;
+			if (mensaje == "Error while executing SQL command")
+				mensaje = "Error al ejecutar comando SQL";
+			if (mensaje == "Error while creating SQL connection")
+				mensaje = "Error al crear conexión con la base de datos";
+			return onError(mensaje);
 		}
 
 		public override void Match(Action<TValue>? onValue = null, Action? onEmpty = null, Action<string?>? onError = null)
 		{
 			Debug.Assert(onError != null, "Unhandled Error Case");
-
-			onError(error);
+			var mensaje = error;
+			if (mensaje == "Error al while executing SQL command")
+				mensaje = "Error al ejecutar comando SQL";
+			if (mensaje == "Error while creating SQL connection")
+				mensaje = "Error al crear conexión con la base de datos";
+			onError(mensaje);
 		}
 	}
 }

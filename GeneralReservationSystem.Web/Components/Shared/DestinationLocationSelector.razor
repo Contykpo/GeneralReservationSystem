@@ -1,0 +1,188 @@
+@using System
+@using Microsoft.AspNetCore.Components
+@using MudBlazor
+
+<MudGrid Spacing="3">
+    <MudItem xs="12" sm="6" md="4">
+        <MudSelect T="string"
+                   Value="Country"
+                   ValueChanged="OnCountryChanged"
+                   Label="País" Required="true" Variant="Variant.Outlined" Dense="true">
+            @foreach (var country in Countries)
+            {
+                <MudSelectItem Value="@country">@country</MudSelectItem>
+            }
+        </MudSelect>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="4">
+        <MudSelect T="string"
+                   Value="Region"
+                   ValueChanged="OnRegionChanged"
+                   Label="Región" Required="true" Variant="Variant.Outlined" Dense="true"
+                   Disabled="string.IsNullOrEmpty(Country)">
+            @if (!string.IsNullOrEmpty(Country) && CountryRegions.TryGetValue(Country, out var regions))
+            {
+                foreach (var region in regions)
+                {
+                    <MudSelectItem Value="@region">@region</MudSelectItem>
+                }
+            }
+        </MudSelect>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="4">
+        <MudSelect T="string"
+                   Value="City"
+                   ValueChanged="OnCityChanged"
+                   Label="Ciudad" Required="true" Variant="Variant.Outlined" Dense="true" Disabled="string.IsNullOrEmpty(Region)">
+            @if (!string.IsNullOrEmpty(Country) && !string.IsNullOrEmpty(Region) && RegionCities.TryGetValue((Country, Region), out var cities))
+            {
+                foreach (var city in cities)
+                {
+                    <MudSelectItem Value="@city">@city</MudSelectItem>
+                }
+            }
+        </MudSelect>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="4">
+        <MudTextField Value="@(TimeZone?.DisplayName ?? string.Empty)" Label="Zona Horaria" ReadOnly="true" Disabled="true" />
+        <input type="hidden" value="@(TimeZone?.Id ?? string.Empty)" name="TimeZone" />
+    </MudItem>
+</MudGrid>
+
+@code {
+    [Parameter] public string Country { get; set; }
+    [Parameter] public EventCallback<string> CountryChanged { get; set; }
+    [Parameter] public string Region { get; set; }
+    [Parameter] public EventCallback<string> RegionChanged { get; set; }
+    [Parameter] public string City { get; set; }
+    [Parameter] public EventCallback<string> CityChanged { get; set; }
+    [Parameter] public TimeZoneInfo TimeZone { get; set; }
+    [Parameter] public EventCallback<TimeZoneInfo> TimeZoneChanged { get; set; }
+
+    private List<string> Countries = new() { "Argentina", "Uruguay", "Chile", "Brasil", "Paraguay", "España", "Estados Unidos" };
+    private readonly Dictionary<string, List<string>> CountryRegions = new()
+    {
+        ["Argentina"] = new() { "Buenos Aires", "Córdoba", "Santa Fe", "Mendoza", "Tucumán" },
+        ["Uruguay"] = new() { "Montevideo", "Canelones", "Maldonado" },
+        ["Chile"] = new() { "Región Metropolitana", "Valparaíso", "Biobío" },
+        ["Brasil"] = new() { "São Paulo", "Rio de Janeiro", "Bahia" },
+        ["Paraguay"] = new() { "Central", "Asunción", "Alto Paraná" },
+        ["España"] = new() { "Madrid", "Cataluña", "Andalucía" },
+        ["Estados Unidos"] = new() { "California", "Florida", "Nueva York" }
+    };
+    private readonly Dictionary<(string, string), List<string>> RegionCities = new()
+    {
+        [("Argentina", "Buenos Aires")] = new() { "CABA", "La Plata", "Mar del Plata", "Bahía Blanca" },
+        [("Argentina", "Córdoba")] = new() { "Córdoba", "Villa Carlos Paz", "Río Cuarto" },
+        [("Argentina", "Santa Fe")] = new() { "Rosario", "Santa Fe", "Rafaela" },
+        [("Argentina", "Mendoza")] = new() { "Mendoza", "San Rafael" },
+        [("Argentina", "Tucumán")] = new() { "San Miguel de Tucumán", "Tafí Viejo" },
+        [("Uruguay", "Montevideo")] = new() { "Montevideo" },
+        [("Uruguay", "Canelones")] = new() { "Canelones", "Las Piedras" },
+        [("Uruguay", "Maldonado")] = new() { "Punta del Este", "Maldonado" },
+        [("Chile", "Región Metropolitana")] = new() { "Santiago", "Puente Alto" },
+        [("Chile", "Valparaíso")] = new() { "Valparaíso", "Viña del Mar" },
+        [("Chile", "Biobío")] = new() { "Concepción", "Los Ángeles" },
+        [("Brasil", "São Paulo")] = new() { "São Paulo", "Campinas" },
+        [("Brasil", "Rio de Janeiro")] = new() { "Rio de Janeiro", "Niterói" },
+        [("Brasil", "Bahia")] = new() { "Salvador", "Feira de Santana" },
+        [("Paraguay", "Central")] = new() { "San Lorenzo", "Lambaré" },
+        [("Paraguay", "Asunción")] = new() { "Asunción" },
+        [("Paraguay", "Alto Paraná")] = new() { "Ciudad del Este" },
+        [("España", "Madrid")] = new() { "Madrid", "Alcalá de Henares" },
+        [("España", "Cataluña")] = new() { "Barcelona", "Tarragona" },
+        [("España", "Andalucía")] = new() { "Sevilla", "Málaga" },
+        [("Estados Unidos", "California")] = new() { "Los Ángeles", "San Francisco" },
+        [("Estados Unidos", "Florida")] = new() { "Miami", "Orlando" },
+        [("Estados Unidos", "Nueva York")] = new() { "Nueva York", "Buffalo" }
+    };
+
+    // City to TimeZoneInfo mapping (example, expand as needed)
+    private readonly Dictionary<string, string> CityTimeZoneIds = new()
+    {
+        // Argentina
+        ["CABA"] = "Argentina Standard Time",
+        ["La Plata"] = "Argentina Standard Time",
+        ["Mar del Plata"] = "Argentina Standard Time",
+        ["Bahía Blanca"] = "Argentina Standard Time",
+        ["Córdoba"] = "Argentina Standard Time",
+        ["Villa Carlos Paz"] = "Argentina Standard Time",
+        ["Río Cuarto"] = "Argentina Standard Time",
+        ["Rosario"] = "Argentina Standard Time",
+        ["Santa Fe"] = "Argentina Standard Time",
+        ["Rafaela"] = "Argentina Standard Time",
+        ["Mendoza"] = "Argentina Standard Time",
+        ["San Rafael"] = "Argentina Standard Time",
+        ["San Miguel de Tucumán"] = "Argentina Standard Time",
+        ["Tafí Viejo"] = "Argentina Standard Time",
+        // Uruguay
+        ["Montevideo"] = "Montevideo Standard Time",
+        ["Canelones"] = "Montevideo Standard Time",
+        ["Las Piedras"] = "Montevideo Standard Time",
+        ["Punta del Este"] = "Montevideo Standard Time",
+        ["Maldonado"] = "Montevideo Standard Time",
+        // Chile
+        ["Santiago"] = "Pacific SA Standard Time",
+        ["Puente Alto"] = "Pacific SA Standard Time",
+        ["Valparaíso"] = "Pacific SA Standard Time",
+        ["Viña del Mar"] = "Pacific SA Standard Time",
+        ["Concepción"] = "Pacific SA Standard Time",
+        ["Los Ángeles"] = "Pacific SA Standard Time",
+        // Brasil
+        ["São Paulo"] = "E. South America Standard Time",
+        ["Campinas"] = "E. South America Standard Time",
+        ["Rio de Janeiro"] = "E. South America Standard Time",
+        ["Niterói"] = "E. South America Standard Time",
+        ["Salvador"] = "Bahia Standard Time",
+        ["Feira de Santana"] = "Bahia Standard Time",
+        // Paraguay
+        ["San Lorenzo"] = "Paraguay Standard Time",
+        ["Lambaré"] = "Paraguay Standard Time",
+        ["Asunción"] = "Paraguay Standard Time",
+        ["Ciudad del Este"] = "Paraguay Standard Time",
+        // España
+        ["Madrid"] = "Romance Standard Time",
+        ["Alcalá de Henares"] = "Romance Standard Time",
+        ["Barcelona"] = "Romance Standard Time",
+        ["Tarragona"] = "Romance Standard Time",
+        ["Sevilla"] = "Romance Standard Time",
+        ["Málaga"] = "Romance Standard Time",
+        // Estados Unidos
+        ["Los Ángeles"] = "Pacific Standard Time",
+        ["San Francisco"] = "Pacific Standard Time",
+        ["Miami"] = "Eastern Standard Time",
+        ["Orlando"] = "Eastern Standard Time",
+        ["Nueva York"] = "Eastern Standard Time",
+        ["Buffalo"] = "Eastern Standard Time"
+    };
+
+    private async Task OnCountryChanged(string value)
+    {
+        await CountryChanged.InvokeAsync(value);
+        await RegionChanged.InvokeAsync("");
+        await CityChanged.InvokeAsync("");
+        await TimeZoneChanged.InvokeAsync(null);
+    }
+
+    private async Task OnRegionChanged(string value)
+    {
+        await RegionChanged.InvokeAsync(value);
+        await CityChanged.InvokeAsync("");
+        await TimeZoneChanged.InvokeAsync(null);
+    }
+
+    private async Task OnCityChanged(string value)
+    {
+        await CityChanged.InvokeAsync(value);
+        if (!string.IsNullOrEmpty(value) && CityTimeZoneIds.TryGetValue(value, out var tzId))
+        {
+            var tz = TimeZoneInfo.FindSystemTimeZoneById(tzId);
+            if (tz != null && tz != TimeZone)
+                await TimeZoneChanged.InvokeAsync(tz);
+        }
+        else
+        {
+            await TimeZoneChanged.InvokeAsync(null);
+        }
+    }
+}

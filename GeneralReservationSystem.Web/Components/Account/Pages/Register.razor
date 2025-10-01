@@ -108,14 +108,13 @@
                 result.IfSuccess(() =>
                 {
                     // TODO: Might want to make IfSuccess async in the future, so that we can show some message for a few seconds before redirecting.
-                    // Snackbar.Add("User created successfully!", MudBlazor.Severity.Success);
+                    // Snackbar.Add("¡Usuario creado exitosamente!", MudBlazor.Severity.Success);
                     // await Task.Delay(2000);
-
                     NavigationManager.NavigateTo("/Account/Login", forceLoad: true);
                 })
                 .IfFailure(error =>
                 {
-                    Snackbar.Add($"Failed to create user: {error}", MudBlazor.Severity.Error);
+                    Snackbar.Add($"No se pudo crear el usuario: {error}", MudBlazor.Severity.Error);
                 });
             }
         }
@@ -145,22 +144,22 @@
         public RegisterValidator()
         {
             RuleFor(r => r.UserName)
-                .NotEmpty()
-                .Length(1, 50);
+                .NotEmpty().WithMessage("El nombre de usuario es obligatorio.")
+                .Length(1, 50).WithMessage("El nombre de usuario debe tener entre 1 y 50 caracteres.");
             RuleFor(r => r.Email)
                 .Cascade(CascadeMode.Stop)
-                .NotEmpty()
-                .EmailAddress()
-                .MustAsync(async (value, cancellationToken) => await IsUniqueAsync(value));
+                .NotEmpty().WithMessage("El correo electrónico es obligatorio.")
+                .EmailAddress().WithMessage("El correo electrónico no es válido.")
+                .MustAsync(async (value, cancellationToken) => await IsUniqueAsync(value)).WithMessage("El correo electrónico ya está registrado.");
             RuleFor(r => r.Password)
-                .NotEmpty().WithMessage("Your password cannot be empty.")
-                .MinimumLength(8).WithMessage("Your password length must be at least 8 characters.")
-                .Matches(@"[A-Z]+").WithMessage("Your password must contain at least one uppercase letter.")
-                .Matches(@"[a-z]+").WithMessage("Your password must contain at least one lowercase letter.")
-                .Matches(@"[0-9]+").WithMessage("Your password must contain at least one number.")
-                .Matches(@"[\#\?\!\@\$\%\^\&\*\-\.]+").WithMessage("Your password must contain at least one special character: #?!@$ %^&*-.");
+                .NotEmpty().WithMessage("La contraseña no puede estar vacía.")
+                .MinimumLength(8).WithMessage("La contraseña debe tener al menos 8 caracteres.")
+                .Matches(@"[A-Z]+").WithMessage("La contraseña debe contener al menos una letra mayúscula.")
+                .Matches(@"[a-z]+").WithMessage("La contraseña debe contener al menos una letra minúscula.")
+                .Matches(@"[0-9]+").WithMessage("La contraseña debe contener al menos un número.")
+                .Matches(@"[\#\?\!\@\$\%\^\&\*\-\.]+").WithMessage("La contraseña debe contener al menos un carácter especial: #?!@$ %^&*-. ");
             RuleFor(r => r.ConfirmPassword)
-                .Equal(r => r.Password);
+                .Equal(r => r.Password).WithMessage("Las contraseñas no coinciden.");
         }
 
         private async Task<bool> IsUniqueAsync(string email)
@@ -182,8 +181,12 @@
     }
 }
 
-
 @*
+/// <summary>
+/// Blazor Server Side
+/// </summary>
+@page "/Account/Register"
+@attribute [AllowAnonymous]
 @using System.ComponentModel.DataAnnotations
 @using System.Text
 @using System.Text.Encodings.Web
@@ -327,4 +330,4 @@
         public string ConfirmPassword { get; set; } = "";
     }
 }
- *@
+*@

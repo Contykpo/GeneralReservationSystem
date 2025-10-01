@@ -56,12 +56,12 @@ namespace GeneralReservationSystem.Web.Helpers
                     _iterCount = options.IterationCount;
                     if (_iterCount < 1)
                     {
-                        throw new InvalidOperationException("Invalid password hasher iteration count.");
+                        throw new InvalidOperationException("El número de iteraciones del hasher de contraseñas no es válido.");
                     }
                     break;
 
                 default:
-                    throw new InvalidOperationException("Invalid password hasher compatibility mode.");
+                    throw new InvalidOperationException("El modo de compatibilidad del hasher de contraseñas no es válido.");
             }
 
             _rng = RandomNumberGenerator.Create();
@@ -72,7 +72,7 @@ namespace GeneralReservationSystem.Web.Helpers
         public virtual string HashPassword(TUser user, string password)
         {
             if (password == null)
-                throw new ArgumentNullException(nameof(password));
+                throw new ArgumentNullException(nameof(password), "La contraseña no puede ser nula.");
 
             if (_compatibilityMode == PasswordHasherCompatibilityMode.IdentityV2)
             {
