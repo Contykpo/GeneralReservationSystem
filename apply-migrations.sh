@@ -31,7 +31,7 @@ run_sql_file() {
 }
 
 wait_for_sqlserver() {
-    sleep 10
+    sleep 30
     echo "================================================================="
     echo "Waiting for SQL Server at $DB_HOST:$DB_PORT..."
     until run_sql "SELECT 1;" false >/dev/null 2>&1; do

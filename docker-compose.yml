@@ -36,10 +36,6 @@ services:
       - SQL_PASSWORD=${SQL_PASSWORD}
       - APP_HTTP_PORTS=${APP_HTTP_PORTS:-8080}
       - APP_HTTPS_PORTS=${APP_HTTPS_PORTS:-8081}
-      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/appcert.pfx   
-      - ASPNETCORE_Kestrel__Certificates__Default__Password=${CERT_PASSWORD}
-    volumes:
-      - ./appcert.pfx:/https/appcert.pfx
 
   generalreservationsystem.api:
     image: ${DOCKER_REGISTRY-}generalreservationsystemapi
@@ -60,10 +56,6 @@ services:
       - SQL_PASSWORD=${SQL_PASSWORD}
       - API_HTTP_PORTS=${API_HTTP_PORTS:-8082}
       - API_HTTPS_PORTS=${API_HTTPS_PORTS:-8083}
-      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/apicert.pfx   
-      - ASPNETCORE_Kestrel__Certificates__Default__Password=${CERT_PASSWORD}
-    volumes:
-      - ./apicert.pfx:/https/apicert.pfx
 
 volumes:
   sql_data:

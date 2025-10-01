@@ -4,8 +4,8 @@
 FROM mcr.microsoft.com/dotnet/aspnet:9.0-noble AS base
 USER $APP_UID
 WORKDIR /app
-EXPOSE 8080
-EXPOSE 8081
+EXPOSE 8082
+EXPOSE 8083
 
 
 # This stage is used to build the service project
@@ -28,3 +28,6 @@ FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "GeneralReservationSystem.API.dll"]
+
+ENV ASPNETCORE_URLS=http://+:8082
+ENV ASPNETCORE_URLS=https://+:8083

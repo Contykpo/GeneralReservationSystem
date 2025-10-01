@@ -12,6 +12,18 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddInfrastructure();
 
+//builder.WebHost.UseKestrel(options =>
+//{
+//    var httpPort = Environment.GetEnvironmentVariable("API_HTTP_PORTS") ?? "8082";
+//    var httpsPort = Environment.GetEnvironmentVariable("API_HTTP_PORTS") ?? "8083";
+
+//    options.ListenAnyIP(int.Parse(httpPort)); // HTTP
+//    options.ListenAnyIP(int.Parse(httpsPort), listenOptions =>
+//    {
+//        listenOptions.UseHttps(); // HTTPS
+//    });
+//});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(swagger =>
 {
