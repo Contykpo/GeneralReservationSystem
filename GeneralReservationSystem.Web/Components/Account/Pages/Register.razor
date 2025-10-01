@@ -105,11 +105,11 @@
 
             if (form.IsValid)
             {
-                result.IfSuccess(() =>
+                result.IfSuccess(async () =>
                 {
                     // TODO: Might want to make IfSuccess async in the future, so that we can show some message for a few seconds before redirecting.
                     // Snackbar.Add("¡Usuario creado exitosamente!", MudBlazor.Severity.Success);
-                    // await Task.Delay(2000);
+                    await Task.Delay(2000);
                     NavigationManager.NavigateTo("/Account/Login", forceLoad: true);
                 })
                 .IfFailure(error =>

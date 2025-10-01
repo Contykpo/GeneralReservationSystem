@@ -38,8 +38,8 @@ namespace GeneralReservationSystem.Infrastructure
 			public static class ApplicationRole
 			{
 				public const string TableName					= "ApplicationRole";
-				public const string NameColumnName				= "ApplicationRole";
-				public const string NormalizedNameColumnName	= "ApplicationRole";
+				public const string NameColumnName				= "Name";
+				public const string NormalizedNameColumnName	= "NormalizedName";
 				public const string RoleIdColumnName			= "RoleId";
 			}
 

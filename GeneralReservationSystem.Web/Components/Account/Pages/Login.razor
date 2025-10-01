@@ -4,6 +4,7 @@
 @using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication
 
 @inject IUserRepository UserRepository
+@inject ISessionRepository SessionRepository
 @inject ISnackbar Snackbar
 
 
@@ -68,7 +69,7 @@
             var passwordHasher = new Helpers.PasswordHashingHelper<ApplicationUser>();
 
             var result = await UserRepository.GetByEmailAsync(loginUserData.EmailAddress.ToUpperInvariant());
-            result.IfValue(loginUser =>
+            result.IfValue(async loginUser =>
             {
                 var verificationResult = passwordHasher.VerifyHashedPassword(loginUser, System.Text.Encoding.UTF8.GetString(loginUser.PasswordHash), loginUserData.Password);
                 if (verificationResult == PasswordVerificationResult.Success)
@@ -83,26 +84,26 @@
                         SessionInfo = string.Empty
                     };
 
-                    // await SessionRepository.CreateAsync(userSession);
+                    await SessionRepository.CreateSessionAsync(userSession);
 
                     // Write the session cookie into the browser.
-                    var context = HttpContextAccessor.HttpContext ?? throw new InvalidOperationException("No se pudo obtener el contexto HTTP.");
-                    context.Response.Cookies.Append(
-                        "UserSessionId",
-                        userSession.SessionId.ToString(),
-                        new CookieOptions
-                        {
-                            HttpOnly = true,
-                            Secure = true,
-                            SameSite = SameSiteMode.Strict,
-                            Expires = userSession.ExpiresAt
-                        });
+                    // var context = HttpContextAccessor.HttpContext ?? throw new InvalidOperationException("No se pudo obtener el contexto HTTP.");
+                    // context.Response.Cookies.Append(
+                    //     "UserSessionId",
+                    //     userSession.SessionId.ToString(),
+                    //     new CookieOptions
+                    //     {
+                    //         HttpOnly = true,
+                    //         Secure = true,
+                    //         SameSite = SameSiteMode.Strict,
+                    //         Expires = userSession.ExpiresAt
+                    //     });
 
                     // TODO: Add delay and success message.
                     // Snackbar.Add("Login exitoso.", MudBlazor.Severity.Success);
                     // await Task.Delay(2000);
                         
-                    NavigationManager.NavigateTo("/auth", forceLoad: true);
+                    NavigationManager.NavigateTo($"/teraLogin?sessionId={userSession.SessionId}", forceLoad: true);
                 }
                 else
                 {

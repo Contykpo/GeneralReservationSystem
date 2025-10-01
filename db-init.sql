@@ -57,7 +57,7 @@ BEGIN
         Email NVARCHAR(256) NULL,
         NormalizedEmail NVARCHAR(256) NULL,
         EmailConfirmed BIT NOT NULL DEFAULT(0),
-        PasswordHash VARBINARY(64) NOT NULL,             --Hash de 64 bytes guardo en crudo
+        PasswordHash VARBINARY(128) NOT NULL,             --Hash guardo en crudo
         SecurityStamp UNIQUEIDENTIFIER NULL DEFAULT(NEWID())
     );
 

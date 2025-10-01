@@ -206,7 +206,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 					rowsAffected = 0;
 
 					(await _dbConnection.ExecuteAsync(assignRoleSql, connection, roleParameters, transaction)).Match(
-						onValue: (rows) => Value(rows),
+						onValue: (rows) => { rowsAffected = rows; return Value(rows); },
 						onEmpty: () => {
 							_logger.LogError($"Role assignment returned no result for role {role} and user {newUser.UserName}.");
 							throw new Exception("Role assignment returned no result.");
@@ -218,8 +218,8 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementa
 
 					if (rowsAffected == 0)
 					{
-						_logger.LogError($"Failed to assign role {role} to user {newUser.UserName}. Rolling back transaction.");
-						throw new Exception($"Failed to assign role {role.Name} to user {newUser.UserName}");
+						//_logger.LogError($"Failed to assign role {role} to user {newUser.UserName}. Rolling back transaction.");
+						//throw new Exception($"Failed to assign role {role.Name} to user {newUser.UserName}");
 					}
 					else
 					{
