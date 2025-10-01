@@ -59,8 +59,8 @@ builder.Services.AddHttpContextAccessor();
 
 builder.WebHost.UseKestrel(options =>
 {
-    var httpPort = Environment.GetEnvironmentVariable("ASPNETCORE_HTTP_PORTS") ?? "8080";
-    var httpsPort = Environment.GetEnvironmentVariable("ASPNETCORE_HTTPS_PORTS") ?? "8081";
+    var httpPort = Environment.GetEnvironmentVariable("APP_HTTP_PORTS") ?? "8080";
+    var httpsPort = Environment.GetEnvironmentVariable("APP_HTTPS_PORTS") ?? "8081";
 
     options.ListenAnyIP(int.Parse(httpPort)); // HTTP
     options.ListenAnyIP(int.Parse(httpsPort), listenOptions =>
