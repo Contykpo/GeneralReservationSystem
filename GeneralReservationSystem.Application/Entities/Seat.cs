@@ -8,14 +8,14 @@ namespace GeneralReservationSystem.Application.Entities
 {
     public class Seat
     {
-        public int SeatId { get; set; }
-        public required int VehicleModelId { get; set; }
-        public required int SeatRow { get; set; }
-        public required int SeatColumn { get; set; }
-        public required bool IsAtWindow { get; set; } = false;
-        public required bool IsAtAisle { get; set; } = false;
-        public required bool IsInFront { get; set; } = false;
-        public required bool IsInBack { get; set; } = false;
-        public required bool IsAccessible { get; set; } = false;
+        public int SeatId { get; set; } = new int();
+        public int VehicleModelId { get; set; } = new int();
+        public int SeatRow { get; set; } = new int();
+        public int SeatColumn { get; set; } = new int();
+        public bool IsAtWindow { get; set; } = false;
+        public bool IsAtAisle { get; set; } = false;
+        public bool IsInFront { get; set; } = false;
+        public bool IsInBack { get; set; } = false;
+        public bool IsAccessible { get; set; } = false;
     }
 }
