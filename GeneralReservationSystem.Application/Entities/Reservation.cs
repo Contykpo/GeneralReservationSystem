@@ -8,8 +8,8 @@ namespace GeneralReservationSystem.Application.Entities
 {
     public class Reservation
     {
-        public required int TripId { get; set; }
-        public required int SeatId { get; set; }
-        public required Guid UserId { get; set; }
+        public int TripId { get; set; }
+        public int SeatId { get; set; }
+        public Guid UserId { get; set; }
     }
 }

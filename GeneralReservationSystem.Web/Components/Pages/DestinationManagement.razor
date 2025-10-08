@@ -1,464 +1,339 @@
 @page "/Admin/Destinations"
 
 @using GeneralReservationSystem.Application.Entities
-@using GeneralReservationSystem.Application.DTOs
 @using GeneralReservationSystem.Application.Services.Interfaces
-@using GeneralReservationSystem.Application.Repositories.Interfaces
-@using GeneralReservationSystem.Application.Common
-@using GeneralReservationSystem.Web.Components.Pages
-@using GeneralReservationSystem.Web.Components.Shared
+@using GeneralReservationSystem.Application.DTOs
+@using System.ComponentModel.DataAnnotations
+@using ValidationResult = System.ComponentModel.DataAnnotations.ValidationResult
+@using Severity = MudBlazor.Severity
 
 @inject IDestinationService DestinationService
 @inject ISnackbar Snackbar
-@inject NavigationManager NavigationManager
-@inject IDialogService DialogService
-
-<MudDialogProvider />
 
 <PageTitle>Gestión de Destinos</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mx-auto">
-    <MudContainer MaxWidth="MaxWidth.Large" Class="pt-4">
-        <MudText Typo="Typo.h5">Gestión de Destinos</MudText>
-        <MudDivider Class="mb-4" />
-        @if (!string.IsNullOrWhiteSpace(lastErrorMessage))
-        {
-            <MudAlert Severity="MudBlazor.Severity.Error" Elevation="2" Class="mb-4">@lastErrorMessage</MudAlert>
-        }
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Gestión de Destinos</MudText>
 
-        <!-- Add Destination Form -->
-        <MudExpansionPanels Class="my-4">
-            <MudExpansionPanel Text="Agregar Destino">
-                <EditForm Model="newDestination" OnValidSubmit="AddDestinationAsync" Class="p-2">
-                    <DataAnnotationsValidator />
-                    <ValidationSummary />
-                    <MudGrid Spacing="3">
-                        <MudItem xs="12" sm="6" md="4">
-                            <MudTextField @bind-Value="newDestination.Name" Label="Nombre" Required="true" Variant="Variant.Outlined" Dense="true" />
-                        </MudItem>
-                        <MudItem xs="12" sm="6" md="4">
-                            <MudTextField @bind-Value="newDestination.Code" Label="Código" Required="true" Variant="Variant.Outlined" Dense="true" />
-                        </MudItem>
-                        <MudItem xs="12">
-                            <DestinationLocationSelector
-                                @bind-Country="newDestination.Country"
-                                @bind-Region="newDestination.Region"
-                                @bind-City="newDestination.City"
-                                @bind-TimeZone="newDestination.TimeZone" />
-                        </MudItem>
-                        <MudItem xs="12">
-                            <div class="d-flex justify-end">
-                                <MudButton Variant="Variant.Filled" Color="Color.Primary" ButtonType="ButtonType.Submit">Agregar</MudButton>
-                            </div>
-                        </MudItem>
-                    </MudGrid>
-                </EditForm>
-            </MudExpansionPanel>
-        </MudExpansionPanels>
+    <MudExpansionPanels Class="mb-4">
+        <MudExpansionPanel Text="Agregar Nuevo Destino" Icon="@Icons.Material.Filled.Add">
+            <MudCard Class="pd-2">
+                <MudCardContent>
+                    <MudForm Model="@createModel" @ref="createForm" Validation="ValidateCreateModel">
+                        <MudGrid>
+                            <MudItem xs="12" sm="6" md="4">
+                                <MudTextField @bind-Value="createModel.Name" Label="Nombre" Variant="Variant.Outlined" For="@(() => createModel.Name)" Immediate="true" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6" md="4">
+                                <MudTextField @bind-Value="createModel.Code" Label="Código" Variant="Variant.Outlined" For="@(() => createModel.Code)" Immediate="true" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6" md="4">
+                                <MudTextField @bind-Value="createModel.City" Label="Ciudad" Variant="Variant.Outlined" For="@(() => createModel.City)" Immediate="true" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6" md="4">
+                                <MudTextField @bind-Value="createModel.Region" Label="Región" Variant="Variant.Outlined" For="@(() => createModel.Region)" Immediate="true" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6" md="4">
+                                <MudTextField @bind-Value="createModel.Country" Label="País" Variant="Variant.Outlined" For="@(() => createModel.Country)" Immediate="true" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6" md="4">
+                                <MudSelect @bind-Value="createModel.TimeZone" Label="Zona Horaria" Variant="Variant.Outlined" For="@(() => createModel.TimeZone)" T="TimeZoneInfo" ToStringFunc="@(tz => tz?.DisplayName ?? string.Empty)">
+                                    @foreach (var tz in TimeZoneInfo.GetSystemTimeZones())
+                                    {
+                                        <MudSelectItem Value="@tz">@tz.DisplayName</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudItem>
+                        </MudGrid>
+                    </MudForm>
+                </MudCardContent>
+                <MudCardActions Class="gap-2">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="HandleCreateDestination" StartIcon="@Icons.Material.Filled.Save">Guardar</MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ClearCreateForm">Limpiar</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudExpansionPanel>
+    </MudExpansionPanels>
 
-        <!-- Search Section -->
-        <MudPaper Elevation="1" Class="mb-1 p-2">
-            <MudStack Row="true" Spacing="2" Wrap="Wrap.Wrap">
-                <MudTextField @bind-Value="searchName" Label="Buscar Nombre" Immediate="true" Variant="Variant.Outlined" Dense="true" Class="flex-auto d-inline-flex" />
-                <MudTextField @bind-Value="searchCode" Label="Buscar Código" Immediate="true" Variant="Variant.Outlined" Dense="true" Class="flex-auto d-inline-flex" />
-                <MudTextField @bind-Value="searchCity" Label="Buscar Ciudad" Immediate="true" Variant="Variant.Outlined" Dense="true" Class="flex-auto d-inline-flex" />
-                <MudTextField @bind-Value="searchRegion" Label="Buscar Región" Immediate="true" Variant="Variant.Outlined" Dense="true" Class="flex-auto d-inline-flex" />
-                <MudTextField @bind-Value="searchCountry" Label="Buscar País" Immediate="true" Variant="Variant.Outlined" Dense="true" Class="flex-auto d-inline-flex" />
-            </MudStack>
-        </MudPaper>
-
-        <MudDivider Class="mb-4" />
-
-        <!-- Destinations Table -->
-        <MudTable Items="pagedDestinations?.Items ?? new List<Destination>()" Hover="true" Bordered="true" Dense="true" @bind-SortLabel="sortLabel" @bind-SortDirection="sortDirection" OnSort="OnSortChanged" Class="mb-4">
-            <HeaderContent>
-                <MudTh><MudTableSortLabel T="Destination" SortBy="x => x.Name">Nombre</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel T="Destination" SortBy="x => x.Code">Código</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel T="Destination" SortBy="x => x.City">Ciudad</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel T="Destination" SortBy="x => x.Region">Región</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel T="Destination" SortBy="x => x.Country">País</MudTableSortLabel></MudTh>
-                <MudTh Style="width:1%; white-space:nowrap;">Acciones</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd DataLabel="Nombre">@context.Name</MudTd>
-                <MudTd DataLabel="Código">@context.Code</MudTd>
-                <MudTd DataLabel="Ciudad">@context.City</MudTd>
-                <MudTd DataLabel="Región">@context.Region</MudTd>
-                <MudTd DataLabel="País">@context.Country</MudTd>
-                <MudTd Style="width:1%; white-space:nowrap;">
-                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" OnClick="@(() => EditDestination(context.DestinationId))" />
-                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="() => ConfirmDelete(context.DestinationId)" />
-                </MudTd>
-            </RowTemplate>
-        </MudTable>
-
-        <!-- Pagination Controls -->
-        <MudGrid Class="mb-2">
-            <MudItem xs="12" sm="4" md="3">
-                <MudText Typo="Typo.body2">Total: <b>@(pagedDestinations?.TotalCount ?? 0)</b></MudText>
-            </MudItem>
-            <MudItem xs="12" sm="4" md="6">
-                <div class="d-flex justify-center align-center" style="gap:8px; flex-wrap:wrap;">
-                    <MudButton Variant="Variant.Outlined" Disabled="pageIndex == 0" OnClick="PrevPage">Anterior</MudButton>
-                    @if (pagedDestinations != null)
-                    {
-                        for (int i = 0; i < pagedDestinations.TotalPages; i++)
+    <MudDataGrid @ref="dataGrid" 
+                 T="DestinationEditModel" 
+                 ServerData="ServerReload" 
+                 Filterable="true" 
+                 FilterMode="DataGridFilterMode.ColumnFilterMenu" 
+                 FilterCaseSensitivity="DataGridFilterCaseSensitivity.CaseInsensitive" 
+                 SortMode="SortMode.Multiple" 
+                 EditMode="DataGridEditMode.Form" 
+                 EditTrigger="DataGridEditTrigger.Manual" 
+                 CommittedItemChanges="HandleCommittedItemChanges" 
+                 CanceledEditingItem="HandleCanceledEditingItem" 
+                 ReadOnly="false" 
+                 EditDialogOptions="editDialogOptions"
+                 RowsPerPage="10">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Destinos</MudText>
+            <MudSpacer />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => dataGrid.ReloadServerData())" StartIcon="@Icons.Material.Filled.Refresh">Actualizar</MudButton>
+        </ToolBarContent>
+        <Columns>
+            <PropertyColumn Property="x => x.DestinationId" Title="ID" Sortable="true" Filterable="false" Editable="false" />
+            <PropertyColumn Property="x => x.Name" Title="Nombre" Sortable="true" Filterable="true">
+                <EditTemplate>
+                    <MudTextField @bind-Value="context.Item.Name" Label="Nombre" Required="true" RequiredError="El nombre es obligatorio." Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" Validation="@(new Func<string, IEnumerable<string>>(value => ValidateProperty(nameof(UpdateDestinationDto.Name), value)))" />
+                </EditTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.Code" Title="Código" Sortable="true" Filterable="true">
+                <EditTemplate>
+                    <MudTextField @bind-Value="context.Item.Code" Label="Código" Required="true" RequiredError="El código es obligatorio." Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" Validation="@(new Func<string, IEnumerable<string>>(value => ValidateProperty(nameof(UpdateDestinationDto.Code), value)))" />
+                </EditTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.City" Title="Ciudad" Sortable="true" Filterable="true">
+                <EditTemplate>
+                    <MudTextField @bind-Value="context.Item.City" Label="Ciudad" Required="true" RequiredError="La ciudad es obligatoria." Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" Validation="@(new Func<string, IEnumerable<string>>(value => ValidateProperty(nameof(UpdateDestinationDto.City), value)))" />
+                </EditTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.Region" Title="Región" Sortable="true" Filterable="true">
+                <EditTemplate>
+                    <MudTextField @bind-Value="context.Item.Region" Label="Región" Required="true" RequiredError="La región es obligatoria." Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" Validation="@(new Func<string, IEnumerable<string>>(value => ValidateProperty(nameof(UpdateDestinationDto.Region), value)))" />
+                </EditTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.Country" Title="País" Sortable="true" Filterable="true">
+                <EditTemplate>
+                    <MudTextField @bind-Value="context.Item.Country" Label="País" Required="true" RequiredError="El país es obligatorio." Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" Validation="@(new Func<string, IEnumerable<string>>(value => ValidateProperty(nameof(UpdateDestinationDto.Country), value)))" />
+                </EditTemplate>
+            </PropertyColumn>
+            <TemplateColumn Title="Zona Horaria" CellClass="text-end text-md-start" Sortable="false" Filterable="false">
+                <CellTemplate>
+                    @context.Item.TimeZoneDisplayName
+                </CellTemplate>
+                <EditTemplate>
+                    <MudSelect @bind-Value="context.Item.TimeZoneId" Label="Zona Horaria" Variant="Variant.Outlined" Required="true" RequiredError="La zona horaria es obligatoria." T="string" Margin="Margin.Dense" Immediate="true">
+                        @foreach (var tz in TimeZoneInfo.GetSystemTimeZones())
                         {
-                            var pageNum = i + 1;
-                            var pageIndexCopy = i; // Fix: capture value for lambda
-                            <MudButton Variant="Variant.Text" Color="@(i == pageIndex ? Color.Primary : Color.Default)" OnClick="() => GoToPage(pageIndexCopy)">@pageNum</MudButton>
+                            <MudSelectItem Value="@tz.Id">@tz.DisplayName</MudSelectItem>
                         }
-                    }
-                    <MudButton Variant="Variant.Outlined" Disabled="pagedDestinations == null || pageIndex >= pagedDestinations.TotalPages - 1" OnClick="NextPage">Siguiente</MudButton>
-                </div>
-            </MudItem>
-            <MudItem xs="12" sm="4" md="3">
-                <MudSelect T="int" @bind-Value="pageSize" Label="Tamaño de página" Dense="true" Style="width:120px">
-                    <MudSelectItem Value="5">5</MudSelectItem>
-                    <MudSelectItem Value="10">10</MudSelectItem>
-                    <MudSelectItem Value="20">20</MudSelectItem>
-                </MudSelect>
-            </MudItem>
-        </MudGrid>
-    </MudContainer>
+                    </MudSelect>
+                </EditTemplate>
+            </TemplateColumn>
+            <TemplateColumn CellClass="w-auto text-nowrap text-md-center justify-end align-center" Sortable="false" Filterable="false">
+                <CellTemplate>
+                    <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Filled.Edit" OnClick="@(() => context.Actions.StartEditingItemAsync())" />
+                    <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => HandleDeleteDestination(context.Item))" />
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager T="DestinationEditModel" PageSizeOptions="new int[] { 5, 10, 25, 50, 100 }" />
+        </PagerContent>
+    </MudDataGrid>
 </MudContainer>
 
 @code {
-    [Parameter, SupplyParameterFromQuery]
-    public string searchName
-    {
-        get => _searchName;
-        set
-        {
-            if (_searchName != value)
-            {
-                _searchName = value;
-                pageIndex = 0;
-                UpdateUrl();
-                DebounceReload();
-            }
-        }
-    }
-    private string _searchName = "";
-    [Parameter, SupplyParameterFromQuery]
-    public string searchCode
-    {
-        get => _searchCode;
-        set
-        {
-            if (_searchCode != value)
-            {
-                _searchCode = value;
-                pageIndex = 0;
-                UpdateUrl();
-                DebounceReload();
-            }
-        }
-    }
-    private string _searchCode = "";
-    [Parameter, SupplyParameterFromQuery]
-    public string searchCity
-    {
-        get => _searchCity;
-        set
-        {
-            if (_searchCity != value)
-            {
-                _searchCity = value;
-                pageIndex = 0;
-                UpdateUrl();
-                DebounceReload();
-            }
-        }
-    }
-    private string _searchCity = "";
-    [Parameter, SupplyParameterFromQuery]
-    public string searchRegion
-    {
-        get => _searchRegion;
-        set
-        {
-            if (_searchRegion != value)
-            {
-                _searchRegion = value;
-                pageIndex = 0;
-                UpdateUrl();
-                DebounceReload();
-            }
-        }
-    }
-    private string _searchRegion = "";
-    [Parameter, SupplyParameterFromQuery]
-    public string searchCountry
-    {
-        get => _searchCountry;
-        set
-        {
-            if (_searchCountry != value)
-            {
-                _searchCountry = value;
-                pageIndex = 0;
-                UpdateUrl();
-                DebounceReload();
-            }
-        }
-    }
-    private string _searchCountry = "";
-    [Parameter, SupplyParameterFromQuery]
-    public int pageIndex
-    {
-        get => _pageIndex;
-        set
-        {
-            int newIndex = value < 0 ? 0 : value;
-            if (_pageIndex != newIndex)
-            {
-                _pageIndex = newIndex;
-                UpdateUrl();
-                _ = ReloadAsync();
-            }
-        }
-    }
-    private int _pageIndex = 0;
-    [Parameter, SupplyParameterFromQuery]
-    public int pageSize
-    {
-        get => _pageSize;
-        set
-        {
-            int newSize = value <= 0 ? 10 : value;
-            if (_pageSize != newSize)
-            {
-                _pageSize = newSize;
-                pageIndex = 0;
-                UpdateUrl();
-                _ = ReloadAsync();
-            }
-        }
-    }
-    private int _pageSize = 10;
-    string sortLabel = "";
-    MudBlazor.SortDirection sortDirection = MudBlazor.SortDirection.None;
+    private MudDataGrid<DestinationEditModel> dataGrid = null!;
+    private MudForm createForm = null!;
+    private CreateDestinationDto createModel = new();
 
-    PagedResult<Destination>? pagedDestinations;
-
-    // Add Destination
-    MudForm addForm;
-    CreateDestinationDto newDestination = new() { TimeZone = TimeZoneInfo.Utc };
-    bool isAddValid = true;
-
-    // Delete
-    int deleteId;
-
-    // Debounce timer
-    System.Timers.Timer? debounceTimer;
-    const int DebounceDelay = 400;
-
-    private string? lastErrorMessage;
-
-    protected override async Task OnInitializedAsync()
+    private DialogOptions editDialogOptions = new()
     {
-        await ReloadAsync();
-    }
+        MaxWidth = MaxWidth.Medium,
+        FullWidth = true,
+        CloseButton = true,
+        Position = DialogPosition.Center,
+        CloseOnEscapeKey = true
+    };
 
-    void UpdateUrl()
+    public class DestinationEditModel
     {
-        var uri = NavigationManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        public int DestinationId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Code { get; set; } = string.Empty;
+        public string City { get; set; } = string.Empty;
+        public string Region { get; set; } = string.Empty;
+        public string Country { get; set; } = string.Empty;
+        public string TimeZoneId { get; set; } = TimeZoneInfo.Utc.Id;
+        public string TimeZoneDisplayName => TimeZoneInfo.FindSystemTimeZoneById(TimeZoneId).DisplayName;
+
+        public static DestinationEditModel FromDestination(Destination destination) => new()
         {
-            [nameof(pageIndex)] = pageIndex,
-            [nameof(pageSize)] = pageSize,
-            [nameof(searchName)] = string.IsNullOrWhiteSpace(searchName) ? null : searchName,
-            [nameof(searchCode)] = string.IsNullOrWhiteSpace(searchCode) ? null : searchCode,
-            [nameof(searchCity)] = string.IsNullOrWhiteSpace(searchCity) ? null : searchCity,
-            [nameof(searchRegion)] = string.IsNullOrWhiteSpace(searchRegion) ? null : searchRegion,
-            [nameof(searchCountry)] = string.IsNullOrWhiteSpace(searchCountry) ? null : searchCountry
-        });
-        NavigationManager.NavigateTo(uri, replace: true);
-    }
-
-    async Task ReloadAsync()
-    {
-        lastErrorMessage = null;
-        var sortBy = sortLabel switch
-        {
-            nameof(Destination.Name) => DestinationSearchSortBy.Name,
-            nameof(Destination.Code) => DestinationSearchSortBy.Code,
-            nameof(Destination.City) => DestinationSearchSortBy.City,
-            nameof(Destination.Region) => DestinationSearchSortBy.Region,
-            nameof(Destination.Country) => DestinationSearchSortBy.Country,
-            _ => (DestinationSearchSortBy?)null
+            DestinationId = destination.DestinationId,
+            Name = destination.Name,
+            Code = destination.Code,
+            City = destination.City,
+            Region = destination.Region,
+            Country = destination.Country,
+            TimeZoneId = destination.TimeZone?.Id ?? TimeZoneInfo.Utc.Id
         };
-        var result = await DestinationService.SearchDestinationsAsync(pageIndex, pageSize, searchName, searchCode, searchCity, searchRegion, searchCountry, sortBy, sortDirection == MudBlazor.SortDirection.Descending);
-        bool clamped = false;
-        result.IfValue(paged =>
-        {
-            pagedDestinations = paged;
-            if (paged.TotalPages == 0)
-            {
-                if (pageIndex != 0) { pageIndex = 0; clamped = true; }
-            }
-            else if (pageIndex >= paged.TotalPages)
-            {
-                pageIndex = paged.TotalPages - 1;
-                clamped = true;
-            }
-            pageIndex = paged.PageNumber;
-        })
-        .IfError(error => {
-            lastErrorMessage = error ?? "Error al cargar destinos";
-            Snackbar.Add(lastErrorMessage, MudBlazor.Severity.Error);
-        });
-        StateHasChanged();
-        if (clamped)
-        {
-            UpdateUrl();
-            await ReloadAsync();
-        }
-    }
 
-    void PrevPage()
-    {
-        if (pageIndex > 0)
+        public UpdateDestinationDto ToUpdateDto() => new()
         {
-            pageIndex = pageIndex - 1;
-        }
-    }
-
-    void NextPage()
-    {
-        if (pagedDestinations != null && pageIndex < pagedDestinations.TotalPages - 1)
-        {
-            pageIndex = pageIndex + 1;
-        }
-    }
-
-    void GoToPage(int idx)
-    {
-        if (pagedDestinations != null && idx >= 0 && idx < pagedDestinations.TotalPages)
-        {
-            pageIndex = idx;
-        }
-    }
-
-    void OnSortChanged(string label, MudBlazor.SortDirection direction)
-    {
-        sortLabel = label;
-        sortDirection = direction;
-        pageIndex = 0;
-        UpdateUrl();
-        DebounceReload();
-    }
-
-    void OnPageSizeChanged(int newSize)
-    {
-        pageSize = newSize;
-    }
-
-    void DebounceReload()
-    {
-        debounceTimer?.Stop();
-        debounceTimer?.Dispose();
-        debounceTimer = new System.Timers.Timer(DebounceDelay);
-        debounceTimer.Elapsed += async (_, __) =>
-        {
-            debounceTimer?.Stop();
-            debounceTimer?.Dispose();
-            debounceTimer = null;
-            await InvokeAsync(ReloadAsync);
+            DestinationId = DestinationId,
+            Name = Name,
+            Code = Code,
+            City = City,
+            Region = Region,
+            Country = Country,
+            TimeZone = TimeZoneInfo.FindSystemTimeZoneById(TimeZoneId)
         };
-        debounceTimer.AutoReset = false;
-        debounceTimer.Start();
     }
 
-    async Task AddDestinationAsync()
+    private IEnumerable<string> ValidateProperty(string propertyName, object? value)
     {
-        lastErrorMessage = null;
-        var result = await DestinationService.AddDestinationAsync(newDestination);
-        result.IfSuccess(() =>
+        var tempDto = new UpdateDestinationDto();
+        var property = typeof(UpdateDestinationDto).GetProperty(propertyName);
+        property?.SetValue(tempDto, value);
+        var validationContext = new ValidationContext(tempDto) { MemberName = propertyName };
+        var validationResults = new List<ValidationResult>();
+        var propertyValue = property?.GetValue(tempDto);
+        var attributes = property?.GetCustomAttributes(typeof(ValidationAttribute), true).Cast<ValidationAttribute>();
+        if (attributes != null)
         {
-            Snackbar.Add("Destino agregado", MudBlazor.Severity.Success);
-            newDestination = new() { TimeZone = TimeZoneInfo.Utc };
-            _ = ReloadAsync();
-        })
-        .IfFailure(error => {
-            lastErrorMessage = error ?? "No se pudo agregar el destino";
-            Snackbar.Add(lastErrorMessage, MudBlazor.Severity.Error);
-            StateHasChanged();
-        });
-    }
-
-    async Task ConfirmDelete(int id)
-    {
-        deleteId = id;
-        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small };
-        var dialog = await DialogService.ShowAsync<DeleteConfirmationDialog>("Confirmar eliminación", options);
-        var result = await dialog.Result;
-        if (result != null && !result.Canceled)
-        {
-            await DeleteDestinationAsync();
-        }
-    }
-
-    async Task DeleteDestinationAsync()
-    {
-        lastErrorMessage = null;
-        var result = await DestinationService.DeleteDestinationAsync(deleteId);
-        result.IfSuccess(() =>
-        {
-            Snackbar.Add("Destino eliminado", MudBlazor.Severity.Success);
-            _ = ReloadAsync();
-        })
-        .IfFailure(error => {
-            lastErrorMessage = error ?? "No se pudo eliminar el destino";
-            Snackbar.Add(lastErrorMessage, MudBlazor.Severity.Error);
-            StateHasChanged();
-        });
-    }
-
-    // Edit dialog
-    private async Task EditDestination(int id)
-    {
-        lastErrorMessage = null;
-        // Get destination by id
-        var result = await DestinationService.GetDestinationByIdAsync(id);
-        result.Match(
-            onValue: async dest =>
+            foreach (var attribute in attributes)
             {
-                var dto = new UpdateDestinationDto
-                {
-                    Id = dest.DestinationId,
-                    Name = dest.Name,
-                    Code = dest.Code,
-                    City = dest.City,
-                    Region = dest.Region,
-                    Country = dest.Country,
-                    TimeZone = dest.TimeZone
-                };
-                var parameters = new DialogParameters { ["editDestination"] = dto };
-                var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small };
-                var dialog = await DialogService.ShowAsync<DestinationEditDialog>("Editar Destino", parameters, options);
-                var dialogResult = await dialog.Result;
-                if (dialogResult != null && !dialogResult.Canceled)
-                {
-                    await ReloadAsync();
-                }
+                var result = attribute.GetValidationResult(propertyValue, validationContext);
+                if (result != ValidationResult.Success && result != null)
+                    validationResults.Add(result);
+            }
+        }
+        return validationResults.Select(r => r.ErrorMessage ?? string.Empty);
+    }
+
+    private IEnumerable<string> ValidateCreateModel(object model)
+    {
+        var validationContext = new ValidationContext(model);
+        var validationResults = new List<ValidationResult>();
+        Validator.TryValidateObject(model, validationContext, validationResults, true);
+        return validationResults.Select(r => r.ErrorMessage ?? string.Empty);
+    }
+
+    private async Task<GridData<DestinationEditModel>> ServerReload(GridState<DestinationEditModel> state)
+    {
+        var searchRequest = new DestinationSearchRequestDto
+        {
+            PaginationOptions = new PaginationOptions
+            {
+                PageNumber = state.Page + 1,
+                PageSize = state.PageSize
             },
-            onEmpty: () => Snackbar.Add("Destino no encontrado", MudBlazor.Severity.Error),
-            onError: error => Snackbar.Add(error ?? "Error al cargar destino", MudBlazor.Severity.Error)
-        );
+            OrderingOptions = null
+        };
+        foreach (var filterDefinition in state.FilterDefinitions)
+        {
+            var columnTitle = filterDefinition.Title ?? filterDefinition.Column?.PropertyName ?? string.Empty;
+            var filterValue = filterDefinition.Value?.ToString();
+            if (string.IsNullOrWhiteSpace(filterValue)) continue;
+            switch (columnTitle?.ToLower())
+            {
+                case "name":
+                case "nombre": searchRequest.Name = filterValue; break;
+                case "code":
+                case "código": searchRequest.Code = filterValue; break;
+                case "city":
+                case "ciudad": searchRequest.City = filterValue; break;
+                case "region":
+                case "región": searchRequest.Region = filterValue; break;
+                case "country":
+                case "país": searchRequest.Country = filterValue; break;
+            }
+        }
+        if (state.SortDefinitions.Any())
+        {
+            var primarySort = state.SortDefinitions.First();
+            var propertyName = primarySort.SortBy?.ToLower() ?? string.Empty;
+            DestinationOrderBy orderBy = propertyName switch
+            {
+                "destinationid" => DestinationOrderBy.DestinationId,
+                "name" => DestinationOrderBy.Name,
+                "code" => DestinationOrderBy.Code,
+                "city" => DestinationOrderBy.City,
+                "region" => DestinationOrderBy.Region,
+                "country" => DestinationOrderBy.Country,
+                _ => DestinationOrderBy.DestinationId
+            };
+            searchRequest.OrderingOptions = new OrderingOptionsDto<DestinationOrderBy>
+            {
+                OrderBy = orderBy,
+                Ascending = !primarySort.Descending
+            };
+        }
+        try
+        {
+            var result = await DestinationService.SearchDestinationsAsync(searchRequest);
+            return new GridData<DestinationEditModel>
+            {
+                Items = result.Items.Select(DestinationEditModel.FromDestination),
+                TotalItems = result.TotalCount
+            };
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al cargar destinos: {ex.Message}", Severity.Error);
+            return new GridData<DestinationEditModel> { Items = [], TotalItems = 0 };
+        }
     }
 
-    private async Task OnCountryChanged(string value)
+    private async Task HandleCommittedItemChanges(DestinationEditModel item)
     {
-        newDestination.Country = value;
-        newDestination.Region = string.Empty;
-        newDestination.City = string.Empty;
-        await InvokeAsync(StateHasChanged);
+        var updateDto = item.ToUpdateDto();
+        var updateValidationContext = new ValidationContext(updateDto);
+        var updateValidationResults = new List<ValidationResult>();
+        if (!Validator.TryValidateObject(updateDto, updateValidationContext, updateValidationResults, true))
+        {
+            var errors = string.Join(", ", updateValidationResults.Select(r => r.ErrorMessage));
+            Snackbar.Add($"Errores de validación: {errors}", Severity.Error);
+            return;
+        }
+        try
+        {
+            await DestinationService.UpdateDestinationAsync(updateDto);
+            Snackbar.Add("Destino actualizado correctamente", Severity.Success);
+            await dataGrid.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al actualizar destino: {ex.Message}", Severity.Error);
+            await dataGrid.ReloadServerData();
+        }
     }
-    private async Task OnRegionChanged(string value)
+
+    private void HandleCanceledEditingItem(DestinationEditModel item) => _ = dataGrid.ReloadServerData();
+
+    private async Task HandleCreateDestination()
     {
-        newDestination.Region = value;
-        newDestination.City = string.Empty;
-        await InvokeAsync(StateHasChanged);
+        await createForm.Validate();
+        if (!createForm.IsValid)
+        {
+            Snackbar.Add("Por favor, corrija los errores del formulario", Severity.Warning);
+            return;
+        }
+        try
+        {
+            await DestinationService.AddDestinationAsync(createModel);
+            Snackbar.Add("Destino creado correctamente", Severity.Success);
+            ClearCreateForm();
+            await dataGrid.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al crear destino: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task HandleDeleteDestination(DestinationEditModel item)
+    {
+        try
+        {
+            await DestinationService.DeleteDestinationAsync(item.DestinationId);
+            Snackbar.Add("Destino eliminado correctamente", Severity.Success);
+            await dataGrid.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al eliminar destino: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void ClearCreateForm()
+    {
+        createModel = new CreateDestinationDto();
+        createForm?.ResetValidation();
     }
 }

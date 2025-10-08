@@ -9,10 +9,10 @@ namespace GeneralReservationSystem.Application.Entities
     public class Driver
     {
         public int DriverId { get; set; }
-        public required int IdentificationNumber { get; set; }
-        public required string FirstName { get; set; }
-        public required string LastName { get; set; }
-        public required string LicenseNumber { get; set; }
-        public required DateTime LicenseExpiryDate { get; set; }
+        public int IdentificationNumber { get; set; }
+        public string FirstName { get; set; } = null!;
+        public string LastName { get; set; } = null!;
+        public string LicenseNumber { get; set; } = null!;
+        public DateTime LicenseExpiryDate { get; set; }
     }
 }

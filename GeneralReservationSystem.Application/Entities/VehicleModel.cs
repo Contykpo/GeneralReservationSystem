@@ -9,7 +9,7 @@ namespace GeneralReservationSystem.Application.Entities
     public class VehicleModel
     {
         public int VehicleModelId { get; set; }
-        public required string Name { get; set; }
-        public required string Manufacturer { get; set; }
+        public string Name { get; set; } = null!;
+        public string Manufacturer { get; set; } = null!;
     }
 }

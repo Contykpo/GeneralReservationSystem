@@ -6,6 +6,9 @@ DECLARE @MigrationNameIdentifier NVARCHAR(256) = '1_reservation_schemas';
 -- Check if this migration was already applied
 IF NOT EXISTS (SELECT 1 FROM __migrations WHERE MigrationName = @MigrationNameIdentifier)
 BEGIN
+    SET QUOTED_IDENTIFIER ON;
+    SET ANSI_NULLS ON;
+
     -- Create Driver table
     IF OBJECT_ID(N'Driver', 'U') IS NULL
     BEGIN
@@ -53,16 +56,21 @@ BEGIN
         CREATE TABLE Destination (
             DestinationId INT IDENTITY(1,1) NOT NULL,
             Name NVARCHAR(100) NOT NULL,
-            NormalizedName NVARCHAR(100) NOT NULL,
+            -- NormalizedName NVARCHAR(100) NOT NULL,
+            NormalizedName AS UPPER(LTRIM(RTRIM(Name))) PERSISTED,
             Code NVARCHAR(10) NOT NULL,
-            NormalizedCode NVARCHAR(10) NOT NULL,
+            -- NormalizedCode NVARCHAR(10) NOT NULL,
+            NormalizedCode AS UPPER(LTRIM(RTRIM(Code))) PERSISTED,
             City NVARCHAR(50) NOT NULL,
-            NormalizedCity NVARCHAR(50) NOT NULL,
+            -- NormalizedCity NVARCHAR(50) NOT NULL,
+            NormalizedCity AS UPPER(LTRIM(RTRIM(City))) PERSISTED,
             Region NVARCHAR(50) NOT NULL,
-            NormalizedRegion NVARCHAR(50) NOT NULL,
+            -- NormalizedRegion NVARCHAR(50) NOT NULL,
+            NormalizedRegion AS UPPER(LTRIM(RTRIM(Region))) PERSISTED,
             Country NVARCHAR(50) NOT NULL,
-            NormalizedCountry NVARCHAR(50) NOT NULL,
-            TimeZone NVARCHAR(100) NOT NULL,
+            -- NormalizedCountry NVARCHAR(50) NOT NULL,
+            NormalizedCountry AS UPPER(LTRIM(RTRIM(Country))) PERSISTED,
+            TimeZone NVARCHAR(50) NOT NULL,
             CONSTRAINT PK_Destination PRIMARY KEY (DestinationId),
             CONSTRAINT UQ_Destination_Code UNIQUE (Code)
         );
@@ -150,60 +158,6 @@ BEGIN
         BEGIN
             DELETE FROM Reservation WHERE SeatId IN (SELECT SeatId FROM deleted);
         END');
-    END
-
-    -- Create view for available seats
-    IF OBJECT_ID(N'TripAvailableSeats', 'V') IS NULL
-    BEGIN
-        EXEC('CREATE VIEW TripAvailableSeats AS
-        SELECT s.SeatId, t.TripId, s.SeatRow, s.SeatColumn, s.IsAtWindow, s.IsAtAisle, s.IsInFront, s.IsInBack, s.IsAccessible
-        FROM Seat s
-        JOIN VehicleModel vm ON s.VehicleModelId = vm.VehicleModelId
-        JOIN Vehicle v ON vm.VehicleModelId = v.VehicleModelId
-        JOIN Trip t ON v.VehicleId = t.VehicleId
-        WHERE s.SeatId NOT IN (SELECT SeatId FROM Reservation WHERE TripId = t.TripId)');
-    END
-
-    -- Create TripDetailsView for trip search and details
-    IF OBJECT_ID(N'TripDetailsView', 'V') IS NULL
-    BEGIN
-        EXEC('CREATE VIEW TripDetailsView AS
-        WITH SeatCounts AS (
-            SELECT
-                t.TripId,
-                COUNT(s.SeatId) AS TotalSeats,
-                COUNT(s.SeatId) - COUNT(r.SeatId) AS AvailableSeats
-            FROM Trip t
-            JOIN Vehicle v ON t.VehicleId = v.VehicleId
-            JOIN Seat s ON v.VehicleModelId = s.VehicleModelId
-            LEFT JOIN Reservation r ON r.SeatId = s.SeatId AND r.TripId = t.TripId
-            GROUP BY t.TripId
-        )
-        SELECT
-            t.TripId,
-            t.VehicleId,
-            t.DepartureId,
-            t.DestinationId,
-            t.DriverId,
-            t.DepartureTime,
-            t.ArrivalTime,
-            dep.Name AS DepartureName,
-            dep.City AS DepartureCity,
-            dep.Region AS DepartureRegion,
-            dep.Country AS DepartureCountry,
-            dep.TimeZone AS DepartureTimeZone,
-            dest.Name AS DestinationName,
-            dest.City AS DestinationCity,
-            dest.Region AS DestinationRegion,
-            dest.Country AS DestinationCountry,
-            dest.TimeZone AS DestinationTimeZone,
-            sc.TotalSeats,
-            sc.AvailableSeats
-        FROM Trip t
-        JOIN Vehicle v ON t.VehicleId = v.VehicleId
-        JOIN Destination dep ON t.DepartureId = dep.DestinationId
-        JOIN Destination dest ON t.DestinationId = dest.DestinationId
-        LEFT JOIN SeatCounts sc ON t.TripId = sc.TripId');
     END
 
     -- Record migration

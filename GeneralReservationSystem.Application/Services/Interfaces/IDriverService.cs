@@ -6,14 +6,12 @@ namespace GeneralReservationSystem.Application.Services.Interfaces
 {
     public interface IDriverService
     {
-        Task<OptionalResult<PagedResult<Driver>>> SearchDriversAsync(int pageIndex, int pageSize, string? firstName = null,
-            string? lastName = null, string? licenseNumber = null, string? phoneNumber = null,
-            Repositories.Interfaces.DriverSearchSortBy? sortBy = null, bool descending = false);
-        Task<OptionalResult<Driver>> GetDriverByIdAsync(int id);
-        Task<OptionalResult<Driver>> GetDriverByLicenseNumberAsync(string licenseNumber);
-        Task<OptionalResult<Driver>> GetDriverByIdentificationNumberAsync(int identificationNumber);
-        Task<OperationResult> AddDriverAsync(CreateDriverDto driverDto);
-        Task<OperationResult> UpdateDriverAsync(UpdateDriverDto driverDto);
-        Task<OperationResult> DeleteDriverAsync(int id);
+        Task<PagedResult<Driver>> SearchDriversAsync(DriverSearchRequestDto driverSearchRequestDto, CancellationToken cancellationToken = default);
+        Task<Driver?> GetDriverByIdAsync(int id, CancellationToken cancellationToken = default);
+        Task<Driver?> GetDriverByLicenseNumberAsync(string licenseNumber, CancellationToken cancellationToken = default);
+        Task<Driver?> GetDriverByIdentificationNumberAsync(int identificationNumber, CancellationToken cancellationToken = default);
+        Task AddDriverAsync(CreateDriverDto driverDto, CancellationToken cancellationToken = default);
+        Task UpdateDriverAsync(UpdateDriverDto driverDto, CancellationToken cancellationToken = default);
+        Task DeleteDriverAsync(int id, CancellationToken cancellationToken = default);
     }
 }

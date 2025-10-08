@@ -9,8 +9,8 @@ namespace GeneralReservationSystem.Application.Entities
     public class Vehicle
     {
         public int VehicleId { get; set; }
-        public required int VehicleModelId { get; set; }
-        public required string LicensePlate { get; set; }
-        public required string Status { get; set; } // Possible values: Active, Inactive, Maintenance
+        public int VehicleModelId { get; set; }
+        public string LicensePlate { get; set; } = null!;
+        public string Status { get; set; } = null!; // Possible values: Active, Inactive, Maintenance
     }
 }

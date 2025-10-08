@@ -6,12 +6,12 @@ namespace GeneralReservationSystem.Application.Services.Interfaces
 {
     public interface ISeatService
     {
-        Task<OptionalResult<Seat>> GetSeatByIdAsync(int id);
-        Task<OperationResult> AddSeatAsync(CreateSeatDto seatDto);
-        Task<OperationResult> AddSeatsAsync(IEnumerable<CreateSeatDto> seatDtos);
-        Task<OperationResult> UpdateSeatAsync(UpdateSeatDto seatDto);
-        Task<OperationResult> UpdateSeatsAsync(IEnumerable<UpdateSeatDto> seatDtos);
-        Task<OperationResult> DeleteSeatAsync(int id);
-        Task<OperationResult> DeleteSeatsAsync(IEnumerable<int> ids);
+        Task<Seat?> GetSeatByIdAsync(int id, CancellationToken cancellationToken = default);
+        Task AddSeatAsync(CreateSeatDto seatDto, CancellationToken cancellationToken = default);
+        Task<int> AddSeatsAsync(IEnumerable<CreateSeatDto> seatDtos, CancellationToken cancellationToken = default); // Returns number of seats added
+        Task UpdateSeatAsync(UpdateSeatDto seatDto, CancellationToken cancellationToken = default);
+        Task<int> UpdateSeatsAsync(IEnumerable<UpdateSeatDto> seatDtos, CancellationToken cancellationToken = default); // Returns number of seats updated
+        Task DeleteSeatAsync(int id, CancellationToken cancellationToken = default);
+        Task<int> DeleteSeatsAsync(IEnumerable<int> ids, CancellationToken cancellationToken = default); // Returns number of seats deleted
     }
 }

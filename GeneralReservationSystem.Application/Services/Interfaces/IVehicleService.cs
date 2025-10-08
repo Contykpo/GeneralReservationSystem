@@ -6,13 +6,11 @@ namespace GeneralReservationSystem.Application.Services.Interfaces
 {
     public interface IVehicleService
     {
-        Task<OptionalResult<Vehicle>> GetVehicleByIdAsync(int id);
-        Task<OptionalResult<VehicleModel>> GetModelByIdAsync(int id);
-        Task<OptionalResult<PagedResult<VehicleDetailsDto>>> SearchVehiclesAsync(int pageIndex, int pageSize, string? modelName = null,
-            string? manufacturer = null, string? licensePlate = null, Repositories.Interfaces.VehicleSearchSortBy? sortBy = null,
-            bool descending = false);
-        Task<OperationResult> AddVehicleAsync(CreateVehicleDto vehicleDto);
-        Task<OperationResult> UpdateVehicleAsync(UpdateVehicleDto vehicleDto);
-        Task<OperationResult> DeleteVehicleAsync(int id);
+        Task<Vehicle?> GetVehicleByIdAsync(int id, CancellationToken cancellationToken = default);
+        Task<VehicleModel?> GetModelOfVehicleByIdAsync(int id, CancellationToken cancellationToken = default);
+        Task<PagedResult<VehicleDetailsDto>> SearchVehiclesAsync(VehicleDetailsSearchRequestDto vehicleDetailsSearchRequestDto, CancellationToken cancellationToken = default);
+        Task AddVehicleAsync(CreateVehicleDto vehicleDto, CancellationToken cancellationToken = default);
+        Task UpdateVehicleAsync(UpdateVehicleDto vehicleDto, CancellationToken cancellationToken = default);
+        Task DeleteVehicleAsync(int id, CancellationToken cancellationToken = default);
     }
 }

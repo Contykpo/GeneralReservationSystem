@@ -3,7 +3,9 @@ using GeneralReservationSystem.Application.Entities;
 
 namespace GeneralReservationSystem.Application.Repositories.Interfaces
 {
-    public interface ISeatRepository
+    public interface ISeatRepository : IRepository<Seat> { }
+
+    /*public interface ISeatRepository
     {
         Task<OptionalResult<Seat>> GetByIdAsync(int id);
         Task<OperationResult> AddAsync(Seat seat);
@@ -12,5 +14,5 @@ namespace GeneralReservationSystem.Application.Repositories.Interfaces
         Task<OperationResult> UpdateMultipleAsync(IEnumerable<Seat> seats);
         Task<OperationResult> DeleteAsync(int id);
         Task<OperationResult> DeleteMultipleAsync(IEnumerable<int> ids);
-    }
+    }*/
 }

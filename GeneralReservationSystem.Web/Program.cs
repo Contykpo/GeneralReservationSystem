@@ -1,57 +1,40 @@
-using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication;
 using GeneralReservationSystem.Infrastructure;
 using GeneralReservationSystem.Infrastructure.Middleware;
-using GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations.Authentication;
 using GeneralReservationSystem.Web.Components;
-using GeneralReservationSystem.Web.Components.Account;
-using GeneralReservationSystem.Web.Data;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Options;
+using MudBlazor;
 using MudBlazor.Services;
-using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
-builder.Services.AddMudServices();
+builder.Services.AddMudServices(config =>
+{
+    config.SnackbarConfiguration.PositionClass = Defaults.Classes.Position.BottomRight;
+});
 
 // Register all default repositories via DI extension
 builder.Services.AddInfrastructureRepositories();
 
-//builder.Services.AddCascadingAuthenticationState();
-//builder.Services.AddScoped<IdentityUserAccessor>();
-//builder.Services.AddScoped<IdentityRedirectManager>();
-//builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
-
-//builder.Services.AddAuthentication(options =>
-//    {
-//        options.DefaultScheme = IdentityConstants.ApplicationScheme;
-//        options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
-//    })
-//    .AddIdentityCookies();
-
 builder.Services.AddAuthentication(Constants.AuthenticationScheme)
     .AddCookie(Constants.AuthenticationScheme, options =>
     {
-        options.LoginPath           = "/";
-        options.LogoutPath          = "/";
-        options.ExpireTimeSpan      = TimeSpan.FromHours(1);
-        options.Cookie.SameSite     = Microsoft.AspNetCore.Http.SameSiteMode.Strict;
-        options.Cookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.Always;
-        options.Cookie.Name         = Constants.CookieNames.SessionID;
-	});
+        options.LoginPath = "/";
+        options.LogoutPath = "/";
+        options.ExpireTimeSpan = TimeSpan.FromHours(1);
+        options.Cookie.SameSite = SameSiteMode.Strict;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.Name = Constants.CookieNames.SessionID;
+    });
 
 builder.Services.AddAuthorization();
 
-//builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
-//    .AddEntityFrameworkStores<ApplicationDbContext>()
-//    .AddSignInManager()
-//    .AddDefaultTokenProviders();
-
-//builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+// Explicitly configure antiforgery cookie options to match authentication cookie
+builder.Services.AddAntiforgery(options =>
+{
+    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+});
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -93,13 +76,10 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 
-// Add additional endpoints required by the Identity /Account Razor components.
-// app.MapAdditionalIdentityEndpoints();
-
 app.MapGet("/teraLogin", httpContext =>
 {
     var sessionId = httpContext.Request.Query["sessionId"];
-    
+
     if (Guid.TryParse(sessionId, out var sessionGuid))
     {
         httpContext.Response.Cookies.Append(
@@ -107,18 +87,18 @@ app.MapGet("/teraLogin", httpContext =>
             sessionGuid.ToString(),
             new CookieOptions
             {
-                HttpOnly    = true,
-                Secure      = true,
-                SameSite    = SameSiteMode.Strict,
-                Expires     = DateTimeOffset.UtcNow.AddHours(1)
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTimeOffset.UtcNow.AddHours(1)
             });
 
         httpContext.Response.Redirect("/");
-	}
+    }
     else
     {
         httpContext.Response.StatusCode = 400;
-	}
+    }
 
     return Task.CompletedTask;
 });

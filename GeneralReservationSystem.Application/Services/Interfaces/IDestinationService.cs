@@ -6,11 +6,10 @@ namespace GeneralReservationSystem.Application.Services.Interfaces
 {
     public interface IDestinationService
     {
-        Task<OptionalResult<PagedResult<Destination>>> SearchDestinationsAsync(int pageIndex, int pageSize, string? name = null, string? code = null,
-            string? city = null, string? region = null, string? country = null, Repositories.Interfaces.DestinationSearchSortBy? sortBy = null, bool descending = false);
-        Task<OptionalResult<Destination>> GetDestinationByIdAsync(int id);
-        Task<OperationResult> AddDestinationAsync(CreateDestinationDto destinationDto);
-        Task<OperationResult> UpdateDestinationAsync(UpdateDestinationDto destinationDto);
-        Task<OperationResult> DeleteDestinationAsync(int id);
+        Task<PagedResult<Destination>> SearchDestinationsAsync(DestinationSearchRequestDto destinationSearchRequestDto, CancellationToken cancellationToken = default);
+        Task<Destination?> GetDestinationByIdAsync(int id, CancellationToken cancellationToken = default);
+        Task AddDestinationAsync(CreateDestinationDto destinationDto, CancellationToken cancellationToken = default);
+        Task UpdateDestinationAsync(UpdateDestinationDto destinationDto, CancellationToken cancellationToken = default);
+        Task DeleteDestinationAsync(int id, CancellationToken cancellationToken = default);
     }
 }
