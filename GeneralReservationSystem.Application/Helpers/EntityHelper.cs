@@ -6,61 +6,52 @@ namespace GeneralReservationSystem.Application.Helpers
 {
     public static class EntityHelper
     {
-        public static string GetTableName<TEntity>()
+		public static string GetTableName(Type entityType)
+		{
+			var attr = entityType.TryGetAttribute<TableNameAttribute>();
+
+            return attr!.Name ?? entityType.Name;
+		}
+
+		public static string GetTableName<TEntity>() => GetTableName(typeof(TEntity));
+
+		public static PropertyInfo[] GetKeyProperties<TEntity>()
         {
-            var attr = typeof(TEntity).GetCustomAttribute<TableNameAttribute>();
+            var keys = ReflectionHelpers.GetPropertiesWithAttribute<TEntity, KeyAttribute>();
 
-            if (attr == null)
-                return typeof(TEntity).Name;
-
-            return attr.Name;
-        }
-
-        public static string GetTableName(Type entityType)
-        {
-            var attr = entityType.GetCustomAttribute<TableNameAttribute>();
-
-            if (attr == null)
-                return entityType.Name;
-
-            return attr.Name;
-        }
-
-        public static PropertyInfo[] GetKeyProperties<TEntity>()
-        {
-            var keys = typeof(TEntity).GetProperties()
-                .Where(p => p.GetCustomAttribute<KeyAttribute>() != null)
-                .ToArray();
-
-            if (!keys.Any())
+			if (!keys.Any())
                 throw new InvalidOperationException($"Entity {typeof(TEntity).Name} must have at least one [Key] property.");
 
             return keys;
         }
 
-        public static PropertyInfo[] GetComputedProperties<TEntity>()
-        {
-            return typeof(TEntity).GetProperties()
-                .Where(p => p.GetCustomAttribute<ComputedAttribute>() != null)
-                .ToArray();
-        }
+        public static PropertyInfo[] GetComputedProperties<TEntity>() => ReflectionHelpers.GetPropertiesWithAttribute<TEntity, ComputedAttribute>();
 
-        public static PropertyInfo[] GetNonComputedProperties<TEntity>()
-        {
-            return typeof(TEntity).GetProperties()
-                .Where(p => p.GetCustomAttribute<ComputedAttribute>() == null)
-                .ToArray();
-        }
+		public static PropertyInfo[] GetNonComputedProperties<TEntity>() => ReflectionHelpers.GetPropertiesWithoutAttribute<TEntity, ComputedAttribute>();
 
-        public static string GetColumnName<TEntity, TProperty>(Expression<Func<TEntity, TProperty>> propertyExpression)
+		public static string GetColumnName<TEntity, TProperty>(Expression<Func<TEntity, TProperty>> propertyExpression)
         {
-            if (propertyExpression.Body is not MemberExpression member)
-                throw new ArgumentException("Expression must be a member expression", nameof(propertyExpression));
+            ThrowHelpers.ThrowIfNull(propertyExpression, nameof(propertyExpression));
 
-            return GetColumnName((PropertyInfo)member.Member);
+            MemberExpression? me = propertyExpression.Body switch
+            {
+                MemberExpression m => m,
+                UnaryExpression u when u.Operand is MemberExpression m => m,
+                MethodCallExpression mc when mc.Object is MemberExpression m => m,
+                _ => null
+            };
+            
+			if (me is null)
+                throw new ArgumentException("Expression must be a member expression e => e.m", nameof(propertyExpression));
+
+            if(me.Member is not PropertyInfo pi)
+                throw new ArgumentException($"{nameof(MemberExpression)} must refer to a property, not a method or a field", nameof(propertyExpression));
+
+			return GetColumnName(pi);
         }
 
         public static string GetColumnName(PropertyInfo prop) =>
-            prop.GetCustomAttribute<ColumnNameAttribute>()?.Name ?? prop.Name;
+			//TODO: Tal vez sea mas conveniente tirar una excepcion si no tiene el atributo
+			prop.GetCustomAttribute<ColumnNameAttribute>()?.Name ?? prop.Name;
     }
 }
