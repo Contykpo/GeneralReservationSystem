@@ -8,8 +8,8 @@ namespace GeneralReservationSystem.Application.Entities
 {
     public class VehicleModel
     {
-        public int VehicleModelId { get; set; }
-        public required string Name { get; set; }
-        public required string Manufacturer { get; set; }
+        public int VehicleModelId { get; set; } = new int();
+        public string Name { get; set; } = string.Empty;
+        public string Manufacturer { get; set; } = string.Empty;
     }
 }
