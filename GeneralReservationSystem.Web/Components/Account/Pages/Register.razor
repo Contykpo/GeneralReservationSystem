@@ -1,6 +1,7 @@
 ﻿@page "/Account/Register"
 
-@using GeneralReservationSystem.Application.Entities.Authentication
+@* TODO: Debo arreglarlo, paciencia *@
+@*@using GeneralReservationSystem.Application.Entities.Authentication
 @using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication
 @using GeneralReservationSystem.Web.Helpers
 @using System.Text
@@ -101,9 +102,17 @@
 
             if (rows > 0)
             {
-                Snackbar.Add("Usuario creado exitosamente.", MudBlazor.Severity.Success);
-                NavigationManager.NavigateTo("/Account/Login", forceLoad: true);
-                return;
+                result.IfSuccess(async () =>
+                {
+                    // TODO: Might want to make IfSuccess async in the future, so that we can show some message for a few seconds before redirecting.
+                    // Snackbar.Add("¡Usuario creado exitosamente!", MudBlazor.Severity.Success);
+                    await Task.Delay(2000);
+                    NavigationManager.NavigateTo("/Account/Login", forceLoad: true);
+                })
+                .IfFailure(error =>
+                {
+                    Snackbar.Add($"No se pudo crear el usuario: {error}", MudBlazor.Severity.Error);
+                });
             }
 
             Snackbar.Add("No se pudo crear el usuario.", MudBlazor.Severity.Error);
@@ -154,4 +163,4 @@
             return result.Errors.Select(e => e.ErrorMessage);
         };
     }
-}
+}*@

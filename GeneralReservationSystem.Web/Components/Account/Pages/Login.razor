@@ -1,10 +1,12 @@
 ﻿@page "/Account/Login"
 
-@using GeneralReservationSystem.Application.Entities.Authentication
+@* TODO: Debo arreglarlo, paciencia *@
+@*@using GeneralReservationSystem.Application.Entities.Authentication
 @using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication
 @using GeneralReservationSystem.Web.Helpers
 @using Microsoft.AspNetCore.Identity
 @inject IUserRepository UserRepository
+@inject ISessionRepository SessionRepository
 @inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager
 @inject IHttpContextAccessor HttpContextAccessor
@@ -70,9 +72,8 @@
 
             var passwordHasher = new PasswordHashingHelper<ApplicationUser>();
 
-            var user = await UserRepository.GetByEmailAsync(loginUserData.EmailAddress.Trim().ToUpperInvariant());
-
-            if (user is null)
+            var result = await UserRepository.GetByEmailAsync(loginUserData.EmailAddress.ToUpperInvariant());
+            result.IfValue(async loginUser =>
             {
                 Snackbar.Add("No existe un usuario con este mail registrado.", MudBlazor.Severity.Warning);
                 return;
@@ -93,29 +94,40 @@
                     SessionInfo = string.Empty
                 };
 
-                // Persisting session may be implemented later (SessionRepository).
+                    await SessionRepository.CreateSessionAsync(userSession);
 
-                // Write the session cookie into the browser.
-                var context = HttpContextAccessor.HttpContext ?? throw new InvalidOperationException("No se pudo obtener el contexto HTTP.");
-                context.Response.Cookies.Append(
-                    "UserSessionId",
-                    userSession.SessionId.ToString(),
-                    new CookieOptions
-                    {
-                        HttpOnly = true,
-                        Secure = true,
-                        SameSite = SameSiteMode.Strict,
-                        Expires = userSession.ExpiresAt
-                    });
+                    // Write the session cookie into the browser.
+                    // var context = HttpContextAccessor.HttpContext ?? throw new InvalidOperationException("No se pudo obtener el contexto HTTP.");
+                    // context.Response.Cookies.Append(
+                    //     "UserSessionId",
+                    //     userSession.SessionId.ToString(),
+                    //     new CookieOptions
+                    //     {
+                    //         HttpOnly = true,
+                    //         Secure = true,
+                    //         SameSite = SameSiteMode.Strict,
+                    //         Expires = userSession.ExpiresAt
+                    //     });
 
-                Snackbar.Add("Login exitoso.", MudBlazor.Severity.Success);
-
-                NavigationManager.NavigateTo("/auth", forceLoad: true);
-            }
-            else
+                    // TODO: Add delay and success message.
+                    // Snackbar.Add("Login exitoso.", MudBlazor.Severity.Success);
+                    // await Task.Delay(2000);
+                        
+                    NavigationManager.NavigateTo($"/teraLogin?sessionId={userSession.SessionId}", forceLoad: true);
+                }
+                else
+                {
+                    Snackbar.Add("Contraseña incorrecta.", MudBlazor.Severity.Error);
+                }
+            })
+            .IfEmpty(() =>
             {
-                Snackbar.Add("Contraseña incorrecta.", MudBlazor.Severity.Error);
-            }
+                Snackbar.Add("No existe un usuario con este mail registrado.", MudBlazor.Severity.Warning);
+            })
+            .IfError(error =>
+            {
+                Snackbar.Add($"Se produjo el error: {error}", MudBlazor.Severity.Error);
+            });
         }
         catch (Exception ex)
         {
@@ -153,4 +165,4 @@
             return result.Errors.Select(e => e.ErrorMessage);
         };
     }
-}
+}*@

@@ -1,7 +1,10 @@
 ﻿@page "/"
 
+@inject IHttpContextAccessor httpContextAccessor
+
 <PageTitle>Inicio</PageTitle>
 
+@*<h1>Bienvenido al Sistema General de Reservas @UserName</h1>*@
 <h1>Bienvenido al Sistema General de Reservas</h1>
 
 <MudPaper Class="mt-4 p-4">
@@ -21,3 +24,14 @@
         </MudItem>
     </MudGrid>
 </MudPaper>
+
+@code {
+    // TODO: Debo arreglarlo, paciencia
+    /*private string UserName = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        var user = httpContextAccessor.HttpContext?.User;
+        UserName = user?.Identity?.Name ?? string.Empty;
+	}*/
+}
