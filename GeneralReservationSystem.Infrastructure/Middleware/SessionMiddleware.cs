@@ -1,71 +1,39 @@
-﻿using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication;
-using Microsoft.AspNetCore.Authentication;
+﻿using GeneralReservationSystem.Infrastructure.Helpers;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace GeneralReservationSystem.Infrastructure.Middleware
 {
-    public class SessionMiddleware
+    public class SessionMiddleware(RequestDelegate next)
     {
-        private readonly RequestDelegate _next;
-
-        public SessionMiddleware(RequestDelegate next)
+        public async Task InvokeAsync(HttpContext context)
         {
-            _next = next;
-        }
-
-        public async Task InvokeAsync(HttpContext context, IServiceProvider serviceProvider)
-        {
-            var sessionRepository = serviceProvider.GetService<ISessionRepository>();
-            var logger = serviceProvider.GetService<ILogger<SessionMiddleware>>();
-
-            if (sessionRepository == null)
+            if (context.Request.Cookies.TryGetValue(SessionHelper.CookieName, out var cookieValue))
             {
-                throw new Exception($"Unable to get {nameof(ISessionRepository)} service");
-            }
-
-            if (context.Request.Cookies.TryGetValue(Constants.CookieNames.SessionID, out var sessionIDCookieValue)
-                && Guid.TryParse(sessionIDCookieValue, out Guid sessionId))
-            {
-                var sessionWithUser = await sessionRepository.GetSessionWithUserAsync(sessionId);
-
-                if (sessionWithUser is (var session, var user))
+                try
                 {
-                    //TODO: Agregar roles del usuario
-
-                    // If ExpiresAt is set and in the past, consider the session expired
-                    if (session.ExpiresAt.HasValue && session.ExpiresAt.Value < DateTimeOffset.UtcNow)
+                    var userSession = JsonSerializer.Deserialize<UserSessionInfo>(cookieValue);
+                    if (userSession != null)
                     {
-                        logger?.LogDebug($"Session expired: {session.SessionId}");
-                    }
-                    else
-                    {
-                        var claims = new List<Claim>
+                        context.Items["UserSession"] = userSession;
+                        var claims = new[]
                         {
-                            new Claim(ClaimTypes.Name, user.UserName),
-                            new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString())
+                            new Claim(ClaimTypes.NameIdentifier, userSession.UserId.ToString()),
+                            new Claim(ClaimTypes.Name, userSession.UserName),
+                            new Claim(ClaimTypes.Email, userSession.Email),
+                            new Claim(ClaimTypes.Role, userSession.IsAdmin ? "Admin" : "User")
                         };
-
-                        var userClaims = new ClaimsIdentity(claims, "Session");
-                        var userIdentity = new ClaimsPrincipal(userClaims);
-
-                        await context.SignInAsync(
-                            Constants.AuthenticationScheme,
-                            userIdentity,
-                            new AuthenticationProperties { IsPersistent = true, ExpiresUtc = DateTimeOffset.UtcNow.AddDays(1) });
-
-                        logger?.LogDebug($"User Authenticated: {user.UserName}");
+                        var identity = new ClaimsIdentity(claims, "Cookie");
+                        context.User = new ClaimsPrincipal(identity);
                     }
                 }
-                else
+                catch
                 {
-                    logger?.LogDebug($"No session found for id {sessionId}");
+                    // Invalid cookie, ignore
                 }
             }
-
-            await _next(context);
+            await next(context);
         }
     }
 }

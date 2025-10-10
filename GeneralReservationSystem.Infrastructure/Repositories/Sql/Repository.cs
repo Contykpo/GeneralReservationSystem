@@ -10,22 +10,13 @@ using System.Text;
 
 namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
 {
-    public class Repository<T> : IRepository<T> where T : class, new()
+    public class Repository<T>(Func<DbConnection> connectionFactory, DbTransaction? transaction = null) : IRepository<T> where T : class, new()
     {
-        protected readonly Func<DbConnection> _connectionFactory;
-        protected readonly DbTransaction? _transaction;
-
         protected static readonly string _tableName = EntityHelper.GetTableName<T>();
         protected static readonly PropertyInfo[] _properties = typeof(T).GetProperties();
         protected static readonly PropertyInfo[] _keyProperties = EntityHelper.GetKeyProperties<T>();
         protected static readonly PropertyInfo[] _computedProperties = EntityHelper.GetComputedProperties<T>();
         protected static readonly PropertyInfo[] _nonComputedProperties = EntityHelper.GetNonComputedProperties<T>();
-
-        public Repository(Func<DbConnection> connectionFactory, DbTransaction? transaction = null)
-        {
-            _connectionFactory = connectionFactory;
-            _transaction = transaction;
-        }
 
         #region Helper Methods
 
@@ -89,13 +80,13 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
 
         public IQuery<T> Query()
         {
-            return new Query<T>(_connectionFactory, _transaction);
+            return new Query<T>(connectionFactory, transaction);
         }
 
         public async Task<IEnumerable<T>> GetAllAsync(CancellationToken cancellationToken = default)
         {
-            using var conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(_connectionFactory, cancellationToken);
-            using var cmd = SqlCommandHelper.CreateCommand(conn, _transaction);
+            using var conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(connectionFactory, cancellationToken);
+            using var cmd = SqlCommandHelper.CreateCommand(conn, transaction);
 
             cmd.CommandText = $"SELECT * FROM [{_tableName}]";
             using var reader = await SqlCommandHelper.ExecuteReaderAsync(cmd, cancellationToken);
@@ -109,10 +100,10 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
 
         public async Task<int> CreateAsync(T entity, CancellationToken cancellationToken = default)
         {
-            using var conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(_connectionFactory, cancellationToken);
-            using var cmd = SqlCommandHelper.CreateCommand(conn, _transaction);
+            using var conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(connectionFactory, cancellationToken);
+            using var cmd = SqlCommandHelper.CreateCommand(conn, transaction);
 
-            var hasOutput = _computedProperties.Any();
+            var hasOutput = _computedProperties.Length != 0;
             cmd.CommandText = SqlCommandHelper.BuildInsertStatement(_tableName, _nonComputedProperties, _computedProperties, (p, i) => $"@p{i}");
 
             AddEntityParameters(cmd, entity);
@@ -124,16 +115,16 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
 
         public async Task<int> CreateBulkAsync(IEnumerable<T> entities, CancellationToken cancellationToken = default)
         {
-            var entityList = entities as IList<T> ?? entities.ToList();
+            var entityList = entities as IList<T> ?? [.. entities];
             if (entityList.Count == 0) return 0;
             if (entityList.Count == 1)
                 return await CreateAsync(entityList[0], cancellationToken);
 
-            using var conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(_connectionFactory, cancellationToken);
-            using var cmd = SqlCommandHelper.CreateCommand(conn, _transaction);
+            using var conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(connectionFactory, cancellationToken);
+            using var cmd = SqlCommandHelper.CreateCommand(conn, transaction);
 
             var columns = _nonComputedProperties.Select(p => EntityHelper.GetColumnName(p)).ToArray();
-            var hasOutput = _computedProperties.Any();
+            var hasOutput = _computedProperties.Length != 0;
             var valueRows = new StringBuilder();
 
             for (int e = 0; e < entityList.Count; e++)
@@ -147,7 +138,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                     SqlCommandHelper.AddParameter(cmd, paramName, rawValue, prop.PropertyType);
                     valueNames.Add(paramName);
                 }
-                if (e > 0) valueRows.Append(",");
+                if (e > 0) valueRows.Append(',');
                 valueRows.Append("(" + string.Join(",", valueNames) + ")");
             }
 
@@ -162,11 +153,11 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
 
         public async Task<int> UpdateAsync(T entity, CancellationToken cancellationToken = default)
         {
-            using var conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(_connectionFactory, cancellationToken);
-            using var cmd = SqlCommandHelper.CreateCommand(conn, _transaction);
+            using var conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(connectionFactory, cancellationToken);
+            using var cmd = SqlCommandHelper.CreateCommand(conn, transaction);
 
             var setColumns = _nonComputedProperties.Where(p => !_keyProperties.Contains(p)).ToArray();
-            var hasOutput = _computedProperties.Any();
+            var hasOutput = _computedProperties.Length != 0;
 
             cmd.CommandText = SqlCommandHelper.BuildUpdateStatement(_tableName, setColumns, _keyProperties, _computedProperties, (p, i) => $"@set{i}", (p, i) => $"@key{i}");
 
@@ -187,16 +178,16 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
 
         public async Task<int> UpdateBulkAsync(IEnumerable<T> entities, CancellationToken cancellationToken = default)
         {
-            var entityList = entities as IList<T> ?? entities.ToList();
+            var entityList = entities as IList<T> ?? [.. entities];
             if (entityList.Count == 0) return 0;
             if (entityList.Count == 1)
                 return await UpdateAsync(entityList[0], cancellationToken);
 
-            using var conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(_connectionFactory, cancellationToken);
-            using var cmd = SqlCommandHelper.CreateCommand(conn, _transaction);
+            using var conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(connectionFactory, cancellationToken);
+            using var cmd = SqlCommandHelper.CreateCommand(conn, transaction);
 
             var setColumns = _nonComputedProperties.Where(p => !_keyProperties.Contains(p)).ToArray();
-            var hasOutput = _computedProperties.Any();
+            var hasOutput = _computedProperties.Length != 0;
             var setClauses = new List<string>();
 
             for (int s = 0; s < setColumns.Length; s++)
@@ -237,8 +228,8 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
 
         public async Task<int> DeleteAsync(T entity, CancellationToken cancellationToken = default)
         {
-            using var conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(_connectionFactory, cancellationToken);
-            using var cmd = SqlCommandHelper.CreateCommand(conn, _transaction);
+            using var conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(connectionFactory, cancellationToken);
+            using var cmd = SqlCommandHelper.CreateCommand(conn, transaction);
 
             cmd.CommandText = SqlCommandHelper.BuildDeleteStatement(_tableName, _keyProperties, (p, i) => $"@key{i}");
 
@@ -249,13 +240,13 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
 
         public async Task<int> DeleteBulkAsync(IEnumerable<T> entities, CancellationToken cancellationToken = default)
         {
-            var entityList = entities as IList<T> ?? entities.ToList();
+            var entityList = entities as IList<T> ?? [.. entities];
             if (entityList.Count == 0) return 0;
             if (entityList.Count == 1)
                 return await DeleteAsync(entityList[0], cancellationToken);
 
-            using var conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(_connectionFactory, cancellationToken);
-            using var cmd = SqlCommandHelper.CreateCommand(conn, _transaction);
+            using var conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(connectionFactory, cancellationToken);
+            using var cmd = SqlCommandHelper.CreateCommand(conn, transaction);
 
             var whereClause = SqlCommandHelper.BuildBulkWhereClause(entityList, _keyProperties, cmd, "key");
             cmd.CommandText = $"DELETE FROM [{_tableName}] WHERE " + whereClause;

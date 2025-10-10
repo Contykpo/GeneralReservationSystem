@@ -1,4 +1,4 @@
-﻿using GeneralReservationSystem.Application.Exceptions;
+﻿using GeneralReservationSystem.Application.Exceptions.Repositories;
 using Microsoft.Extensions.Logging;
 using System.Data.Common;
 using System.Text.RegularExpressions;
@@ -79,21 +79,15 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             if (violationType == null)
                 return null; // Not a recognized constraint violation.  
 
-            switch (violationType)
+            return violationType switch
             {
-                case SqlConstraintViolationType.PrimaryKey:
-                    return new PrimaryKeyViolationException(ExtractConstraintName(ex.Message) ?? "Unknown", ex);
-                case SqlConstraintViolationType.Unique:
-                    return new UniqueConstraintViolationException(ExtractConstraintName(ex.Message) ?? "Unknown", ex);
-                case SqlConstraintViolationType.ForeignKey:
-                    return new ForeignKeyViolationException(ExtractConstraintName(ex.Message) ?? "Unknown", ex);
-                case SqlConstraintViolationType.Check:
-                    return new CheckConstraintViolationException(ExtractConstraintName(ex.Message) ?? "Unknown", ex);
-                case SqlConstraintViolationType.NotNull:
-                    return new NotNullConstraintViolationException(ExtractNotNullColumnName(ex.Message) ?? "Unknown", ex);
-            }
-
-            return null; // Not a recognized constraint violation.
+                SqlConstraintViolationType.PrimaryKey => new PrimaryKeyViolationException(ExtractConstraintName(ex.Message) ?? "Unknown", ex),
+                SqlConstraintViolationType.Unique => new UniqueConstraintViolationException(ExtractConstraintName(ex.Message) ?? "Unknown", ex),
+                SqlConstraintViolationType.ForeignKey => new ForeignKeyViolationException(ExtractConstraintName(ex.Message) ?? "Unknown", ex),
+                SqlConstraintViolationType.Check => new CheckConstraintViolationException(ExtractConstraintName(ex.Message) ?? "Unknown", ex),
+                SqlConstraintViolationType.NotNull => new NotNullConstraintViolationException(ExtractNotNullColumnName(ex.Message) ?? "Unknown", ex),
+                _ => null,// Not a recognized constraint violation.
+            };
         }
 
         public static RepositoryException ToRepositoryException(DbException ex)

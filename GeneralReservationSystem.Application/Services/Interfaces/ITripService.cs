@@ -1,19 +1,19 @@
 using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.Entities;
-using GeneralReservationSystem.Application.Repositories.Interfaces;
-using System;
-using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace GeneralReservationSystem.Application.Services.Interfaces
 {
     public interface ITripService
     {
-        Task<PagedResult<TripDetailsDto>> SearchPagedAsync(TripDetailsSearchRequestDto tripDetailsSearchRequestDto, CancellationToken cancellationToken = default);
-        Task<Trip?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
-        Task AddAsync(CreateTripDto tripDto, CancellationToken cancellationToken = default);
-        Task UpdateAsync(UpdateTripDto tripDto, CancellationToken cancellationToken = default);
-        Task DeleteAsync(int id, CancellationToken cancellationToken = default);
+        Task<Trip> GetTripAsync(TripKeyDto keyDto, CancellationToken cancellationToken = default);
+        Task<IEnumerable<Trip>> GetAllTripsAsync(CancellationToken cancellationToken = default);
+        Task<PagedResult<Trip>> SearchTripsAsync(PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default);
+        Task<Trip> CreateTripAsync(CreateTripDto dto, CancellationToken cancellationToken = default);
+        Task<Trip> UpdateTripAsync(UpdateTripDto dto, CancellationToken cancellationToken = default);
+        Task DeleteTripAsync(TripKeyDto keyDto, CancellationToken cancellationToken = default);
     }
 }

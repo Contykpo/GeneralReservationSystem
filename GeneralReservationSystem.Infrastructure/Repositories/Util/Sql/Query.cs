@@ -8,28 +8,20 @@ using System.Reflection;
 
 namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 {
-    public class Query<T> : IQuery<T>
+    public class Query<T>(Func<DbConnection> connectionFactory, DbTransaction? transaction = null) : IQuery<T>
     {
-        protected QueryModel<T> Model { get; set; }
-        protected readonly Func<DbConnection> ConnectionFactory;
-        protected readonly DbTransaction? Transaction;
-
-        public Query(Func<DbConnection> connectionFactory, DbTransaction? transaction = null)
-        {
-            ConnectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
-            Transaction = transaction;
-
-            Model = new QueryModel<T>(
-                Filters: Array.Empty<FilterDescriptor<T>>(),
+        protected QueryModel<T> Model { get; set; } = new QueryModel<T>(
+                Filters: [],
                 Projection: null,
                 Group: null,
-                Aggregates: Array.Empty<AggregateDescriptor<T, object>>(),
-                Joins: Array.Empty<JoinDescriptor<T, object, object>>(),
-                Orders: Array.Empty<OrderDescriptor<T, object>>(),
+                Aggregates: [],
+                Joins: [],
+                Orders: [],
                 Pagination: null,
                 IsDistinct: false
             );
-        }
+        protected readonly Func<DbConnection> ConnectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
+        protected readonly DbTransaction? Transaction = transaction;
 
         protected Query(Func<DbConnection> connectionFactory, DbTransaction? transaction, QueryModel<T> model)
             : this(connectionFactory, transaction)
@@ -39,7 +31,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
         private static IReadOnlyList<OrderDescriptor<T, object>> AppendOrder(IReadOnlyList<OrderDescriptor<T, object>> existing, OrderDescriptor<T, object> newOrder)
         {
-            var list = existing?.ToList() ?? new List<OrderDescriptor<T, object>>();
+            var list = existing?.ToList() ?? [];
             var prioritized = new OrderDescriptor<T, object>(newOrder.KeySelector, newOrder.Ascending, list.Count + 1);
             list.Add(prioritized);
             return list;
@@ -47,7 +39,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
         private static Expression<Func<T, object>> ConvertToObjectSelector<TKey>(Expression<Func<T, TKey>> selector)
         {
-            if (selector == null) throw new ArgumentNullException(nameof(selector));
+            ArgumentNullException.ThrowIfNull(selector);
             var param = selector.Parameters.Single();
             var body = Expression.Convert(selector.Body, typeof(object));
             return Expression.Lambda<Func<T, object>>(body, param);
@@ -55,8 +47,8 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
         public IQuery<T> Where(Expression<Func<T, bool>> predicate)
         {
-            if (predicate == null) throw new ArgumentNullException(nameof(predicate));
-            var filters = Model.Filters?.ToList() ?? new List<FilterDescriptor<T>>();
+            ArgumentNullException.ThrowIfNull(predicate);
+            var filters = Model.Filters?.ToList() ?? [];
             filters.Add(new FilterDescriptor<T>(predicate));
             Model = new QueryModel<T>(
                 Filters: filters,
@@ -71,17 +63,63 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
             return this;
         }
 
+        public IQuery<T> ApplyFilters(IEnumerable<Filter> filters)
+        {
+            ArgumentNullException.ThrowIfNull(filters);
+
+            var query = this;
+            foreach (var filter in filters)
+            {
+                var predicate = SqlExpressionBuilder.BuildFilterPredicate<T>(filter);
+                if (predicate != null)
+                {
+                    query = (Query<T>)query.Where(predicate);
+                }
+            }
+
+            return query;
+        }
+
+        public IQuery<T> ApplySorting(IEnumerable<SortOption> sortOptions)
+        {
+            ArgumentNullException.ThrowIfNull(sortOptions);
+
+            var query = this;
+            var isFirst = true;
+
+            foreach (var sortOption in sortOptions)
+            {
+                var keySelector = SqlExpressionBuilder.BuildSortExpression<T>(sortOption);
+                if (keySelector != null)
+                {
+                    var ascending = sortOption.Direction == SortDirection.Asc;
+                    
+                    if (isFirst)
+                    {
+                        query = (Query<T>)query.OrderBy(keySelector, ascending);
+                        isFirst = false;
+                    }
+                    else
+                    {
+                        query = (Query<T>)query.ThenBy(keySelector, ascending);
+                    }
+                }
+            }
+
+            return query;
+        }
+
         public IQuery<TResult> Select<TResult>(Expression<Func<T, TResult>> selector)
         {
-            if (selector == null) throw new ArgumentNullException(nameof(selector));
+            ArgumentNullException.ThrowIfNull(selector);
 
             var newModel = new QueryModel<TResult>(
-                Filters: Array.Empty<FilterDescriptor<TResult>>(),
+                Filters: [],
                 Projection: new ProjectionDescriptor<TResult, object>(selector),
                 Group: null,
-                Aggregates: Array.Empty<AggregateDescriptor<TResult, object>>(),
-                Joins: Array.Empty<JoinDescriptor<TResult, object, object>>(),
-                Orders: Array.Empty<OrderDescriptor<TResult, object>>(),
+                Aggregates: [],
+                Joins: [],
+                Orders: [],
                 Pagination: null,
                 IsDistinct: Model.IsDistinct
             );
@@ -91,16 +129,16 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
         public IQuery<TResult> SelectMany<TCollection, TResult>(Expression<Func<T, IEnumerable<TCollection>>> collectionSelector, Expression<Func<T, TCollection, TResult>> resultSelector)
         {
-            if (collectionSelector == null) throw new ArgumentNullException(nameof(collectionSelector));
-            if (resultSelector == null) throw new ArgumentNullException(nameof(resultSelector));
+            ArgumentNullException.ThrowIfNull(collectionSelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
             var newModel = new QueryModel<TResult>(
-                Filters: Array.Empty<FilterDescriptor<TResult>>(),
+                Filters: [],
                 Projection: new ProjectionDescriptor<TResult, object>(resultSelector),
                 Group: null,
-                Aggregates: Array.Empty<AggregateDescriptor<TResult, object>>(),
-                Joins: Array.Empty<JoinDescriptor<TResult, object, object>>(),
-                Orders: Array.Empty<OrderDescriptor<TResult, object>>(),
+                Aggregates: [],
+                Joins: [],
+                Orders: [],
                 Pagination: null,
                 IsDistinct: Model.IsDistinct
             );
@@ -110,12 +148,12 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
         public IQuery<(T Outer, TInner Inner)> Join<TInner>(Expression<Func<T, TInner, bool>> onPredicate, JoinType joinType = JoinType.Inner)
         {
-            if (onPredicate == null) throw new ArgumentNullException(nameof(onPredicate));
+            ArgumentNullException.ThrowIfNull(onPredicate);
 
             var outerParam = Expression.Parameter(typeof(T), "outer");
             var innerParam = Expression.Parameter(typeof(TInner), "inner");
             var tupleType = typeof(ValueTuple<,>).MakeGenericType(typeof(T), typeof(TInner));
-            var ctor = tupleType.GetConstructor(new[] { typeof(T), typeof(TInner) })!;
+            var ctor = tupleType.GetConstructor([typeof(T), typeof(TInner)])!;
             var body = Expression.New(ctor, outerParam, innerParam);
             var resultSelector = Expression.Lambda(body, outerParam, innerParam);
 
@@ -124,8 +162,8 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
         public IQuery<TResult> Join<TInner, TResult>(Expression<Func<T, TInner, bool>> onPredicate, Expression<Func<T, TInner, TResult>> resultSelector, JoinType joinType = JoinType.Inner)
         {
-            if (onPredicate == null) throw new ArgumentNullException(nameof(onPredicate));
-            if (resultSelector == null) throw new ArgumentNullException(nameof(resultSelector));
+            ArgumentNullException.ThrowIfNull(onPredicate);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
             var outerParam = Expression.Parameter(typeof(T), "outer");
             var innerObjParam = Expression.Parameter(typeof(object), "innerObj");
@@ -144,7 +182,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
                 JoinType: joinType
             );
 
-            var joins = Model.Joins?.ToList() ?? new List<JoinDescriptor<T, object, object>>();
+            var joins = Model.Joins?.ToList() ?? [];
             joins.Add(joinDesc);
 
             Model = new QueryModel<T>(
@@ -163,8 +201,8 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
         public IQuery<TResult> GroupBy<TKey, TResult>(Expression<Func<T, TKey>> keySelector, Expression<Func<IGrouping<TKey, T>, TResult>> resultSelector)
         {
-            if (keySelector == null) throw new ArgumentNullException(nameof(keySelector));
-            if (resultSelector == null) throw new ArgumentNullException(nameof(resultSelector));
+            ArgumentNullException.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
             var groupDesc = new GroupDescriptor<T, object>(keySelector);
             var projection = new ProjectionDescriptor<TResult, object>(resultSelector);
@@ -185,7 +223,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
         public IQuery<TResult> Having<TKey, TResult>(Expression<Func<IGrouping<TKey, T>, bool>> predicate)
         {
-            if (predicate == null) throw new ArgumentNullException(nameof(predicate));
+            ArgumentNullException.ThrowIfNull(predicate);
             var projection = new ProjectionDescriptor<TResult, object>(predicate);
 
             Model = new QueryModel<T>(
@@ -204,7 +242,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
         public IQuery<T> OrderBy<TKey>(Expression<Func<T, TKey>> keySelector, bool ascending = false)
         {
-            if (keySelector == null) throw new ArgumentNullException(nameof(keySelector));
+            ArgumentNullException.ThrowIfNull(keySelector);
             var converted = ConvertToObjectSelector(keySelector);
             var order = new OrderDescriptor<T, object>(converted, ascending, 0);
             var orders = AppendOrder(Model.Orders, order);
@@ -234,7 +272,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
                 Group: Model.Group,
                 Aggregates: Model.Aggregates,
                 Joins: Model.Joins,
-                Orders: Array.Empty<OrderDescriptor<T, object>>(),
+                Orders: [],
                 Pagination: Model.Pagination,
                 IsDistinct: Model.IsDistinct
             );
@@ -318,24 +356,18 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
             return this;
         }
 
-        private sealed class SqlQueryBuilder
+        private sealed class SqlQueryBuilder(QueryModel<T> model)
         {
-            private readonly QueryModel<T> _model;
-            private readonly List<KeyValuePair<string, object?>> _parameters = new();
+            private readonly List<KeyValuePair<string, object?>> _parameters = [];
             private int _paramCounter = 0;
-
-            public SqlQueryBuilder(QueryModel<T> model)
-            {
-                _model = model ?? throw new ArgumentNullException(nameof(model));
-            }
 
             public (string SelectSql, IReadOnlyList<(string Column, string Alias)> Selected, bool SelectAll, Type SourceType) BuildSelectClause()
             {
                 Type sourceType = typeof(T);
                 LambdaExpression? projectionLambda = null;
-                if (_model.Projection != null)
+                if (model.Projection != null)
                 {
-                    projectionLambda = _model.Projection.Selector as LambdaExpression;
+                    projectionLambda = model.Projection.Selector as LambdaExpression;
                     if (projectionLambda != null && projectionLambda.Parameters.Count > 0)
                         sourceType = projectionLambda.Parameters[0].Type;
                 }
@@ -358,7 +390,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
                     var body = projectionLambda.Body;
                     if (body is MemberInitExpression mi)
                     {
-                        foreach (MemberAssignment assign in mi.Bindings)
+                        foreach (MemberAssignment assign in mi.Bindings.Cast<MemberAssignment>())
                         {
                             if (assign.Expression is MemberExpression mex && mex.Member is PropertyInfo pinfo)
                             {
@@ -409,7 +441,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
                 var sb = new System.Text.StringBuilder();
                 sb.Append("SELECT ");
-                if (_model.IsDistinct) sb.Append("DISTINCT ");
+                if (model.IsDistinct) sb.Append("DISTINCT ");
                 if (selected.Count == 0) sb.Append('*');
                 else sb.Append(SqlCommandHelper.BuildColumnListWithAliases(selected, tableName));
 
@@ -441,7 +473,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
                 {
                     sb.Append(' ').Append(order);
                 }
-                else if (_model.Pagination != null)
+                else if (model.Pagination != null)
                 {
                     var firstProp = sourceType.GetProperties().FirstOrDefault();
                     if (firstProp != null)
@@ -460,11 +492,11 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
             public (string Sql, IReadOnlyList<KeyValuePair<string, object?>> Parameters) BuildWhereClause(string tableName)
             {
-                if (_model.Filters == null || _model.Filters.Count == 0)
+                if (model.Filters == null || model.Filters.Count == 0)
                     return (string.Empty, Array.Empty<KeyValuePair<string, object?>>().ToList());
 
                 var parts = new List<string>();
-                foreach (var f in _model.Filters)
+                foreach (var f in model.Filters)
                 {
                     if (f.Predicate is LambdaExpression le)
                     {
@@ -478,7 +510,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
             public string BuildOrderBy(string tableName)
             {
-                var orders = _model.Orders?.OrderBy(o => o.Priority).ToList();
+                var orders = model.Orders?.OrderBy(o => o.Priority).ToList();
                 if (orders == null || orders.Count == 0) return string.Empty;
                 var parts = new List<string>();
                 foreach (var o in orders)
@@ -500,9 +532,9 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
             public string BuildPagination()
             {
-                if (_model.Pagination == null) return string.Empty;
+                if (model.Pagination == null) return string.Empty;
 
-                var pagination = _model.Pagination;
+                var pagination = model.Pagination;
                 int offset = 0;
                 int fetch = 0;
 
@@ -534,16 +566,15 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
             public string BuildJoins(string outerTableName)
             {
-                if (_model.Joins == null || _model.Joins.Count == 0) return string.Empty;
+                if (model.Joins == null || model.Joins.Count == 0) return string.Empty;
                 var parts = new List<string>();
-                foreach (var join in _model.Joins)
+                foreach (var join in model.Joins)
                 {
                     if (join.On is LambdaExpression onLambda)
                     {
                         var body = onLambda.Body;
-                        InvocationExpression? inv = body as InvocationExpression;
                         LambdaExpression? origOn = null;
-                        if (inv != null)
+                        if (body is InvocationExpression inv)
                         {
                             origOn = inv.Expression as LambdaExpression;
                         }
@@ -593,8 +624,8 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
             public string BuildGroupBy(string tableName)
             {
-                if (_model.Group == null) return string.Empty;
-                if (_model.Group.Selector is LambdaExpression gLE && gLE.Body is MemberExpression gm && gm.Member is PropertyInfo gpi)
+                if (model.Group == null) return string.Empty;
+                if (model.Group.Selector is LambdaExpression gLE && gLE.Body is MemberExpression gm && gm.Member is PropertyInfo gpi)
                 {
                     var gcol = EntityHelper.GetColumnName(gpi);
                     var qualified = SqlCommandHelper.FormatQualifiedTableName(tableName);
@@ -605,16 +636,14 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
             public (string SqlFragment, IReadOnlyList<string> Names) BuildAggregates(IEnumerable<AggregateDescriptor<T, object>> aggregates)
             {
-                if (aggregates == null) throw new ArgumentNullException(nameof(aggregates));
+                ArgumentNullException.ThrowIfNull(aggregates);
                 var aggs = aggregates.ToList();
-                if (!aggs.Any()) return (string.Empty, Array.Empty<string>());
+                if (aggs.Count == 0) return (string.Empty, Array.Empty<string>());
 
                 Type sourceType = typeof(T);
-                LambdaExpression? projectionLambda = null;
-                if (_model.Projection != null)
+                if (model.Projection != null)
                 {
-                    projectionLambda = _model.Projection.Selector as LambdaExpression;
-                    if (projectionLambda != null && projectionLambda.Parameters.Count > 0)
+                    if (model.Projection.Selector is LambdaExpression projectionLambda && projectionLambda.Parameters.Count > 0)
                         sourceType = projectionLambda.Parameters[0].Type;
                 }
 
@@ -659,13 +688,11 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
             public (string Sql, IReadOnlyList<KeyValuePair<string, object?>> Parameters, IReadOnlyList<string> AggregateNames) BuildAggregate(IEnumerable<AggregateDescriptor<T, object>> aggregates)
             {
-                if (aggregates == null) throw new ArgumentNullException(nameof(aggregates));
+                ArgumentNullException.ThrowIfNull(aggregates);
                 Type sourceType = typeof(T);
-                LambdaExpression? projectionLambda = null;
-                if (_model.Projection != null)
+                if (model.Projection != null)
                 {
-                    projectionLambda = _model.Projection.Selector as LambdaExpression;
-                    if (projectionLambda != null && projectionLambda.Parameters.Count > 0)
+                    if (model.Projection.Selector is LambdaExpression projectionLambda && projectionLambda.Parameters.Count > 0)
                         sourceType = projectionLambda.Parameters[0].Type;
                 }
                 var tableName = EntityHelper.GetTableName(sourceType);
@@ -693,7 +720,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
         public AggregateResult Aggregate(params AggregateDescriptor<T, object>[] aggregates)
         {
-            if (aggregates == null) throw new ArgumentNullException(nameof(aggregates));
+            ArgumentNullException.ThrowIfNull(aggregates);
             var builder = new SqlQueryBuilder(Model);
             var (sql, parameters, names) = builder.BuildAggregate(aggregates);
 
@@ -717,8 +744,8 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
         public Task<AggregateResult> AggregateAsync(IEnumerable<AggregateDescriptor<T, object>> aggregates, CancellationToken cancellationToken = default)
         {
-            if (aggregates == null) throw new ArgumentNullException(nameof(aggregates));
-            return AggregateAsyncInternal(aggregates.ToArray(), cancellationToken);
+            ArgumentNullException.ThrowIfNull(aggregates);
+            return AggregateAsyncInternal([.. aggregates], cancellationToken);
         }
 
         private async Task<AggregateResult> AggregateAsyncInternal(AggregateDescriptor<T, object>[] aggregates, CancellationToken cancellationToken)
@@ -746,14 +773,13 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
         private static AggregateResult CreateAggregateResult(Dictionary<string, object?> values)
         {
             var ctor = typeof(AggregateResult).GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
-                .FirstOrDefault(c => c.GetParameters().Length == 1 && c.GetParameters()[0].ParameterType == typeof(Dictionary<string, object?>));
-            if (ctor == null) throw new InvalidOperationException("Could not locate AggregateResult constructor via reflection.");
-            return (AggregateResult)ctor.Invoke(new object[] { values ?? new Dictionary<string, object?>() });
+                .FirstOrDefault(c => c.GetParameters().Length == 1 && c.GetParameters()[0].ParameterType == typeof(Dictionary<string, object?>)) ?? throw new InvalidOperationException("Could not locate AggregateResult constructor via reflection.");
+            return (AggregateResult)ctor.Invoke([values ?? []]);
         }
 
         private static Expression<Func<T, object>> ConvertSelectorToObject<TResult>(Expression<Func<T, TResult>> selector)
         {
-            if (selector == null) throw new ArgumentNullException(nameof(selector));
+            ArgumentNullException.ThrowIfNull(selector);
             var param = selector.Parameters.Single();
             var body = Expression.Convert(selector.Body, typeof(object));
             return Expression.Lambda<Func<T, object>>(body, param);
@@ -763,20 +789,20 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
         {
             var agg = new AggregateDescriptor<T, object>(AggregateFunction.Count, (Expression<Func<T, object>>)(t => 1), "Count");
             var builder = new SqlQueryBuilder(Model);
-            var (sql, parameters, _) = builder.BuildAggregate(new[] { agg });
+            var (sql, parameters, _) = builder.BuildAggregate([agg]);
             var obj = SqlCommandHelper.ExecuteScalar(ConnectionFactory, Transaction, sql, parameters);
             return Convert.ToInt64(obj ?? 0L);
         }
 
         public long Count(Expression<Func<T, bool>> predicate)
         {
-            if (predicate == null) throw new ArgumentNullException(nameof(predicate));
-            var filters = Model.Filters?.ToList() ?? new List<FilterDescriptor<T>>();
+            ArgumentNullException.ThrowIfNull(predicate);
+            var filters = Model.Filters?.ToList() ?? [];
             filters.Add(new FilterDescriptor<T>(predicate));
             var tempModel = new QueryModel<T>(filters, Model.Projection, Model.Group, Model.Aggregates, Model.Joins, Model.Orders, Model.Pagination, Model.IsDistinct);
             var agg = new AggregateDescriptor<T, object>(AggregateFunction.Count, (Expression<Func<T, object>>)(t => 1), "Count");
             var builder = new SqlQueryBuilder(tempModel);
-            var (sql, parameters, _) = builder.BuildAggregate(new[] { agg });
+            var (sql, parameters, _) = builder.BuildAggregate([agg]);
             var obj = SqlCommandHelper.ExecuteScalar(ConnectionFactory, Transaction, sql, parameters);
             return Convert.ToInt64(obj ?? 0L);
         }
@@ -796,13 +822,13 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
             QueryModel<T> model = Model;
             if (predicate != null)
             {
-                var filters = Model.Filters?.ToList() ?? new List<FilterDescriptor<T>>();
+                var filters = Model.Filters?.ToList() ?? [];
                 filters.Add(new FilterDescriptor<T>(predicate));
                 model = new QueryModel<T>(filters, Model.Projection, Model.Group, Model.Aggregates, Model.Joins, Model.Orders, Model.Pagination, Model.IsDistinct);
             }
             var agg = new AggregateDescriptor<T, object>(AggregateFunction.Count, (Expression<Func<T, object>>)(t => 1), "Count");
             var builder = new SqlQueryBuilder(model);
-            var (sql, parameters, _) = builder.BuildAggregate(new[] { agg });
+            var (sql, parameters, _) = builder.BuildAggregate([agg]);
             var obj = await SqlCommandHelper.ExecuteScalarAsync(ConnectionFactory, Transaction, sql, parameters, cancellationToken);
             return Convert.ToInt64(obj ?? 0L);
         }
@@ -835,11 +861,11 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
         public TResult Sum<TResult>(Expression<Func<T, TResult>> selector)
         {
-            if (selector == null) throw new ArgumentNullException(nameof(selector));
+            ArgumentNullException.ThrowIfNull(selector);
             var objSel = ConvertSelectorToObject(selector);
             var agg = new AggregateDescriptor<T, object>(AggregateFunction.Sum, objSel, "Sum");
             var builder = new SqlQueryBuilder(Model);
-            var (sql, parameters, _) = builder.BuildAggregate(new[] { agg });
+            var (sql, parameters, _) = builder.BuildAggregate([agg]);
             var obj = SqlCommandHelper.ExecuteScalar(ConnectionFactory, Transaction, sql, parameters);
             if (obj == null || obj == DBNull.Value) return default!;
             return (TResult)Convert.ChangeType(obj, typeof(TResult));
@@ -847,7 +873,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
         public Task<TResult> SumAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default)
         {
-            if (selector == null) throw new ArgumentNullException(nameof(selector));
+            ArgumentNullException.ThrowIfNull(selector);
             return SumAsyncInternal(selector, cancellationToken);
         }
 
@@ -856,7 +882,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
             var objSel = ConvertSelectorToObject(selector);
             var agg = new AggregateDescriptor<T, object>(AggregateFunction.Sum, objSel, "Sum");
             var builder = new SqlQueryBuilder(Model);
-            var (sql, parameters, _) = builder.BuildAggregate(new[] { agg });
+            var (sql, parameters, _) = builder.BuildAggregate([agg]);
             var obj = await SqlCommandHelper.ExecuteScalarAsync(ConnectionFactory, Transaction, sql, parameters, cancellationToken);
             if (obj == null || obj == DBNull.Value) return default!;
             return (TResult)Convert.ChangeType(obj, typeof(TResult));
@@ -864,11 +890,11 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
         public TResult Min<TResult>(Expression<Func<T, TResult>> selector)
         {
-            if (selector == null) throw new ArgumentNullException(nameof(selector));
+            ArgumentNullException.ThrowIfNull(selector);
             var objSel = ConvertSelectorToObject(selector);
             var agg = new AggregateDescriptor<T, object>(AggregateFunction.Min, objSel, "Min");
             var builder = new SqlQueryBuilder(Model);
-            var (sql, parameters, _) = builder.BuildAggregate(new[] { agg });
+            var (sql, parameters, _) = builder.BuildAggregate([agg]);
             var obj = SqlCommandHelper.ExecuteScalar(ConnectionFactory, Transaction, sql, parameters);
             if (obj == null || obj == DBNull.Value) return default!;
             return (TResult)Convert.ChangeType(obj, typeof(TResult));
@@ -876,7 +902,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
         public Task<TResult> MinAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default)
         {
-            if (selector == null) throw new ArgumentNullException(nameof(selector));
+            ArgumentNullException.ThrowIfNull(selector);
             return MinAsyncInternal(selector, cancellationToken);
         }
 
@@ -885,7 +911,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
             var objSel = ConvertSelectorToObject(selector);
             var agg = new AggregateDescriptor<T, object>(AggregateFunction.Min, objSel, "Min");
             var builder = new SqlQueryBuilder(Model);
-            var (sql, parameters, _) = builder.BuildAggregate(new[] { agg });
+            var (sql, parameters, _) = builder.BuildAggregate([agg]);
             var obj = await SqlCommandHelper.ExecuteScalarAsync(ConnectionFactory, Transaction, sql, parameters, cancellationToken);
             if (obj == null || obj == DBNull.Value) return default!;
             return (TResult)Convert.ChangeType(obj, typeof(TResult));
@@ -893,11 +919,11 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
         public TResult Max<TResult>(Expression<Func<T, TResult>> selector)
         {
-            if (selector == null) throw new ArgumentNullException(nameof(selector));
+            ArgumentNullException.ThrowIfNull(selector);
             var objSel = ConvertSelectorToObject(selector);
             var agg = new AggregateDescriptor<T, object>(AggregateFunction.Max, objSel, "Max");
             var builder = new SqlQueryBuilder(Model);
-            var (sql, parameters, _) = builder.BuildAggregate(new[] { agg });
+            var (sql, parameters, _) = builder.BuildAggregate([agg]);
             var obj = SqlCommandHelper.ExecuteScalar(ConnectionFactory, Transaction, sql, parameters);
             if (obj == null || obj == DBNull.Value) return default!;
             return (TResult)Convert.ChangeType(obj, typeof(TResult));
@@ -905,7 +931,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
         public Task<TResult> MaxAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default)
         {
-            if (selector == null) throw new ArgumentNullException(nameof(selector));
+            ArgumentNullException.ThrowIfNull(selector);
             return MaxAsyncInternal(selector, cancellationToken);
         }
 
@@ -914,7 +940,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
             var objSel = ConvertSelectorToObject(selector);
             var agg = new AggregateDescriptor<T, object>(AggregateFunction.Max, objSel, "Max");
             var builder = new SqlQueryBuilder(Model);
-            var (sql, parameters, _) = builder.BuildAggregate(new[] { agg });
+            var (sql, parameters, _) = builder.BuildAggregate([agg]);
             var obj = await SqlCommandHelper.ExecuteScalarAsync(ConnectionFactory, Transaction, sql, parameters, cancellationToken);
             if (obj == null || obj == DBNull.Value) return default!;
             return (TResult)Convert.ChangeType(obj, typeof(TResult));
@@ -922,11 +948,11 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
         public double Average<TResult>(Expression<Func<T, TResult>> selector)
         {
-            if (selector == null) throw new ArgumentNullException(nameof(selector));
+            ArgumentNullException.ThrowIfNull(selector);
             var objSel = ConvertSelectorToObject(selector);
             var agg = new AggregateDescriptor<T, object>(AggregateFunction.Average, objSel, "Average");
             var builder = new SqlQueryBuilder(Model);
-            var (sql, parameters, _) = builder.BuildAggregate(new[] { agg });
+            var (sql, parameters, _) = builder.BuildAggregate([agg]);
             var obj = SqlCommandHelper.ExecuteScalar(ConnectionFactory, Transaction, sql, parameters);
             if (obj == null || obj == DBNull.Value) return 0.0;
             return Convert.ToDouble(obj);
@@ -934,7 +960,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
         public Task<double> AverageAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default)
         {
-            if (selector == null) throw new ArgumentNullException(nameof(selector));
+            ArgumentNullException.ThrowIfNull(selector);
             return AverageAsyncInternal(selector, cancellationToken);
         }
 
@@ -943,7 +969,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
             var objSel = ConvertSelectorToObject(selector);
             var agg = new AggregateDescriptor<T, object>(AggregateFunction.Average, objSel, "Average");
             var builder = new SqlQueryBuilder(Model);
-            var (sql, parameters, _) = builder.BuildAggregate(new[] { agg });
+            var (sql, parameters, _) = builder.BuildAggregate([agg]);
             var obj = await SqlCommandHelper.ExecuteScalarAsync(ConnectionFactory, Transaction, sql, parameters, cancellationToken);
             if (obj == null || obj == DBNull.Value) return 0.0;
             return Convert.ToDouble(obj);
@@ -986,13 +1012,13 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
         public T[] ToArray()
         {
-            return ToList().ToArray();
+            return [.. ToList()];
         }
 
         public async Task<T[]> ToArrayAsync(CancellationToken cancellationToken = default)
         {
             var list = await ToListAsync(cancellationToken);
-            return list.ToArray();
+            return [.. list];
         }
 
         public T First()
@@ -1061,7 +1087,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
             var items = Page(page, pageSize).ToList();
 
-            var countModel = new QueryModel<T>(Model.Filters, Model.Projection, Model.Group, Model.Aggregates, Model.Joins, Array.Empty<OrderDescriptor<T, object>>(), null, Model.IsDistinct);
+            var countModel = new QueryModel<T>(Model.Filters, Model.Projection, Model.Group, Model.Aggregates, Model.Joins, [], null, Model.IsDistinct);
             var countQuery = new SqlQueryBuilder(countModel);
             var (countSql, countParams, _, _, _) = countQuery.Build();
 
@@ -1084,7 +1110,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
 
             var items = await Page(page, pageSize).ToListAsync(cancellationToken);
 
-            var countModel = new QueryModel<T>(Model.Filters, Model.Projection, Model.Group, Model.Aggregates, Model.Joins, Array.Empty<OrderDescriptor<T, object>>(), null, Model.IsDistinct);
+            var countModel = new QueryModel<T>(Model.Filters, Model.Projection, Model.Group, Model.Aggregates, Model.Joins, [], null, Model.IsDistinct);
             var countQuery = new SqlQueryBuilder(countModel);
             var (countSql, countParams, _, _, _) = countQuery.Build();
 

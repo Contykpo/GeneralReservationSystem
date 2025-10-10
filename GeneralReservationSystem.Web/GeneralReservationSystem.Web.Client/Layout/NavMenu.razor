@@ -1,0 +1,44 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+
+@inject AuthenticationStateProvider AuthStateProvider
+@inject GeneralReservationSystem.Application.Services.Interfaces.Authentication.IUserService UserService
+@inject NavigationManager Navigation
+
+<MudNavMenu>
+    <MudNavLink Href="/" Match="NavLinkMatch.All">Dashboard</MudNavLink>
+    <MudNavLink Href="/servers" Match="NavLinkMatch.Prefix">Servers</MudNavLink>
+    <MudNavGroup Title="Settings" Expanded="true">
+        <MudNavLink Href="/users" Match="NavLinkMatch.Prefix">Users</MudNavLink>
+        <MudNavLink Href="/security" Match="NavLinkMatch.Prefix">Security</MudNavLink>
+    </MudNavGroup>
+    <MudNavLink Href="/about" Match="NavLinkMatch.Prefix">About</MudNavLink>
+
+    <AuthorizeView>
+        <Authorized>
+            <MudNavLink OnClick="LogoutAsync">Logout</MudNavLink>
+        </Authorized>
+        <NotAuthorized>
+            <MudNavLink Href="/login">Login</MudNavLink>
+            <MudNavLink Href="/register">Register</MudNavLink>
+        </NotAuthorized>
+    </AuthorizeView>
+</MudNavMenu>
+
+@code {
+    private async Task LogoutAsync()
+    {
+        try
+        {
+            await UserService.LogoutAsync();
+            if (AuthStateProvider is GeneralReservationSystem.Web.Services.Authentication.CustomAuthenticationStateProvider custom)
+            {
+                custom.MarkUserAsLoggedOut();
+            }
+            Navigation.NavigateTo("/");
+        }
+        catch
+        {
+            // Don't care
+        }
+    }
+}

@@ -27,25 +27,15 @@ namespace GeneralReservationSystem.Infrastructure
 
             // Register all default repository implementations
             services.AddScoped<IUserRepository, UserRepository>();
-            services.AddScoped<IRoleRepository, RoleRepository>();
-            services.AddScoped<ISessionRepository, SessionRepository>();
-            services.AddScoped<IDestinationRepository, DestinationRepository>();
-            services.AddScoped<IDriverRepository, DriverRepository>();
+            services.AddScoped<IStationRepository, StationRepository>();
             services.AddScoped<IReservationRepository, ReservationRepository>();
-            services.AddScoped<ISeatRepository, SeatRepository>();
             services.AddScoped<ITripRepository, TripRepository>();
-            services.AddScoped<IVehicleModelRepository, VehicleModelRepository>();
-            services.AddScoped<IVehicleRepository, VehicleRepository>();
 
             // Register all default service implementations
-            services.AddScoped<IAuthenticationService, AuthenticationService>();
-            services.AddScoped<IDestinationService, DestinationService>();
-            services.AddScoped<IDriverService, DriverService>();
+            services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IStationService, StationService>();
             services.AddScoped<IReservationService, ReservationService>();
-            services.AddScoped<ISeatService, SeatService>();
             services.AddScoped<ITripService, TripService>();
-            services.AddScoped<IVehicleModelService, VehicleModelService>();
-            services.AddScoped<IVehicleService, VehicleService>();
 
             // Register UnitOfWork
             services.AddScoped<IUnitOfWork, UnitOfWork>();

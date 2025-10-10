@@ -1,47 +1,103 @@
 using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.Entities;
+using GeneralReservationSystem.Application.Exceptions.Repositories;
+using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Repositories.Interfaces;
 using GeneralReservationSystem.Application.Services.Interfaces;
 
 namespace GeneralReservationSystem.Application.Services.DefaultImplementations
 {
-    public class ReservationService : IReservationService
+    public class ReservationService(IReservationRepository reservationRepository) : IReservationService
     {
-        private readonly IReservationRepository _reservationRepository;
-        private readonly ISeatRepository _seatRepository;
-        private readonly ITripRepository _tripRepository;
-
-        public ReservationService(IReservationRepository reservationRepository, ISeatRepository seatRepository, ITripRepository tripRepository)
+        public async Task CreateReservationAsync(CreateReservationDto dto, int userId, CancellationToken cancellationToken = default)
         {
-            _reservationRepository = reservationRepository;
-            _seatRepository = seatRepository;
-            _tripRepository = tripRepository;
+            var reservation = new Reservation
+            {
+                TripId = dto.TripId,
+                UserId = userId,
+                SeatNumber = dto.Seat
+            };
+            try
+            {
+                await reservationRepository.CreateAsync(reservation, cancellationToken);
+            }
+            catch (ForeignKeyViolationException ex)
+            {
+                throw new ServiceBusinessException("El viaje o el usuario no existen.", ex);
+            }
+            catch (UniqueConstraintViolationException ex)
+            {
+                throw new ServiceBusinessException("El asiento ya está reservado para este viaje.", ex);
+            }
+            catch (RepositoryException ex)
+            {
+                throw new ServiceException("Error al crear la reserva.", ex);
+            }
         }
 
-        public Task AddReservationAsync(CreateReservationDto reservationDto, CancellationToken cancellationToken = default)
+        public async Task DeleteReservationAsync(ReservationKeyDto keyDto, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            var reservation = new Reservation
+            {
+                TripId = keyDto.TripId,
+                UserId = keyDto.UserId
+            };
+            try
+            {
+                var affected = await reservationRepository.DeleteAsync(reservation, cancellationToken);
+                if (affected == 0)
+                    throw new ServiceNotFoundException("No se encontró la reserva para eliminar.");
+            }
+            catch (RepositoryException ex)
+            {
+                throw new ServiceException("Error al eliminar la reserva.", ex);
+            }
         }
 
-        public Task DeleteReservationAsync(Reservation reservation, CancellationToken cancellationToken = default)
+        public async Task<Reservation> GetReservationAsync(ReservationKeyDto keyDto, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var reservation = await reservationRepository.Query()
+                    .Where(r => r.TripId == keyDto.TripId && r.UserId == keyDto.UserId)
+                    .FirstOrDefaultAsync(cancellationToken);
+                return reservation ?? throw new ServiceNotFoundException("No se encontró la reserva solicitada.");
+            }
+            catch (RepositoryException ex)
+            {
+                throw new ServiceException("Error al consultar la reserva.", ex);
+            }
         }
 
-        public Task<PagedResult<AvailableSeatDto>> GetAvailableSeatsAsync(TripAvailableSeatSearchRequestDto tripAvailableSeatSearchRequestDto, CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<Reservation>> GetUserReservationsAsync(int userId, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            try
+            {
+                return await reservationRepository.Query()
+                    .Where(r => r.UserId == userId)
+                    .ToListAsync(cancellationToken);
+            }
+            catch (RepositoryException ex)
+            {
+                throw new ServiceException("Error al obtener las reservas del usuario.", ex);
+            }
         }
 
-        public Task<PagedResult<ReservedSeatDto>> GetReservedSeatsForTripAsync(TripReservedSeatSearchRequestDto tripReservedSeatSearchRequestDto, CancellationToken cancellationToken = default)
+        public async Task<PagedResult<Reservation>> SearchReservationsAsync(PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
-        }
-
-        public Task<PagedResult<ReservedSeatDto>> GetReservedSeatsForUserAsync(UserReservedSeatSearchRequestDto userReservedSeatSearchRequestDto, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
+            try
+            {
+                var query = reservationRepository.Query()
+                    .ApplyFilters(searchDto.Filters)
+                    .ApplySorting(searchDto.Orders)
+                    .Page(searchDto.Page, searchDto.PageSize);
+                return await query.ToPagedResultAsync(cancellationToken);
+            }
+            catch (RepositoryException ex)
+            {
+                throw new ServiceException("Error al buscar reservas.", ex);
+            }
         }
     }
 }

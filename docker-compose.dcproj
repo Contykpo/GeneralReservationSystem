@@ -15,7 +15,7 @@
     </None>
     <None Include="docker-compose.yml" />
     <None Include=".dockerignore" />
-    <None Include="GeneralReservationSystem.Web\Components\Pages\Component.razor" />
     <None Include="Migrations\1_reservation_schemas.sql" />
+    <None Include="Migrations\0_initial_schemas.sql" />
   </ItemGroup>
 </Project>

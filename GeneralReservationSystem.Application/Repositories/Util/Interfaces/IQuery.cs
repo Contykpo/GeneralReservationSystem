@@ -63,6 +63,10 @@ namespace GeneralReservationSystem.Application.Repositories.Util.Interfaces
     {
         IQuery<T> Where(Expression<Func<T, bool>> predicate);
 
+        IQuery<T> ApplyFilters(IEnumerable<Filter> filters);
+
+        IQuery<T> ApplySorting(IEnumerable<SortOption> sortOptions);
+
         IQuery<TResult> Select<TResult>(Expression<Func<T, TResult>> selector);
 
         IQuery<(T Outer, TInner Inner)> Join<TInner>(

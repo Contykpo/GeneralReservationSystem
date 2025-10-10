@@ -1,0 +1,236 @@
+@GeneralReservationSystem.API_HostAddress = http://localhost:5003
+
+### Authentication
+
+POST {{GeneralReservationSystem.API_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "userName": "testuser",
+  "email": "testuser@example.com",
+  "password": "TestPassword123!"
+}
+
+###
+
+POST {{GeneralReservationSystem.API_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "userNameOrEmail": "testuser",
+  "password": "TestPassword123!"
+}
+
+###
+
+POST {{GeneralReservationSystem.API_HostAddress}}/api/auth/logout
+
+###
+
+GET {{GeneralReservationSystem.API_HostAddress}}/api/auth/me
+
+### Users - Current User (Authenticated)
+
+GET {{GeneralReservationSystem.API_HostAddress}}/api/users/me
+
+###
+
+PUT {{GeneralReservationSystem.API_HostAddress}}/api/users/me
+Content-Type: application/json
+
+{
+  "userName": "updateduser",
+  "email": "updated@example.com"
+}
+
+###
+
+DELETE {{GeneralReservationSystem.API_HostAddress}}/api/users/me
+
+###
+
+POST {{GeneralReservationSystem.API_HostAddress}}/api/users/me/change-password
+Content-Type: application/json
+
+{
+  "currentPassword": "TestPassword123!",
+  "newPassword": "NewPassword456!"
+}
+
+### Users - Admin Only
+
+GET {{GeneralReservationSystem.API_HostAddress}}/api/users
+
+###
+
+POST {{GeneralReservationSystem.API_HostAddress}}/api/users/search
+Content-Type: application/json
+
+{
+  "page": 1,
+  "pageSize": 10,
+  "filters": [],
+  "orders": []
+}
+
+###
+
+GET {{GeneralReservationSystem.API_HostAddress}}/api/users/{{userId}}
+
+###
+
+PUT {{GeneralReservationSystem.API_HostAddress}}/api/users/{{userId}}
+Content-Type: application/json
+
+{
+  "userName": "adminupdated",
+  "email": "adminupdated@example.com"
+}
+
+###
+
+DELETE {{GeneralReservationSystem.API_HostAddress}}/api/users/{{userId}}
+
+### Stations
+
+GET {{GeneralReservationSystem.API_HostAddress}}/api/stations
+
+###
+
+POST {{GeneralReservationSystem.API_HostAddress}}/api/stations/search
+Content-Type: application/json
+
+{
+  "page": 1,
+  "pageSize": 10,
+  "filters": [],
+  "orders": []
+}
+
+###
+
+GET {{GeneralReservationSystem.API_HostAddress}}/api/stations/1
+
+###
+
+POST {{GeneralReservationSystem.API_HostAddress}}/api/stations
+Content-Type: application/json
+
+{
+  "name": "Central Station",
+  "city": "New York",
+  "region": "NY",
+  "country": "USA"
+}
+
+###
+
+PUT {{GeneralReservationSystem.API_HostAddress}}/api/stations/1
+Content-Type: application/json
+
+{
+  "name": "Updated Station",
+  "city": "Los Angeles",
+  "region": "CA",
+  "country": "USA"
+}
+
+###
+
+DELETE {{GeneralReservationSystem.API_HostAddress}}/api/stations/1
+
+### Trips
+
+GET {{GeneralReservationSystem.API_HostAddress}}/api/trips
+
+###
+
+POST {{GeneralReservationSystem.API_HostAddress}}/api/trips/search
+Content-Type: application/json
+
+{
+  "page": 1,
+  "pageSize": 10,
+  "filters": [],
+  "orders": []
+}
+
+###
+
+GET {{GeneralReservationSystem.API_HostAddress}}/api/trips/1
+
+###
+
+POST {{GeneralReservationSystem.API_HostAddress}}/api/trips
+Content-Type: application/json
+
+{
+  "departureStationId": 1,
+  "departureTime": "2024-12-25T10:00:00",
+  "arrivalStationId": 2,
+  "arrivalTime": "2024-12-25T14:00:00",
+  "availableSeats": 100
+}
+
+###
+
+PUT {{GeneralReservationSystem.API_HostAddress}}/api/trips/1
+Content-Type: application/json
+
+{
+  "departureTime": "2024-12-25T11:00:00",
+  "arrivalTime": "2024-12-25T15:00:00",
+  "availableSeats": 80
+}
+
+###
+
+DELETE {{GeneralReservationSystem.API_HostAddress}}/api/trips/1
+
+### Reservations - Current User
+
+GET {{GeneralReservationSystem.API_HostAddress}}/api/reservations/me
+
+###
+
+GET {{GeneralReservationSystem.API_HostAddress}}/api/reservations/me/trip/1
+
+###
+
+POST {{GeneralReservationSystem.API_HostAddress}}/api/reservations
+Content-Type: application/json
+
+{
+  "tripId": 1,
+  "seat": 15
+}
+
+###
+
+DELETE {{GeneralReservationSystem.API_HostAddress}}/api/reservations/me/trip/1
+
+### Reservations - Admin Only
+
+POST {{GeneralReservationSystem.API_HostAddress}}/api/reservations/search
+Content-Type: application/json
+
+{
+  "page": 1,
+  "pageSize": 10,
+  "filters": [],
+  "orders": []
+}
+
+###
+
+GET {{GeneralReservationSystem.API_HostAddress}}/api/reservations/user/{{userId}}
+
+###
+
+GET {{GeneralReservationSystem.API_HostAddress}}/api/reservations/trip/1/user/{{userId}}
+
+###
+
+DELETE {{GeneralReservationSystem.API_HostAddress}}/api/reservations/trip/1/user/{{userId}}
+
+###

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using GeneralReservationSystem.Application.Common;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,8 +9,10 @@ namespace GeneralReservationSystem.Application.Entities
 {
     public class Reservation
     {
+        [Key]
         public int TripId { get; set; }
-        public int SeatId { get; set; }
-        public Guid UserId { get; set; }
+        [Key]
+        public int UserId { get; set; }
+        public int SeatNumber { get; set; }
     }
 }

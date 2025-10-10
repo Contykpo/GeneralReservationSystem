@@ -3,17 +3,15 @@
 namespace GeneralReservationSystem.Application.Common
 {
     [AttributeUsage(AttributeTargets.Class)]
-    public class TableNameAttribute : Attribute
+    public class TableNameAttribute(string name) : Attribute
     {
-        public string Name { get; }
-        public TableNameAttribute(string name) => Name = name;
+        public string Name { get; } = name;
     }
 
     [AttributeUsage(AttributeTargets.Property)]
-    public class ColumnNameAttribute : Attribute
+    public class ColumnNameAttribute(string name) : Attribute
     {
-        public string Name { get; }
-        public ColumnNameAttribute(string name) => Name = name;
+        public string Name { get; } = name;
     }
 
     // NOTE: [Key] doesn't imply that the key is computed/auto-incremented/identity.

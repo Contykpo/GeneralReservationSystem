@@ -8,10 +8,10 @@ namespace GeneralReservationSystem.Application.Helpers
     {
 		public static string GetTableName(Type entityType)
 		{
-			var attr = entityType.TryGetAttribute<TableNameAttribute>();
+            var attr = entityType.TryGetAttribute<TableNameAttribute>();
 
-            return attr!.Name ?? entityType.Name;
-		}
+            return attr?.Name ?? entityType.Name;
+        }
 
 		public static string GetTableName<TEntity>() => GetTableName(typeof(TEntity));
 
@@ -19,7 +19,7 @@ namespace GeneralReservationSystem.Application.Helpers
         {
             var keys = ReflectionHelpers.GetPropertiesWithAttribute<TEntity, KeyAttribute>();
 
-			if (!keys.Any())
+			if (keys.Length == 0)
                 throw new InvalidOperationException($"Entity {typeof(TEntity).Name} must have at least one [Key] property.");
 
             return keys;
@@ -39,12 +39,9 @@ namespace GeneralReservationSystem.Application.Helpers
                 UnaryExpression u when u.Operand is MemberExpression m => m,
                 MethodCallExpression mc when mc.Object is MemberExpression m => m,
                 _ => null
-            };
-            
-			if (me is null)
-                throw new ArgumentException("Expression must be a member expression e => e.m", nameof(propertyExpression));
+            } ?? throw new ArgumentException("Expression must be a member expression e => e.m", nameof(propertyExpression));
 
-            if(me.Member is not PropertyInfo pi)
+            if (me.Member is not PropertyInfo pi)
                 throw new ArgumentException($"{nameof(MemberExpression)} must refer to a property, not a method or a field", nameof(propertyExpression));
 
 			return GetColumnName(pi);

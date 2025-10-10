@@ -1,18 +1,15 @@
-using GeneralReservationSystem.Application.Repositories.Interfaces;
-using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.DTOs;
-using GeneralReservationSystem.Application.Entities.Authentication;
-using System.Threading.Tasks;
+using GeneralReservationSystem.Application.Entities;
 
 namespace GeneralReservationSystem.Application.Services.Interfaces
 {
     public interface IReservationService
     {
-        Task<PagedResult<AvailableSeatDto>> GetAvailableSeatsAsync(TripAvailableSeatSearchRequestDto tripAvailableSeatSearchRequestDto, CancellationToken cancellationToken = default);
-        Task<PagedResult<ReservedSeatDto>> GetReservedSeatsForTripAsync(TripReservedSeatSearchRequestDto tripReservedSeatSearchRequestDto, CancellationToken cancellationToken = default);
-        Task<PagedResult<ReservedSeatDto>> GetReservedSeatsForUserAsync(UserReservedSeatSearchRequestDto userReservedSeatSearchRequestDto, CancellationToken cancellationToken = default);
-        Task AddReservationAsync(CreateReservationDto reservationDto, CancellationToken cancellationToken = default);
-        Task DeleteReservationAsync(Reservation reservation, CancellationToken cancellationToken = default);
+        Task<Reservation> GetReservationAsync(ReservationKeyDto keyDto, CancellationToken cancellationToken = default);
+        Task<IEnumerable<Reservation>> GetUserReservationsAsync(int userId, CancellationToken cancellationToken = default);
+        Task<PagedResult<Reservation>> SearchReservationsAsync(PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default);
+        Task CreateReservationAsync(CreateReservationDto dto, int userId, CancellationToken cancellationToken = default);
+        Task DeleteReservationAsync(ReservationKeyDto keyDto, CancellationToken cancellationToken = default);
     }
 }

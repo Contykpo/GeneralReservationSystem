@@ -13,16 +13,10 @@ namespace GeneralReservationSystem.Application.Repositories.Util.Interfaces
         // (ya que la cuestión de conexión a DB excede la interfáz de IUnitOfWork, es imponer algo implementativo).
         // Por ello, se opta por la forma explícita, que es más verbosa pero más clara y flexible. Afortunadamente, 
         // no hay demasiados repositorios en este proyecto.
-        public IRoleRepository RoleRepository { get; }
         public IUserRepository UserRepository { get; }
-        public ISessionRepository SessionRepository { get; }
-        public IDestinationRepository DestinationRepository { get; }
-        public IDriverRepository DriverRepository { get; }
+        public IStationRepository StationRepository { get; }
         public IReservationRepository ReservationRepository { get; }
-        public ISeatRepository SeatRepository { get; }
         public ITripRepository TripRepository { get; }
-        public IVehicleModelRepository VehicleModelRepository { get; }
-        public IVehicleRepository VehicleRepository { get; }
 
         void Commit();
         void Rollback();

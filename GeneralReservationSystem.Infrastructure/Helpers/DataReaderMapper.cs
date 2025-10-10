@@ -58,10 +58,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
                 return (T)Convert.ChangeType(val, targetType)!;
             }
 
-            var instance = Activator.CreateInstance<T>();
-            if (instance == null)
-                throw new InvalidOperationException($"Cannot create instance of type {targetType.Name}");
-
+            var instance = Activator.CreateInstance<T>() ?? throw new InvalidOperationException($"Cannot create instance of type {targetType.Name}");
             if (selectAll)
             {
                 for (int i = 0; i < selectedColumns.Count; i++)
@@ -118,10 +115,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
                 return (T)Convert.ChangeType(val, targetType)!;
             }
 
-            var instance = Activator.CreateInstance<T>();
-            if (instance == null)
-                throw new InvalidOperationException($"Cannot create instance of type {targetType.Name}");
-
+            var instance = Activator.CreateInstance<T>() ?? throw new InvalidOperationException($"Cannot create instance of type {targetType.Name}");
             if (selectAll)
             {
                 for (int i = 0; i < selectedColumns.Count; i++)
