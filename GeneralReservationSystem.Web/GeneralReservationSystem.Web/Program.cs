@@ -6,6 +6,15 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
 
+builder.WebHost.UseKestrel(k =>
+{
+	var httpPort    = int.Parse(Environment.GetEnvironmentVariable("ASPNETCORE_HTTP_PORTS") ?? "8080");
+	var httpsPort   = int.Parse(Environment.GetEnvironmentVariable("ASPNETCORE_HTTPS_PORTS") ?? "8081");
+
+	k.ListenAnyIP(httpPort);
+    k.ListenAnyIP(httpsPort, c => c.UseHttps());
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
