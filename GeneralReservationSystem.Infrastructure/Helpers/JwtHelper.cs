@@ -21,10 +21,10 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
 
         public static SymmetricSecurityKey GetIssuerSigningKeyFromString(string secretKey)
             => new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
-        
+
         public static string GenerateJwtToken(UserSessionInfo userSession, JwtSettings settings)
         {
-            var key         = GetIssuerSigningKeyFromString(settings.SecretKey);
+            var key = GetIssuerSigningKeyFromString(settings.SecretKey);
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var claims = new[]
@@ -36,13 +36,13 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim(JwtRegisteredClaimNames.Iss, settings.Issuer),
                 new Claim(JwtRegisteredClaimNames.Aud, settings.Audience)
-			};
+            };
 
             var token = new JwtSecurityToken(
-                issuer:             settings.Issuer,
-                audience:           settings.Audience,
-                claims:             claims,
-                expires:            DateTime.UtcNow.AddDays(settings.ExpirationDays),
+                issuer: settings.Issuer,
+                audience: settings.Audience,
+                claims: claims,
+                expires: DateTime.UtcNow.AddDays(settings.ExpirationDays),
                 signingCredentials: credentials
             );
 
@@ -53,12 +53,12 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
         {
             var options = new CookieOptions
             {
-                HttpOnly    = true,
-                Secure      = true,
+                HttpOnly = true,
+                Secure = true,
 
-                SameSite    = SameSiteMode.None,
+                SameSite = SameSiteMode.None,
 
-                Expires     = DateTimeOffset.UtcNow.AddDays(settings.ExpirationDays)
+                Expires = DateTimeOffset.UtcNow.AddDays(settings.ExpirationDays)
             };
 
             context.Response.Cookies.Append(CookieName, token, options);
@@ -70,9 +70,9 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             SetJwtCookie(context, token, settings);
 
             return token;
-		}
+        }
 
-		public static void ClearJwtCookie(HttpContext context)
+        public static void ClearJwtCookie(HttpContext context)
         {
             context.Response.Cookies.Delete(CookieName);
         }

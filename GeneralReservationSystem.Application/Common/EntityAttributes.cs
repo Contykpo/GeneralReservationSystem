@@ -1,6 +1,4 @@
-﻿using System.Linq.Expressions;
-
-namespace GeneralReservationSystem.Application.Common
+﻿namespace GeneralReservationSystem.Application.Common
 {
     [AttributeUsage(AttributeTargets.Class)]
     public class TableNameAttribute(string name) : Attribute

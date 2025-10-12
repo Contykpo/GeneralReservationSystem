@@ -1,0 +1,70 @@
+@page "/authentication/register"
+
+@using GeneralReservationSystem.Application.DTOs.Authentication
+@using GeneralReservationSystem.Application.Exceptions.Services
+@using GeneralReservationSystem.Web.Authentication
+@using GeneralReservationSystem.Web.Services
+@using GeneralReservationSystem.Web.Services.Interfaces.Authentication
+
+@inject IClientAuthenticationService ClientAuthenticationService
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
+
+<AuthorizeView>
+    <Authorized>
+        <RedirectToHome />
+    </Authorized>
+    <NotAuthorized>
+        <MudPaper Class="mx-auto my-5 p-4" Style="max-width:400px;" Color="Color.Surface" Elevation="6">
+            <MudText Typo="Typo.h5" Class="mb-4">Register</MudText>
+            <MudForm @ref="_form" Spacing="3">
+                <AntiforgeryToken />
+                <MudTextField Label="Nombre de usuario" For="@(() => _registerDto.UserName)" @bind-Value="_registerDto.UserName" />
+                <MudTextField Label="Correo electrónico" For="@(() => _registerDto.Email)" @bind-Value="_registerDto.Email" />
+                <MudTextField Label="Contraseña" For="@(() => _registerDto.Password)" @bind-Value="_registerDto.Password" InputType="InputType.Password" />
+                <MudTextField Label="Confirmación de contraseña" For="@(() => _registerDto.ConfirmPassword)" @bind-Value="_registerDto.ConfirmPassword" InputType="InputType.Password" />
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto" OnClick="HandleRegister">Registrarse</MudButton>
+                @if (!string.IsNullOrEmpty(_error))
+                {
+                    <MudAlert Severity="Severity.Error" Class="mt-3">@_error</MudAlert>
+                }
+            </MudForm>
+        </MudPaper>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private RegisterUserDto _registerDto = new();
+    private MudForm _form = null!;
+    private string _error = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            Navigation.NavigateTo("/");
+        }
+    }
+
+    private async Task HandleRegister()
+    {
+        _error = string.Empty;
+        await _form.Validate();
+        if (!_form.IsValid)
+            return;
+        try
+        {
+            var user = await ClientAuthenticationService.RegisterUserAsync(_registerDto);
+            if (AuthStateProvider is CustomAuthenticationStateProvider custom)
+            {
+                custom.MarkUserAsAuthenticated(user);
+            }
+            Navigation.NavigateTo("/");
+        }
+        catch (ServiceBusinessException ex)
+        {
+            _error = ex.Message;
+        }
+    }
+}

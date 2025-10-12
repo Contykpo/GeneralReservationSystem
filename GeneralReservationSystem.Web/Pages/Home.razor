@@ -1,0 +1,32 @@
+﻿@page "/"
+
+@using Microsoft.AspNetCore.Components.Authorization
+
+<PageTitle>Home</PageTitle>
+
+<h1>Auth test placeholder</h1>
+
+<AuthorizeView>
+    <Authorized>
+        @if (context.User.IsInRole("Admin"))
+        {
+            <div>
+                <h4>Welcome, Admin!</h4>
+                <p>This is a placeholder for admin-only content (you are still in the general "Authorized" view).</p>
+            </div>
+        }
+        else
+        {
+            <div>
+                <h4>Welcome, User!</h4>
+                <p>This is a placeholder for authenticated non-admin users.</p>
+            </div>
+        }
+    </Authorized>
+    <NotAuthorized>
+        <div>
+            <h4>Not authenticated</h4>
+            <p>This is a placeholder for anonymous visitors. Please <a href="/login">login</a> or <a href="/register">register</a>.</p>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>

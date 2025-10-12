@@ -1,6 +1,4 @@
-﻿using System.Linq.Expressions;
-
-namespace GeneralReservationSystem.Application.Common
+﻿namespace GeneralReservationSystem.Application.Common
 {
     public sealed class PagedResult<T>
     {

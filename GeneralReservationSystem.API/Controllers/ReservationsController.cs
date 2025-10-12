@@ -1,9 +1,9 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using GeneralReservationSystem.Application.Services.Interfaces;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.Exceptions.Services;
+using GeneralReservationSystem.Application.Services.Interfaces;
 using GeneralReservationSystem.Infrastructure.Helpers;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace GeneralReservationSystem.API.Controllers
 {

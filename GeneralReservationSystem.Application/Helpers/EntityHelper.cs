@@ -6,20 +6,20 @@ namespace GeneralReservationSystem.Application.Helpers
 {
     public static class EntityHelper
     {
-		public static string GetTableName(Type entityType)
-		{
+        public static string GetTableName(Type entityType)
+        {
             var attr = entityType.TryGetAttribute<TableNameAttribute>();
 
             return attr?.Name ?? entityType.Name;
         }
 
-		public static string GetTableName<TEntity>() => GetTableName(typeof(TEntity));
+        public static string GetTableName<TEntity>() => GetTableName(typeof(TEntity));
 
-		public static PropertyInfo[] GetKeyProperties<TEntity>()
+        public static PropertyInfo[] GetKeyProperties<TEntity>()
         {
             var keys = ReflectionHelpers.GetPropertiesWithAttribute<TEntity, KeyAttribute>();
 
-			if (keys.Length == 0)
+            if (keys.Length == 0)
                 throw new InvalidOperationException($"Entity {typeof(TEntity).Name} must have at least one [Key] property.");
 
             return keys;
@@ -27,9 +27,9 @@ namespace GeneralReservationSystem.Application.Helpers
 
         public static PropertyInfo[] GetComputedProperties<TEntity>() => ReflectionHelpers.GetPropertiesWithAttribute<TEntity, ComputedAttribute>();
 
-		public static PropertyInfo[] GetNonComputedProperties<TEntity>() => ReflectionHelpers.GetPropertiesWithoutAttribute<TEntity, ComputedAttribute>();
+        public static PropertyInfo[] GetNonComputedProperties<TEntity>() => ReflectionHelpers.GetPropertiesWithoutAttribute<TEntity, ComputedAttribute>();
 
-		public static string GetColumnName<TEntity, TProperty>(Expression<Func<TEntity, TProperty>> propertyExpression)
+        public static string GetColumnName<TEntity, TProperty>(Expression<Func<TEntity, TProperty>> propertyExpression)
         {
             ThrowHelpers.ThrowIfNull(propertyExpression, nameof(propertyExpression));
 
@@ -44,11 +44,11 @@ namespace GeneralReservationSystem.Application.Helpers
             if (me.Member is not PropertyInfo pi)
                 throw new ArgumentException($"{nameof(MemberExpression)} must refer to a property, not a method or a field", nameof(propertyExpression));
 
-			return GetColumnName(pi);
+            return GetColumnName(pi);
         }
 
         public static string GetColumnName(PropertyInfo prop) =>
-			//TODO: Tal vez sea mas conveniente tirar una excepcion si no tiene el atributo
-			prop.GetCustomAttribute<ColumnNameAttribute>()?.Name ?? prop.Name;
+            //TODO: Tal vez sea mas conveniente tirar una excepcion si no tiene el atributo
+            prop.GetCustomAttribute<ColumnNameAttribute>()?.Name ?? prop.Name;
     }
 }

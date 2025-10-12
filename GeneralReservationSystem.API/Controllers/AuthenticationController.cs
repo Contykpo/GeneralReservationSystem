@@ -1,5 +1,4 @@
 ﻿using GeneralReservationSystem.Application.DTOs.Authentication;
-using GeneralReservationSystem.Application.Entities.Authentication;
 using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Helpers;
 using GeneralReservationSystem.Application.Services.Interfaces.Authentication;
@@ -14,12 +13,12 @@ namespace GeneralReservationSystem.API.Controllers
     [ApiController]
     public class AuthenticationController : ControllerBase
     {
-        private readonly IUserService _userService;
+        private readonly IAuthenticationService _authenticationService;
         private readonly JwtSettings _jwtSettings;
 
-        public AuthenticationController(IUserService userService, JwtSettings jwtSettings)
+        public AuthenticationController(IAuthenticationService authenticationService, JwtSettings jwtSettings)
         {
-            _userService = userService;
+            _authenticationService = authenticationService;
             _jwtSettings = jwtSettings;
         }
 
@@ -28,15 +27,19 @@ namespace GeneralReservationSystem.API.Controllers
         {
             try
             {
-                var user = await _userService.RegisterUserAsync(dto, cancellationToken);
+                var userInfo = await _authenticationService.RegisterUserAsync(dto, cancellationToken);
 
-                CreateSessionAndLogin(user);
-                
-                return Ok(new { message = "Usuario registrado exitosamente", userId = user.UserId });
+                CreateSessionAndLogin(userInfo);
+
+                return Ok(new { message = "Usuario registrado exitosamente", userId = userInfo.UserId });
             }
-            catch (ServiceBusinessException)
+            catch (ServiceBusinessException ex)
             {
-                return BadRequest(new { error = "El nombre de usuario o correo electrónico ya está en uso. Por favor, elija otro." });
+                return BadRequest(new { error = ex.Message });
+            }
+            catch (ServiceException)
+            {
+                return StatusCode(500, new { error = "Error al registrar el usuario. Por favor, intente nuevamente." });
             }
         }
 
@@ -45,15 +48,19 @@ namespace GeneralReservationSystem.API.Controllers
         {
             try
             {
-                var user = await _userService.AuthenticateAsync(dto, cancellationToken);
+                var userInfo = await _authenticationService.AuthenticateAsync(dto, cancellationToken);
 
-                CreateSessionAndLogin(user);
+                CreateSessionAndLogin(userInfo);
 
-                return Ok(new { message = "Inicio de sesión exitoso", userId = user.UserId, isAdmin = user.IsAdmin });
+                return Ok(new { message = "Inicio de sesión exitoso", userId = userInfo.UserId, isAdmin = userInfo.IsAdmin });
             }
-            catch (ServiceBusinessException)
+            catch (ServiceBusinessException ex)
             {
-                return BadRequest(new { error = "Credenciales incorrectas. Verifique su nombre de usuario/correo y contraseña." });
+                return BadRequest(new { error = ex.Message });
+            }
+            catch (ServiceException)
+            {
+                return StatusCode(500, new { error = "Error al autenticar el usuario. Por favor, intente nuevamente." });
             }
         }
 
@@ -69,36 +76,63 @@ namespace GeneralReservationSystem.API.Controllers
         [Authorize]
         public IActionResult GetCurrentUser()
         {
-            var userId      = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var userName    = User.FindFirst(ClaimTypes.Name)?.Value;
-            var email       = User.FindFirst(ClaimTypes.Email)?.Value;
-            var isAdmin     = User.IsInRole("Admin");
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userName = User.FindFirst(ClaimTypes.Name)?.Value;
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+            var isAdmin = User.IsInRole("Admin");
 
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(new { error = "No hay una sesión activa." });
 
-            return Ok(new
+            return Ok(new UserInfo
             {
-                userId      = int.Parse(userId),
-                userName    = userName ?? string.Empty,
-                email       = email ?? string.Empty,
-                isAdmin     = isAdmin
+                UserId = int.Parse(userId),
+                UserName = userName ?? string.Empty,
+                Email = email ?? string.Empty,
+                IsAdmin = isAdmin
             });
         }
 
-        private void CreateSessionAndLogin(User user)
+        [HttpPost("change-password")]
+        [Authorize]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto, CancellationToken cancellationToken)
         {
-            ThrowHelpers.ThrowIfNull(user, nameof(user));
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || int.Parse(userIdClaim) != dto.UserId)
+                    return Unauthorized(new { error = "No autorizado para cambiar esta contraseña." });
 
-			var session = new UserSessionInfo
-			{
-				UserId      = user.UserId,
-				UserName    = user.UserName,
-				Email       = user.Email,
-				IsAdmin     = user.IsAdmin
-			};
+                await _authenticationService.ChangePasswordAsync(dto, cancellationToken);
+                return Ok(new { message = "Contraseña cambiada exitosamente." });
+            }
+            catch (ServiceBusinessException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+            catch (ServiceNotFoundException ex)
+            {
+                return NotFound(new { error = ex.Message });
+            }
+            catch (ServiceException)
+            {
+                return StatusCode(500, new { error = "Error al cambiar la contraseña. Por favor, intente nuevamente." });
+            }
+        }
+
+        private void CreateSessionAndLogin(UserInfo userInfo)
+        {
+            ThrowHelpers.ThrowIfNull(userInfo, nameof(userInfo));
+
+            var session = new UserSessionInfo
+            {
+                UserId = userInfo.UserId,
+                UserName = userInfo.UserName,
+                Email = userInfo.Email,
+                IsAdmin = userInfo.IsAdmin
+            };
 
             JwtHelper.GenerateAndSetJwtCookie(HttpContext, session, _jwtSettings);
-		}
+        }
     }
 }

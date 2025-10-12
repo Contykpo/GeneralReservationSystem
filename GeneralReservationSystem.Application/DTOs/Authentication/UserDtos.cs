@@ -62,4 +62,12 @@ namespace GeneralReservationSystem.Application.DTOs.Authentication
         [Range(1, int.MaxValue, ErrorMessage = "El identificador de usuario debe ser un número positivo.")]
         public int UserId { get; set; }
     }
+
+    public class UserInfo
+    {
+        public int UserId { get; set; }
+        public string UserName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public bool IsAdmin { get; set; }
+    }
 }

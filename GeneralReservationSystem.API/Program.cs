@@ -1,9 +1,9 @@
 using GeneralReservationSystem.API.Middleware;
 using GeneralReservationSystem.Infrastructure;
 using GeneralReservationSystem.Infrastructure.Helpers;
+using GeneralReservationSystem.Infrastructure.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,23 +12,14 @@ builder.Services.AddOpenApi();
 builder.Services.AddInfrastructureRepositories();
 builder.Services.AddHttpContextAccessor();
 
-builder.WebHost.UseKestrel(k =>
-{
-	var httpPort = int.Parse(Environment.GetEnvironmentVariable("ASPNETCORE_HTTP_PORTS") ?? "8080");
-	var httpsPort = int.Parse(Environment.GetEnvironmentVariable("ASPNETCORE_HTTPS_PORTS") ?? "8081");
-
-	k.ListenAnyIP(httpPort);
-	k.ListenAnyIP(httpsPort, c => c.UseHttps());
-});
-
 // Configure JWT settings
 var jwtSettings = new JwtSettings
 {
-    SecretKey       = builder.Configuration["Jwt:SecretKey"] ?? "YourSuperSecretKeyThatIsAtLeast32CharactersLong!",
-    Issuer          = builder.Configuration["Jwt:Issuer"] ?? "GeneralReservationSystemAPI",
-    Audience        = builder.Configuration["Jwt:Audience"] ?? "GeneralReservationSystemClient",
+    SecretKey = builder.Configuration["Jwt:SecretKey"] ?? "YourSuperSecretKeyThatIsAtLeast32CharactersLong!",
+    Issuer = builder.Configuration["Jwt:Issuer"] ?? "GeneralReservationSystemAPI",
+    Audience = builder.Configuration["Jwt:Audience"] ?? "GeneralReservationSystemClient",
 
-    ExpirationDays  = int.Parse(builder.Configuration["Jwt:ExpirationDays"] ?? "7")
+    ExpirationDays = int.Parse(builder.Configuration["Jwt:ExpirationDays"] ?? "7")
 };
 builder.Services.AddSingleton(jwtSettings);
 
@@ -38,14 +29,7 @@ builder.Services.AddCors(options =>
     {
         // Read allowed origins from environment variable (comma-separated)
         var allowedOrigins = builder.Configuration["CorsOrigins"]?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            ?? [
-                "http://localhost:5000",
-                "https://localhost:5001",
-                "http://localhost:5002",
-                "https://localhost:5003"
-            ];
-
-        Console.WriteLine("Allowed CORS Origins: " + string.Join(", ", allowedOrigins));
+            ?? []; // No origins allowed
 
         policy.WithOrigins(allowedOrigins)
             .AllowAnyMethod()
@@ -64,13 +48,13 @@ builder.Services.AddAuthentication(options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuer              = true,
-        ValidateAudience            = true,
-        ValidateLifetime            = true,
-        ValidateIssuerSigningKey    = true,
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
 
-        ValidIssuer     = jwtSettings.Issuer,
-        ValidAudience   = jwtSettings.Audience,
+        ValidIssuer = jwtSettings.Issuer,
+        ValidAudience = jwtSettings.Audience,
 
         IssuerSigningKey = JwtHelper.GetIssuerSigningKeyFromString(jwtSettings.SecretKey),
 
@@ -109,6 +93,7 @@ builder.Services.AddAuthorization();
 var app = builder.Build();
 
 app.UseMiddleware<ExceptionsMiddleware>();
+app.UseMiddleware<SessionMiddleware>();
 
 app.UseHttpsRedirection();
 app.UseCors();

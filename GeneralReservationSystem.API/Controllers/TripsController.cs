@@ -1,5 +1,4 @@
 using GeneralReservationSystem.Application.DTOs;
-using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -7,11 +6,11 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GeneralReservationSystem.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/trips")]
     [ApiController]
     public class TripsController(ITripService tripService) : ControllerBase
     {
-        [HttpGet("getall")]
+        [HttpGet]
         public async Task<IActionResult> GetAllTrips(CancellationToken cancellationToken)
         {
             var trips = await tripService.GetAllTripsAsync(cancellationToken);

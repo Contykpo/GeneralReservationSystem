@@ -1,6 +1,6 @@
 using GeneralReservationSystem.Application.Common;
-using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.DTOs;
+using GeneralReservationSystem.Application.Entities;
 
 namespace GeneralReservationSystem.Application.Services.Interfaces
 {

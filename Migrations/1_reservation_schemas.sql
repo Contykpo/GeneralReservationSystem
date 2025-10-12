@@ -49,7 +49,8 @@ BEGIN
             Country NVARCHAR(50) NOT NULL,
             -- NormalizedCountry NVARCHAR(50) NOT NULL,
             NormalizedCountry AS UPPER(LTRIM(RTRIM(Country))) PERSISTED,
-            CONSTRAINT PK_Station PRIMARY KEY (StationId)
+            CONSTRAINT PK_Station PRIMARY KEY (StationId),
+            CONSTRAINT UQ_Station UNIQUE (NormalizedStationName, NormalizedCity, NormalizedRegion, NormalizedCountry)
         );
     END
 

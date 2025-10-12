@@ -1,0 +1,29 @@
+﻿@using GeneralReservationSystem.Web.Authentication
+@using GeneralReservationSystem.Web.Services.Implementations.Authentication
+@using GeneralReservationSystem.Web.Services.Interfaces.Authentication
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+
+@inject NavigationManager Navigation
+@inject IClientAuthenticationService ClientAuthenticationService
+@inject AuthenticationStateProvider AuthStateProvider
+
+<AuthorizeView>
+    <Authorized>
+        <MudButton OnClick="logout">Cerrar sesión</MudButton>
+    </Authorized>
+    <NotAuthorized>
+        <MudNavLink Href="/authentication/login">Iniciar sesión</MudNavLink>
+        <MudNavLink Href="/authentication/register">Registrarse</MudNavLink>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private async Task logout()
+    {
+        await ClientAuthenticationService.LogoutAsync();
+        if (AuthStateProvider is CustomAuthenticationStateProvider custom)
+        {
+            custom.MarkUserAsLoggedOut();
+        }
+    }
+}

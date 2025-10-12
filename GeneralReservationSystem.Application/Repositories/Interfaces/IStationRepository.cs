@@ -2,5 +2,5 @@
 
 namespace GeneralReservationSystem.Application.Repositories.Interfaces
 {
-    public interface IStationRepository : IRepository<Station> {}
+    public interface IStationRepository : IRepository<Station> { }
 }

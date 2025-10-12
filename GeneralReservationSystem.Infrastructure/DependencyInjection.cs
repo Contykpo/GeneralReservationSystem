@@ -32,6 +32,7 @@ namespace GeneralReservationSystem.Infrastructure
             services.AddScoped<ITripRepository, TripRepository>();
 
             // Register all default service implementations
+            services.AddScoped<IAuthenticationService, AuthenticationService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IStationService, StationService>();
             services.AddScoped<IReservationService, ReservationService>();

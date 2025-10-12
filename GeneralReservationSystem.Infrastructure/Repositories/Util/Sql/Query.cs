@@ -93,7 +93,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
                 if (keySelector != null)
                 {
                     var ascending = sortOption.Direction == SortDirection.Asc;
-                    
+
                     if (isFirst)
                     {
                         query = (Query<T>)query.OrderBy(keySelector, ascending);

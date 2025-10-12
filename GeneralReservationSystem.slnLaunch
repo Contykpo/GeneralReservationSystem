@@ -1,0 +1,17 @@
+[
+  {
+    "Name": "Fullstack",
+    "Projects": [
+      {
+        "Path": "docker-compose.dcproj",
+        "Action": "Start",
+        "DebugTarget": "Docker Compose"
+      },
+      {
+        "Path": "GeneralReservationSystem.Web\\GeneralReservationSystem.Web.csproj",
+        "Action": "Start",
+        "DebugTarget": "https"
+      }
+    ]
+  }
+]

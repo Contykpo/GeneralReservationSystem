@@ -141,28 +141,5 @@ namespace GeneralReservationSystem.API.Controllers
                 return NotFound(new { error = $"No se encontró el usuario con ID {userId} para eliminar." });
             }
         }
-
-        [HttpPost("me/change-password")]
-        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto, CancellationToken cancellationToken)
-        {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized(new { error = "No hay una sesión activa." });
-
-            try
-            {
-                dto.UserId = int.Parse(userId);
-                await userService.ChangePasswordAsync(dto, cancellationToken);
-                return Ok(new { message = "Contraseña cambiada exitosamente" });
-            }
-            catch (ServiceNotFoundException)
-            {
-                return NotFound(new { error = "No se encontró el usuario." });
-            }
-            catch (ServiceBusinessException)
-            {
-                return BadRequest(new { error = "La contraseña actual es incorrecta. Por favor, verifíquela e intente nuevamente." });
-            }
-        }
     }
 }
