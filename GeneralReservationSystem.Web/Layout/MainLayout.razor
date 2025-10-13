@@ -19,9 +19,11 @@
         </AuthorizeView>
         <MudIconButton Icon="@Icons.Material.Filled.Menu" OnClick="ToggleDrawer" />
     </MudAppBar>
+
     <MudDrawer @bind-Open="@_drawerOpen" Anchor="Anchor.End" Elevation="1" Variant="@DrawerVariant.Temporary">
         <NavMenu />
     </MudDrawer>
+
     <MudMainContent>
         @Body
     </MudMainContent>

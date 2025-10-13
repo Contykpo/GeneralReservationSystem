@@ -1,4 +1,6 @@
-﻿<CascadingAuthenticationState>
+﻿@using GeneralReservationSystem.Web.Pages
+
+<CascadingAuthenticationState>
     <Router AppAssembly="@typeof(App).Assembly">
         <Found Context="routeData">
             <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
@@ -9,18 +11,14 @@
                     }
                     else
                     {
-                        <PageTitle>Forbidden</PageTitle>
-                        <p role="alert">Sorry, you are not authorized to access this resource.</p>
+                        <StatusRedirect StatusCode="403" />
                     }
                 </NotAuthorized>
             </AuthorizeRouteView>
             <FocusOnNavigate RouteData="@routeData" Selector="h1" />
         </Found>
         <NotFound>
-            <PageTitle>Not found</PageTitle>
-            <LayoutView Layout="@typeof(MainLayout)">
-                <p role="alert">Sorry, there's nothing at this address.</p>
-            </LayoutView>
+            <StatusRedirect StatusCode="404" />
         </NotFound>
     </Router>
 </CascadingAuthenticationState>
