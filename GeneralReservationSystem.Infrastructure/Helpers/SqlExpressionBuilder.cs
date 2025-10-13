@@ -104,7 +104,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             }
         }
 
-        private static Expression BuildEqualsExpression(MemberExpression property, object? value)
+        private static BinaryExpression BuildEqualsExpression(MemberExpression property, object? value)
         {
             ArgumentNullException.ThrowIfNull(property);
 
@@ -124,7 +124,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             }
         }
 
-        private static Expression BuildNotEqualsExpression(MemberExpression property, object? value)
+        private static BinaryExpression BuildNotEqualsExpression(MemberExpression property, object? value)
         {
             ArgumentNullException.ThrowIfNull(property);
 
@@ -144,7 +144,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             }
         }
 
-        private static Expression BuildComparisonExpression(MemberExpression property, object? value, ExpressionType comparisonType)
+        private static BinaryExpression BuildComparisonExpression(MemberExpression property, object? value, ExpressionType comparisonType)
         {
             ArgumentNullException.ThrowIfNull(property);
 

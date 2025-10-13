@@ -13,24 +13,24 @@ namespace GeneralReservationSystem.Web.Services.Implementations.Authentication
             return await GetAsync<IEnumerable<User>>("/api/users", cancellationToken);
         }
 
-        public async Task<PagedResult<User>> SearchUsersAsync(PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default)
+        public async Task<PagedResult<UserInfo>> SearchUsersAsync(PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default)
         {
-            return await PostAsync<PagedResult<User>>("/api/users/search", searchDto, cancellationToken);
+            return await PostAsync<PagedResult<UserInfo>>("/api/users/search", searchDto, cancellationToken);
         }
 
         public async Task<User> GetUserAsync(UserKeyDto keyDto, CancellationToken cancellationToken = default)
         {
-            return await GetAsync<User>($"/api/users/me", cancellationToken);
+            return await GetAsync<User>($"/api/users/{keyDto.UserId}", cancellationToken);
         }
 
         public async Task<User> UpdateUserAsync(UpdateUserDto dto, CancellationToken cancellationToken = default)
         {
-            return await PutAsync<User>("/api/users/me", dto, cancellationToken);
+            return await PutAsync<User>($"/api/users/{dto.UserId}", dto, cancellationToken);
         }
 
         public async Task DeleteUserAsync(UserKeyDto keyDto, CancellationToken cancellationToken = default)
         {
-            await DeleteAsync("/api/users/me", cancellationToken);
+            await DeleteAsync($"/api/users/{keyDto.UserId}", cancellationToken);
         }
     }
 }

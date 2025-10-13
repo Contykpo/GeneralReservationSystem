@@ -20,7 +20,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
         public const string CookieName = "jwt_token";
 
         public static SymmetricSecurityKey GetIssuerSigningKeyFromString(string secretKey)
-            => new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+            => new(Encoding.UTF8.GetBytes(secretKey));
 
         public static string GenerateJwtToken(UserSessionInfo userSession, JwtSettings settings)
         {

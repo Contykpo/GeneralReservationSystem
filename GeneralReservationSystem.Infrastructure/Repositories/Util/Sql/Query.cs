@@ -29,7 +29,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
             Model = model ?? throw new ArgumentNullException(nameof(model));
         }
 
-        private static IReadOnlyList<OrderDescriptor<T, object>> AppendOrder(IReadOnlyList<OrderDescriptor<T, object>> existing, OrderDescriptor<T, object> newOrder)
+        private static IList<OrderDescriptor<T, object>> AppendOrder(IList<OrderDescriptor<T, object>> existing, OrderDescriptor<T, object> newOrder)
         {
             var list = existing?.ToList() ?? [];
             var prioritized = new OrderDescriptor<T, object>(newOrder.KeySelector, newOrder.Ascending, list.Count + 1);

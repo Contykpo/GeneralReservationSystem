@@ -84,7 +84,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
                 var (hash, salt) = PasswordHelper.HashPassword(dto.NewPassword);
                 user.PasswordHash = hash;
                 user.PasswordSalt = salt;
-                var affected = await userRepository.UpdateAsync(user, cancellationToken);
+                var affected = await userRepository.UpdateAsync(user, cancellationToken: cancellationToken);
                 if (affected == 0)
                     throw new ServiceNotFoundException("No se pudo cambiar la contraseña.");
             }

@@ -12,8 +12,8 @@ namespace GeneralReservationSystem.Application.Repositories.Interfaces
         IQuery<T> Query(); // GetByIdAsync can be implemented via Query().Where(...).FirstOrDefaultAsync()
         Task<int> CreateAsync(T entity, CancellationToken cancellationToken = default); // Returns the number of affected rows
         Task<int> CreateBulkAsync(IEnumerable<T> entities, CancellationToken cancellationToken = default); // Returns the number of affected rows
-        Task<int> UpdateAsync(T entity, CancellationToken cancellationToken = default); // Returns the number of affected rows
-        Task<int> UpdateBulkAsync(IEnumerable<T> entities, CancellationToken cancellationToken = default); // Returns the number of affected rows
+        Task<int> UpdateAsync(T entity, Func<T, object?>? selector = null, CancellationToken cancellationToken = default); // Returns the number of affected rows
+        Task<int> UpdateBulkAsync(IEnumerable<T> entities, Func<T, object?>? selector = null, CancellationToken cancellationToken = default); // Returns the number of affected rows
         Task<int> DeleteAsync(T entity, CancellationToken cancellationToken = default); // Returns the number of affected rows
         Task<int> DeleteBulkAsync(IEnumerable<T> entities, CancellationToken cancellationToken = default); // Returns the number of affected rows
     }

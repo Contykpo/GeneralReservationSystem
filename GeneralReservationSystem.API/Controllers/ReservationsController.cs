@@ -1,9 +1,9 @@
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Services.Interfaces;
-using GeneralReservationSystem.Infrastructure.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace GeneralReservationSystem.API.Controllers
 {
@@ -21,12 +21,14 @@ namespace GeneralReservationSystem.API.Controllers
         }
 
         [HttpGet("me")]
+        [Authorize]
         public async Task<IActionResult> GetMyReservations(CancellationToken cancellationToken)
         {
-            if (HttpContext.Items["UserSession"] is not UserSessionInfo session)
-                return Unauthorized(new { error = "No hay una sesión activa." });
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized();
 
-            var reservations = await reservationService.GetUserReservationsAsync(session.UserId, cancellationToken);
+            var reservations = await reservationService.GetUserReservationsAsync(int.Parse(userId), cancellationToken);
             return Ok(reservations);
         }
 
@@ -39,20 +41,22 @@ namespace GeneralReservationSystem.API.Controllers
         }
 
         [HttpGet("me/trip/{tripId:int}")]
+        [Authorize]
         public async Task<IActionResult> GetMyReservationForTrip([FromRoute] int tripId, CancellationToken cancellationToken)
         {
-            if (HttpContext.Items["UserSession"] is not UserSessionInfo session)
-                return Unauthorized(new { error = "No hay una sesión activa." });
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized();
 
             try
             {
-                var keyDto = new ReservationKeyDto { TripId = tripId, UserId = session.UserId };
+                var keyDto = new ReservationKeyDto { TripId = tripId, UserId = int.Parse(userId) };
                 var reservation = await reservationService.GetReservationAsync(keyDto, cancellationToken);
                 return Ok(reservation);
             }
-            catch (ServiceNotFoundException)
+            catch (ServiceNotFoundException ex)
             {
-                return NotFound(new { error = $"No se encontró una reserva para el viaje {tripId}." });
+                return NotFound(new { error = ex.Message });
             }
         }
 
@@ -66,56 +70,52 @@ namespace GeneralReservationSystem.API.Controllers
                 var reservation = await reservationService.GetReservationAsync(keyDto, cancellationToken);
                 return Ok(reservation);
             }
-            catch (ServiceNotFoundException)
+            catch (ServiceNotFoundException ex)
             {
-                return NotFound(new { error = $"No se encontró una reserva para el viaje {tripId} y el usuario especificado." });
+                return NotFound(new { error = ex.Message });
             }
         }
 
         [HttpPost]
+        [Authorize]
         public async Task<IActionResult> CreateReservation([FromBody] CreateReservationDto dto, CancellationToken cancellationToken)
         {
-            if (HttpContext.Items["UserSession"] is not UserSessionInfo session)
-                return Unauthorized(new { error = "No hay una sesión activa." });
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized();
 
             try
             {
-                await reservationService.CreateReservationAsync(dto, session.UserId, cancellationToken);
+                await reservationService.CreateReservationAsync(dto, int.Parse(userId), cancellationToken);
                 return CreatedAtAction(nameof(GetMyReservationForTrip), new { tripId = dto.TripId }, new { message = "Reserva creada exitosamente" });
             }
-            catch (ServiceBusinessException ex) when (ex.Message.Contains("viaje o el usuario"))
+            catch (ServiceBusinessException ex)
             {
-                return BadRequest(new { error = $"El viaje con ID {dto.TripId} no existe o no está disponible." });
-            }
-            catch (ServiceBusinessException ex) when (ex.Message.Contains("asiento ya está reservado"))
-            {
-                return BadRequest(new { error = $"El asiento {dto.Seat} ya está reservado para este viaje. Por favor, seleccione otro asiento." });
-            }
-            catch (ServiceBusinessException)
-            {
-                return BadRequest(new { error = "No se pudo crear la reserva. Verifique los datos e intente nuevamente." });
+                return Conflict(new { error = ex.Message });
             }
         }
 
         [HttpDelete("me/trip/{tripId:int}")]
+        [Authorize]
         public async Task<IActionResult> DeleteMyReservation([FromRoute] int tripId, CancellationToken cancellationToken)
         {
-            if (HttpContext.Items["UserSession"] is not UserSessionInfo session)
-                return Unauthorized(new { error = "No hay una sesión activa." });
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized();
 
             try
             {
-                var keyDto = new ReservationKeyDto { TripId = tripId, UserId = session.UserId };
+                var keyDto = new ReservationKeyDto { TripId = tripId, UserId = int.Parse(userId) };
                 await reservationService.DeleteReservationAsync(keyDto, cancellationToken);
                 return NoContent();
             }
-            catch (ServiceNotFoundException)
+            catch (ServiceNotFoundException ex)
             {
-                return NotFound(new { error = $"No se encontró una reserva para el viaje {tripId}." });
+                return NotFound(new { error = ex.Message });
             }
         }
 
-        [HttpDelete("trip/{tripId:int}/user/{userId:guid}")]
+        [HttpDelete("trip/{tripId:int}/user/{userId:int}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteReservation([FromRoute] int tripId, [FromRoute] int userId, CancellationToken cancellationToken)
         {
@@ -125,9 +125,9 @@ namespace GeneralReservationSystem.API.Controllers
                 await reservationService.DeleteReservationAsync(keyDto, cancellationToken);
                 return NoContent();
             }
-            catch (ServiceNotFoundException)
+            catch (ServiceNotFoundException ex)
             {
-                return NotFound(new { error = $"No se encontró una reserva para el viaje {tripId} y el usuario especificado para eliminar." });
+                return NotFound(new { error = ex.Message });
             }
         }
     }

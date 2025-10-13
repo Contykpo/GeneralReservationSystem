@@ -3,6 +3,7 @@ using GeneralReservationSystem.Application.Services.Interfaces.Authentication;
 using GeneralReservationSystem.Web.Authentication;
 using GeneralReservationSystem.Web.Services.Implementations;
 using GeneralReservationSystem.Web.Services.Implementations.Authentication;
+using GeneralReservationSystem.Web.Services.Interfaces;
 using GeneralReservationSystem.Web.Services.Interfaces.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
 
@@ -26,7 +27,7 @@ namespace GeneralReservationSystem.Web
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IStationService, StationService>();
             services.AddScoped<ITripService, TripService>();
-            services.AddScoped<IReservationService, ReservationService>();
+            services.AddScoped<IClientReservationService, ClientReservationService>();
 
             return services;
         }

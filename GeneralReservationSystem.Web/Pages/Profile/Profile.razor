@@ -1,0 +1,77 @@
+@page "/profile"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using GeneralReservationSystem.Application.DTOs.Authentication
+@using GeneralReservationSystem.Application.DTOs
+@using GeneralReservationSystem.Application.Exceptions.Services
+@using GeneralReservationSystem.Application.Services.Interfaces
+@using GeneralReservationSystem.Application.Services.Interfaces.Authentication
+@using GeneralReservationSystem.Web.Services.Interfaces.Authentication
+@inject IClientAuthenticationService Auth
+@inject IUserService UserService
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-4">
+    <PageTitle>Perfil</PageTitle>
+    <MudPaper Class="pa-4">
+        <MudForm @ref="_form" Spacing="3">
+            <MudTextField Label="Usuario" For="@(() => model.UserName)" @bind-Value="model.UserName" />
+            <MudTextField Label="Correo" For="@(() => model.Email)" @bind-Value="model.Email" />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save">Guardar</MudButton>
+        </MudForm>
+        <MudDivider Class="my-4" />
+        <MudForm @ref="_pwdForm" Spacing="3">
+            <MudTextField Label="Contraseña actual" For="@(() => pwd.CurrentPassword)" @bind-Value="pwd.CurrentPassword" InputType="InputType.Password" />
+            <MudTextField Label="Nueva contraseña" For="@(() => pwd.NewPassword)" @bind-Value="pwd.NewPassword" InputType="InputType.Password" />
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="ChangePassword">Cambiar contraseña</MudButton>
+        </MudForm>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private MudForm _form = null!;
+    private MudForm _pwdForm = null!;
+    private UpdateUserDto model = new();
+    private ChangePasswordDto pwd = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var me = await Auth.GetCurrentUserAsync();
+        model.UserId = me.UserId;
+        model.UserName = me.UserName;
+        model.Email = me.Email;
+        pwd.UserId = me.UserId;
+    }
+
+    private async Task Save()
+    {
+        try
+        {
+            await UserService.UpdateUserAsync(model);
+            Snackbar.Add("Perfil actualizado.", Severity.Success);
+        }
+        catch (ServiceException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task ChangePassword()
+    {
+        try
+        {
+            await Auth.ChangePasswordAsync(pwd);
+            Snackbar.Add("Contraseña cambiada.", Severity.Success);
+            pwd.CurrentPassword = string.Empty;
+            pwd.NewPassword = string.Empty;
+        }
+        catch (ServiceBusinessException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (ServiceException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+}

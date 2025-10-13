@@ -92,9 +92,9 @@ namespace GeneralReservationSystem.Web.Services.Implementations
             throw response.StatusCode switch
             {
                 System.Net.HttpStatusCode.NotFound => new ServiceNotFoundException(errorMessage),
-                System.Net.HttpStatusCode.BadRequest => new ServiceBusinessException(errorMessage),
-                System.Net.HttpStatusCode.Unauthorized => new ServiceBusinessException($"No está autorizado para realizar esta acción: {errorMessage}"),
-                System.Net.HttpStatusCode.Forbidden => new ServiceBusinessException($"No tiene permisos para realizar esta acción: {errorMessage}"),
+                System.Net.HttpStatusCode.Conflict => new ServiceBusinessException(errorMessage),
+                System.Net.HttpStatusCode.Unauthorized => new ServiceBusinessException($"No está autorizado para realizar esta acción."),
+                System.Net.HttpStatusCode.Forbidden => new ServiceBusinessException($"No tiene permisos para realizar esta acción."),
                 _ => new ServiceException(errorMessage)
             };
         }

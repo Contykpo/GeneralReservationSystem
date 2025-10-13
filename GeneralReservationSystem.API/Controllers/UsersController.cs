@@ -30,89 +30,123 @@ namespace GeneralReservationSystem.API.Controllers
         }
 
         [HttpGet("me")]
+        [Authorize]
         public async Task<IActionResult> GetCurrentUser(CancellationToken cancellationToken)
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
-                return Unauthorized(new { error = "No hay una sesión activa." });
+                return Unauthorized();
 
             try
             {
                 var keyDto = new UserKeyDto { UserId = int.Parse(userId) };
                 var user = await userService.GetUserAsync(keyDto, cancellationToken);
-                return Ok(user);
+                var userInfo = new UserInfo
+                {
+                    UserId = user.UserId,
+                    UserName = user.UserName,
+                    Email = user.Email,
+                    IsAdmin = user.IsAdmin
+                };
+                return Ok(userInfo);
             }
-            catch (ServiceNotFoundException)
+            catch (ServiceNotFoundException ex)
             {
-                return NotFound(new { error = "No se encontró el usuario." });
+                return NotFound(new { error = ex.Message });
             }
         }
 
         [HttpGet("{userId:int}")]
-        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetUserById([FromRoute] int userId, CancellationToken cancellationToken)
         {
+            var currentIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(currentIdStr))
+                return Unauthorized();
+            var currentId = int.Parse(currentIdStr);
+            if (!User.IsInRole("Admin") && userId != currentId)
+                return Forbid();
             try
             {
                 var keyDto = new UserKeyDto { UserId = userId };
                 var user = await userService.GetUserAsync(keyDto, cancellationToken);
                 return Ok(user);
             }
-            catch (ServiceNotFoundException)
+            catch (ServiceNotFoundException ex)
             {
-                return NotFound(new { error = $"No se encontró el usuario con ID {userId}." });
+                return NotFound(new { error = ex.Message });
             }
         }
 
         [HttpPut("me")]
+        [Authorize]
         public async Task<IActionResult> UpdateCurrentUser([FromBody] UpdateUserDto dto, CancellationToken cancellationToken)
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
-                return Unauthorized(new { error = "No hay una sesión activa." });
+                return Unauthorized();
 
             try
             {
                 dto.UserId = int.Parse(userId);
                 var user = await userService.UpdateUserAsync(dto, cancellationToken);
-                return Ok(user);
+                var userInfo = new UserInfo
+                {
+                    UserId = user.UserId,
+                    UserName = user.UserName,
+                    Email = user.Email,
+                    IsAdmin = user.IsAdmin
+                };
+                return Ok(userInfo);
             }
-            catch (ServiceNotFoundException)
+            catch (ServiceNotFoundException ex)
             {
-                return NotFound(new { error = "No se encontró el usuario para actualizar." });
+                return NotFound(new { error = ex.Message });
             }
-            catch (ServiceBusinessException)
+            catch (ServiceBusinessException ex)
             {
-                return BadRequest(new { error = "El nombre de usuario o correo electrónico ya está en uso por otro usuario." });
+                return Conflict(new { error = ex.Message });
             }
         }
 
         [HttpPut("{userId:int}")]
-        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateUserById([FromRoute] int userId, [FromBody] UpdateUserDto dto, CancellationToken cancellationToken)
         {
+            var currentIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(currentIdStr))
+                return Unauthorized();
+            var currentId = int.Parse(currentIdStr);
+            if (!User.IsInRole("Admin") && userId != currentId)
+                return Forbid();
             try
             {
                 dto.UserId = userId;
                 var user = await userService.UpdateUserAsync(dto, cancellationToken);
-                return Ok(user);
+                var userInfo = new UserInfo
+                {
+                    UserId = user.UserId,
+                    UserName = user.UserName,
+                    Email = user.Email,
+                    IsAdmin = user.IsAdmin
+                };
+                return Ok(userInfo);
             }
-            catch (ServiceNotFoundException)
+            catch (ServiceNotFoundException ex)
             {
-                return NotFound(new { error = $"No se encontró el usuario con ID {userId} para actualizar." });
+                return NotFound(new { error = ex.Message });
             }
-            catch (ServiceBusinessException)
+            catch (ServiceBusinessException ex)
             {
-                return BadRequest(new { error = "El nombre de usuario o correo electrónico ya está en uso por otro usuario." });
+                return BadRequest(new { error = ex.Message });
             }
         }
 
         [HttpDelete("me")]
+        [Authorize]
         public async Task<IActionResult> DeleteCurrentUser(CancellationToken cancellationToken)
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
-                return Unauthorized(new { error = "No hay una sesión activa." });
+                return Unauthorized();
 
             try
             {
@@ -120,25 +154,30 @@ namespace GeneralReservationSystem.API.Controllers
                 await userService.DeleteUserAsync(keyDto, cancellationToken);
                 return NoContent();
             }
-            catch (ServiceNotFoundException)
+            catch (ServiceNotFoundException ex)
             {
-                return NotFound(new { error = "No se encontró el usuario para eliminar." });
+                return NotFound(new { error = ex.Message });
             }
         }
 
         [HttpDelete("{userId:int}")]
-        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteUserById([FromRoute] int userId, CancellationToken cancellationToken)
         {
+            var currentIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(currentIdStr))
+                return Unauthorized();
+            var currentId = int.Parse(currentIdStr);
+            if (!User.IsInRole("Admin") && userId != currentId)
+                return Forbid();
             try
             {
                 var keyDto = new UserKeyDto { UserId = userId };
                 await userService.DeleteUserAsync(keyDto, cancellationToken);
                 return NoContent();
             }
-            catch (ServiceNotFoundException)
+            catch (ServiceNotFoundException ex)
             {
-                return NotFound(new { error = $"No se encontró el usuario con ID {userId} para eliminar." });
+                return NotFound(new { error = ex.Message });
             }
         }
     }

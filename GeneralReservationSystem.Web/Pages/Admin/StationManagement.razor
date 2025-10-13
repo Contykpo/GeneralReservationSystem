@@ -50,6 +50,7 @@
                  EditMode="DataGridEditMode.Form"
                  EditTrigger="DataGridEditTrigger.Manual"
                  CommittedItemChanges="HandleCommittedItemChanges"
+                 StartedEditingItem="HandleStartedEditingItem"
                  ReadOnly="false"
                  EditDialogOptions="editDialogOptions"
                  RowsPerPage="10">
@@ -62,22 +63,42 @@
             <PropertyColumn Property="x => x.StationId" Title="ID" Sortable="true" Filterable="false" Editable="false" />
             <PropertyColumn Property="x => x.StationName" Title="Nombre" Sortable="true" Filterable="true">
                 <EditTemplate>
-                    <MudTextField Label="Nombre" For="@(() => context.Item.StationName)" @bind-Value="context.Item.StationName" Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" />
+                    <MudTextField Label="Nombre" 
+                                  @bind-Value="_editStationDto.StationName" 
+                                  For="@(() => _editStationDto.StationName)"
+                                  Variant="Variant.Outlined" 
+                                  Margin="Margin.Dense" 
+                                  Immediate="true" />
                 </EditTemplate>
             </PropertyColumn>
             <PropertyColumn Property="x => x.City" Title="Ciudad" Sortable="true" Filterable="true">
                 <EditTemplate>
-                    <MudTextField Label="Ciudad" For="@(() => context.Item.City)" @bind-Value="context.Item.City" Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" />
+                    <MudTextField Label="Ciudad" 
+                                  @bind-Value="_editStationDto.City" 
+                                  For="@(() => _editStationDto.City)"
+                                  Variant="Variant.Outlined" 
+                                  Margin="Margin.Dense" 
+                                  Immediate="true" />
                 </EditTemplate>
             </PropertyColumn>
             <PropertyColumn Property="x => x.Region" Title="Región" Sortable="true" Filterable="true">
                 <EditTemplate>
-                    <MudTextField Label="Región" For="@(() => context.Item.Region)" @bind-Value="context.Item.Region" Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" />
+                    <MudTextField Label="Región" 
+                                  @bind-Value="_editStationDto.Region" 
+                                  For="@(() => _editStationDto.Region)"
+                                  Variant="Variant.Outlined" 
+                                  Margin="Margin.Dense" 
+                                  Immediate="true" />
                 </EditTemplate>
             </PropertyColumn>
             <PropertyColumn Property="x => x.Country" Title="País" Sortable="true" Filterable="true">
                 <EditTemplate>
-                    <MudTextField Label="País" For="@(() => context.Item.Country)" @bind-Value="context.Item.Country" Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" />
+                    <MudTextField Label="País" 
+                                  @bind-Value="_editStationDto.Country" 
+                                  For="@(() => _editStationDto.Country)"
+                                  Variant="Variant.Outlined" 
+                                  Margin="Margin.Dense" 
+                                  Immediate="true" />
                 </EditTemplate>
             </PropertyColumn>
             <TemplateColumn CellClass="w-auto text-nowrap text-md-center justify-end align-center" Sortable="false" Filterable="false">
@@ -94,18 +115,19 @@
 </MudContainer>
 
 @code {
-    private MudDataGrid<Station> dataGrid = null!;
-    private MudForm _createForm = null!;
-    private CreateStationDto _createStationDto = new();
+private MudDataGrid<Station> dataGrid = null!;
+private MudForm _createForm = null!;
+private CreateStationDto _createStationDto = new();
+private UpdateStationDto _editStationDto = new();
 
-    private DialogOptions editDialogOptions = new()
-    {
-        MaxWidth = MaxWidth.Medium,
-        FullWidth = true,
-        CloseButton = true,
-        Position = DialogPosition.Center,
-        CloseOnEscapeKey = true
-    };
+private DialogOptions editDialogOptions = new()
+{
+    MaxWidth = MaxWidth.Medium,
+    FullWidth = true,
+    CloseButton = true,
+    Position = DialogPosition.Center,
+    CloseOnEscapeKey = true
+};
 
     private async Task<GridData<Station>> ServerReload(GridState<Station> state)
     {
@@ -142,20 +164,23 @@
         return new GridData<Station> { Items = Array.Empty<Station>(), TotalItems = 0 };
     }
 
+    private void HandleStartedEditingItem(Station item)
+    {
+        _editStationDto = new UpdateStationDto
+        {
+            StationId = item.StationId,
+            StationName = item.StationName,
+            City = item.City,
+            Region = item.Region,
+            Country = item.Country
+        };
+    }
+
     private async Task HandleCommittedItemChanges(Station item)
     {
         try
         {
-            var dto = new UpdateStationDto
-            {
-                StationId = item.StationId,
-                StationName = item.StationName,
-                City = item.City,
-                Region = item.Region,
-                Country = item.Country
-            };
-
-            await StationService.UpdateStationAsync(dto);
+            await StationService.UpdateStationAsync(_editStationDto);
             Snackbar.Add("Estación actualizada correctamente.", Severity.Success);
             await dataGrid.ReloadServerData();
         }

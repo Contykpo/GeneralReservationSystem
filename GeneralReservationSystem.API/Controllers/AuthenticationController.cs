@@ -11,23 +11,16 @@ namespace GeneralReservationSystem.API.Controllers
 {
     [Route("api/auth")]
     [ApiController]
-    public class AuthenticationController : ControllerBase
+    public class AuthenticationController(IAuthenticationService authenticationService, JwtSettings jwtSettings) : ControllerBase
     {
-        private readonly IAuthenticationService _authenticationService;
-        private readonly JwtSettings _jwtSettings;
-
-        public AuthenticationController(IAuthenticationService authenticationService, JwtSettings jwtSettings)
-        {
-            _authenticationService = authenticationService;
-            _jwtSettings = jwtSettings;
-        }
+        private readonly JwtSettings _jwtSettings = jwtSettings;
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterUserDto dto, CancellationToken cancellationToken)
         {
             try
             {
-                var userInfo = await _authenticationService.RegisterUserAsync(dto, cancellationToken);
+                var userInfo = await authenticationService.RegisterUserAsync(dto, cancellationToken);
 
                 CreateSessionAndLogin(userInfo);
 
@@ -35,7 +28,7 @@ namespace GeneralReservationSystem.API.Controllers
             }
             catch (ServiceBusinessException ex)
             {
-                return BadRequest(new { error = ex.Message });
+                return Conflict(new { error = ex.Message });
             }
             catch (ServiceException)
             {
@@ -48,7 +41,7 @@ namespace GeneralReservationSystem.API.Controllers
         {
             try
             {
-                var userInfo = await _authenticationService.AuthenticateAsync(dto, cancellationToken);
+                var userInfo = await authenticationService.AuthenticateAsync(dto, cancellationToken);
 
                 CreateSessionAndLogin(userInfo);
 
@@ -56,11 +49,7 @@ namespace GeneralReservationSystem.API.Controllers
             }
             catch (ServiceBusinessException ex)
             {
-                return BadRequest(new { error = ex.Message });
-            }
-            catch (ServiceException)
-            {
-                return StatusCode(500, new { error = "Error al autenticar el usuario. Por favor, intente nuevamente." });
+                return Conflict(new { error = ex.Message });
             }
         }
 
@@ -82,7 +71,7 @@ namespace GeneralReservationSystem.API.Controllers
             var isAdmin = User.IsInRole("Admin");
 
             if (string.IsNullOrEmpty(userId))
-                return Unauthorized(new { error = "No hay una sesión activa." });
+                return Unauthorized();
 
             return Ok(new UserInfo
             {
@@ -101,22 +90,18 @@ namespace GeneralReservationSystem.API.Controllers
             {
                 var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userIdClaim) || int.Parse(userIdClaim) != dto.UserId)
-                    return Unauthorized(new { error = "No autorizado para cambiar esta contraseña." });
+                    return Unauthorized();
 
-                await _authenticationService.ChangePasswordAsync(dto, cancellationToken);
+                await authenticationService.ChangePasswordAsync(dto, cancellationToken);
                 return Ok(new { message = "Contraseña cambiada exitosamente." });
             }
             catch (ServiceBusinessException ex)
             {
-                return BadRequest(new { error = ex.Message });
+                return Conflict(new { error = ex.Message });
             }
             catch (ServiceNotFoundException ex)
             {
                 return NotFound(new { error = ex.Message });
-            }
-            catch (ServiceException)
-            {
-                return StatusCode(500, new { error = "Error al cambiar la contraseña. Por favor, intente nuevamente." });
             }
         }
 

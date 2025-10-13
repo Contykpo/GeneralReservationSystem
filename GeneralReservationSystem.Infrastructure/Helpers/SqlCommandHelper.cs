@@ -1,4 +1,5 @@
 using GeneralReservationSystem.Application.Helpers;
+using System.Data;
 using System.Data.Common;
 using System.Reflection;
 
@@ -9,7 +10,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
         public static string FormatQualifiedTableName(string tableName)
         {
             if (string.IsNullOrWhiteSpace(tableName)) return tableName;
-            var parts = tableName.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries);
+            var parts = tableName.Split(['.'], StringSplitOptions.RemoveEmptyEntries);
             return string.Join('.', parts.Select(p => "[" + p + "]"));
         }
 
@@ -173,7 +174,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             }
         }
 
-        public static string BuildOutputClause(IEnumerable<PropertyInfo> computedProperties, string tableName)
+        public static string BuildOutputClause(IEnumerable<PropertyInfo> computedProperties)
         {
             var outputColumns = computedProperties.Select(p => $"INSERTED.[{EntityHelper.GetColumnName(p)}]");
             return "OUTPUT " + string.Join(",", outputColumns);
@@ -186,7 +187,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             var hasOutput = computedProperties.Any();
 
             return hasOutput
-                ? $"INSERT INTO [{tableName}] (" + string.Join(",", columns) + ") " + BuildOutputClause(computedProperties, tableName) + " VALUES (" + string.Join(",", values) + ")"
+                ? $"INSERT INTO [{tableName}] (" + string.Join(",", columns) + ") " + BuildOutputClause(computedProperties) + " VALUES (" + string.Join(",", values) + ")"
                 : $"INSERT INTO [{tableName}] (" + string.Join(",", columns) + ") VALUES (" + string.Join(",", values) + ")";
         }
 
@@ -197,7 +198,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             var hasOutput = computedProperties.Any();
 
             return hasOutput
-                ? $"UPDATE [{tableName}] SET " + string.Join(",", setClauses) + " " + BuildOutputClause(computedProperties, tableName) + " WHERE " + string.Join(" AND ", whereClauses)
+                ? $"UPDATE [{tableName}] SET " + string.Join(",", setClauses) + " " + BuildOutputClause(computedProperties) + " WHERE " + string.Join(" AND ", whereClauses)
                 : $"UPDATE [{tableName}] SET " + string.Join(",", setClauses) + " WHERE " + string.Join(" AND ", whereClauses);
         }
 

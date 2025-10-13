@@ -29,13 +29,47 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
         public async Task<User> UpdateUserAsync(UpdateUserDto dto, CancellationToken cancellationToken = default)
         {
             var user = new User { UserId = dto.UserId };
+            bool hasUpdates = false;
+            
             if (dto.UserName != null)
+            {
                 user.UserName = dto.UserName;
+                hasUpdates = true;
+            }
             if (dto.Email != null)
+            {
                 user.Email = dto.Email;
+                hasUpdates = true;
+            }
+            
+            if (!hasUpdates)
+            {
+                // Nothing to update, return the existing user
+                return await GetUserAsync(new UserKeyDto { UserId = dto.UserId }, cancellationToken);
+            }
+            
             try
             {
-                var affected = await userRepository.UpdateAsync(user, cancellationToken);
+                // Build selector based on what properties are being updated
+                Func<User, object?> selector;
+                if (dto.UserName != null && dto.Email != null)
+                {
+                    selector = u => new { u.UserName, u.Email };
+                }
+                else if (dto.UserName != null)
+                {
+                    selector = u => u.UserName;
+                }
+                else // dto.Email != null
+                {
+                    selector = u => u.Email;
+                }
+                
+                var affected = await userRepository.UpdateAsync(
+                    user,
+                    selector,
+                    cancellationToken: cancellationToken
+                );
                 if (affected == 0)
                     throw new ServiceNotFoundException("No se encontró el usuario para actualizar.");
                 return user;
@@ -77,11 +111,18 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
             }
         }
 
-        public async Task<PagedResult<User>> SearchUsersAsync(PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default)
+        public async Task<PagedResult<UserInfo>> SearchUsersAsync(PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default)
         {
             try
             {
                 var query = userRepository.Query()
+                    .Select(u => new UserInfo
+                    {
+                        UserId = u.UserId,
+                        UserName = u.UserName,
+                        Email = u.Email,
+                        IsAdmin = u.IsAdmin
+                    })
                     .ApplyFilters(searchDto.Filters)
                     .ApplySorting(searchDto.Orders)
                     .Page(searchDto.Page, searchDto.PageSize);

@@ -35,6 +35,8 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
                     throw new ServiceBusinessException("La estación de salida y llegada deben ser diferentes.", ex);
                 if (ex.ConstraintName.Contains("CK_Trip_Times"))
                     throw new ServiceBusinessException("La hora de llegada debe ser posterior a la de salida.", ex);
+                if (ex.ConstraintName.Contains("CK_Trip_AvailableSeats"))
+                    throw new ServiceBusinessException("El número de asientos disponibles debe ser un número positivo.", ex);
                 throw new ServiceBusinessException("Restricción de datos inválida en el viaje.", ex);
             }
             catch (RepositoryException ex)
@@ -59,7 +61,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
 
             try
             {
-                var affected = await tripRepository.UpdateAsync(trip, cancellationToken);
+                var affected = await tripRepository.UpdateAsync(trip, cancellationToken: cancellationToken);
                 if (affected == 0)
                     throw new ServiceNotFoundException("No se encontró el viaje para actualizar.");
                 return trip;
@@ -74,6 +76,8 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
                     throw new ServiceBusinessException("La estación de salida y llegada deben ser diferentes.", ex);
                 if (ex.ConstraintName.Contains("CK_Trip_Times"))
                     throw new ServiceBusinessException("La hora de llegada debe ser posterior a la de salida.", ex);
+                if (ex.ConstraintName.Contains("CK_Trip_AvailableSeats"))
+                    throw new ServiceBusinessException("El número de asientos disponibles debe ser un número positivo.", ex);
                 throw new ServiceBusinessException("Restricción de datos inválida en el viaje.", ex);
             }
             catch (RepositoryException ex)

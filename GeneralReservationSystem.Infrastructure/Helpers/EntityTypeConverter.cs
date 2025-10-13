@@ -8,6 +8,15 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
 
             var underlying = Nullable.GetUnderlyingType(targetType) ?? targetType;
 
+            if (underlying == typeof(byte[]))
+            {
+                if (clrValue == null)
+                    return DBNull.Value;
+                if (clrValue is byte[] bytes && bytes.Length == 0)
+                    return DBNull.Value;
+                return clrValue;
+            }
+
             if (underlying == typeof(TimeZoneInfo))
             {
                 if (clrValue is TimeZoneInfo tzi)

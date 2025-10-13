@@ -33,9 +33,9 @@ namespace GeneralReservationSystem.API.Controllers
                 var trip = await tripService.GetTripAsync(keyDto, cancellationToken);
                 return Ok(trip);
             }
-            catch (ServiceNotFoundException)
+            catch (ServiceNotFoundException ex)
             {
-                return NotFound(new { error = $"No se encontró el viaje con ID {tripId}." });
+                return NotFound(new { error = ex.Message });
             }
         }
 
@@ -48,21 +48,9 @@ namespace GeneralReservationSystem.API.Controllers
                 var trip = await tripService.CreateTripAsync(dto, cancellationToken);
                 return CreatedAtAction(nameof(GetTrip), new { tripId = trip.TripId }, trip);
             }
-            catch (ServiceBusinessException ex) when (ex.Message.Contains("estación de salida o llegada"))
+            catch (ServiceBusinessException ex)
             {
-                return BadRequest(new { error = "Una o ambas estaciones especificadas no existen. Verifique los IDs de las estaciones." });
-            }
-            catch (ServiceBusinessException ex) when (ex.Message.Contains("diferentes"))
-            {
-                return BadRequest(new { error = "La estación de salida y la estación de llegada deben ser diferentes." });
-            }
-            catch (ServiceBusinessException ex) when (ex.Message.Contains("hora de llegada"))
-            {
-                return BadRequest(new { error = "La hora de llegada debe ser posterior a la hora de salida." });
-            }
-            catch (ServiceBusinessException)
-            {
-                return BadRequest(new { error = "Error al crear el viaje. Verifique que todos los datos sean válidos." });
+                return Conflict(new { error = ex.Message });
             }
         }
 
@@ -76,25 +64,13 @@ namespace GeneralReservationSystem.API.Controllers
                 var trip = await tripService.UpdateTripAsync(dto, cancellationToken);
                 return Ok(trip);
             }
-            catch (ServiceNotFoundException)
+            catch (ServiceNotFoundException ex)
             {
-                return NotFound(new { error = $"No se encontró el viaje con ID {tripId} para actualizar." });
+                return NotFound(new { error = ex.Message });
             }
-            catch (ServiceBusinessException ex) when (ex.Message.Contains("estación de salida o llegada"))
+            catch (ServiceBusinessException ex)
             {
-                return BadRequest(new { error = "Una o ambas estaciones especificadas no existen. Verifique los IDs de las estaciones." });
-            }
-            catch (ServiceBusinessException ex) when (ex.Message.Contains("diferentes"))
-            {
-                return BadRequest(new { error = "La estación de salida y la estación de llegada deben ser diferentes." });
-            }
-            catch (ServiceBusinessException ex) when (ex.Message.Contains("hora de llegada"))
-            {
-                return BadRequest(new { error = "La hora de llegada debe ser posterior a la hora de salida." });
-            }
-            catch (ServiceBusinessException)
-            {
-                return BadRequest(new { error = "Error al actualizar el viaje. Verifique que todos los datos sean válidos." });
+                return Conflict(new { error = ex.Message });
             }
         }
 
@@ -108,9 +84,9 @@ namespace GeneralReservationSystem.API.Controllers
                 await tripService.DeleteTripAsync(keyDto, cancellationToken);
                 return NoContent();
             }
-            catch (ServiceNotFoundException)
+            catch (ServiceNotFoundException ex)
             {
-                return NotFound(new { error = $"No se encontró el viaje con ID {tripId} para eliminar." });
+                return NotFound(new { error = ex.Message });
             }
         }
     }

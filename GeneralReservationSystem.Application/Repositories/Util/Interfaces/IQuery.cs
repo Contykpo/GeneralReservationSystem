@@ -16,21 +16,21 @@ namespace GeneralReservationSystem.Application.Repositories.Util.Interfaces
     public sealed record JoinDescriptor<TOuter, TInner, TResult>(Expression<Func<TOuter, TInner, bool>> On, Expression<Func<TOuter, TInner, TResult>> ResultSelector, JoinType JoinType = JoinType.Inner);
 
     public sealed record QueryModel<T>(
-        IReadOnlyList<FilterDescriptor<T>> Filters,
+        IList<FilterDescriptor<T>> Filters,
         ProjectionDescriptor<T, object>? Projection,
         GroupDescriptor<T, object>? Group,
-        IReadOnlyList<AggregateDescriptor<T, object>> Aggregates,
-        IReadOnlyList<JoinDescriptor<T, object, object>> Joins,
-        IReadOnlyList<OrderDescriptor<T, object>> Orders,
+        IList<AggregateDescriptor<T, object>> Aggregates,
+        IList<JoinDescriptor<T, object, object>> Joins,
+        IList<OrderDescriptor<T, object>> Orders,
         PaginationDescriptor? Pagination,
         bool IsDistinct
     );
 
     public sealed class AggregateResult
     {
-        private readonly Dictionary<string, object?> _values = new();
+        private readonly Dictionary<string, object?> _values = [];
 
-        internal AggregateResult(Dictionary<string, object?> values) => _values = values ?? new();
+        internal AggregateResult(Dictionary<string, object?> values) => _values = values ?? [];
 
         public TResult Get<TResult>(string name)
         {
@@ -56,7 +56,7 @@ namespace GeneralReservationSystem.Application.Repositories.Util.Interfaces
     public sealed class GroupResult<TKey, TElement>
     {
         public TKey Key { get; init; } = default!;
-        public IReadOnlyList<TElement> Items { get; init; } = Array.Empty<TElement>();
+        public IReadOnlyList<TElement> Items { get; init; } = [];
     }
 
     public interface IQuery<T>

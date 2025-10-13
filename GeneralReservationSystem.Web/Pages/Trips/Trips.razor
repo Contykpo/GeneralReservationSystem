@@ -1,0 +1,294 @@
+@page "/trips"
+@using GeneralReservationSystem.Application.Common
+@using GeneralReservationSystem.Application.DTOs
+@using GeneralReservationSystem.Application.Entities
+@using GeneralReservationSystem.Application.Exceptions.Services
+@using GeneralReservationSystem.Application.Services.Interfaces
+@using Microsoft.AspNetCore.Authorization
+
+@inject ITripService TripService
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <PageTitle>Viajes</PageTitle>
+
+    <AuthorizeView Roles="Admin">
+        <Authorized>
+            <MudExpansionPanels Class="mb-4">
+                <MudExpansionPanel Text="Agregar nuevo viaje" Icon="@Icons.Material.Filled.Add">
+                    <MudCard Class="pd-2">
+                        <MudCardContent>
+                            <MudForm @ref="_createForm" Spacing="3">
+                                <MudTextField Label="Estación salida" For="@(() => _create.DepartureStationId)" @bind-Value="_create.DepartureStationId" Variant="Variant.Outlined" Immediate="true" />
+                                <MudDatePicker Label="Fecha salida" Date="_create.DepartureTime" DateChanged="v => _create.DepartureTime = v ?? _create.DepartureTime" DateFormat="dd/MM/yyyy" />
+                                <MudTextField Label="Estación llegada" For="@(() => _create.ArrivalStationId)" @bind-Value="_create.ArrivalStationId" Variant="Variant.Outlined" Immediate="true" />
+                                <MudDatePicker Label="Fecha llegada" Date="_create.ArrivalTime" DateChanged="v => _create.ArrivalTime = v ?? _create.ArrivalTime" DateFormat="dd/MM/yyyy" />
+                                <MudTextField Label="Asientos" For="@(() => _create.AvailableSeats)" @bind-Value="_create.AvailableSeats" Variant="Variant.Outlined" Immediate="true" />
+                            </MudForm>
+                        </MudCardContent>
+                        <MudCardActions Class="gap-2">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="HandleCreate" StartIcon="@Icons.Material.Filled.Save">Guardar</MudButton>
+                            <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ClearForm">Limpiar</MudButton>
+                        </MudCardActions>
+                    </MudCard>
+                </MudExpansionPanel>
+            </MudExpansionPanels>
+        </Authorized>
+    </AuthorizeView>
+
+    <MudDataGrid @ref="dataGrid"
+                 T="Trip"
+                 ServerData="ServerReload"
+                 Filterable="true"
+                 FilterMode="DataGridFilterMode.ColumnFilterMenu"
+                 FilterCaseSensitivity="DataGridFilterCaseSensitivity.CaseInsensitive"
+                 SortMode="SortMode.Multiple"
+                 EditMode="DataGridEditMode.Form"
+                 EditTrigger="DataGridEditTrigger.Manual"
+                 CommittedItemChanges="HandleCommit"
+                 StartedEditingItem="HandleStartedEditingItem"
+                 ReadOnly="false"
+                 RowsPerPage="10">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Viajes</MudText>
+            <MudSpacer />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => dataGrid.ReloadServerData())" StartIcon="@Icons.Material.Filled.Refresh">Actualizar</MudButton>
+        </ToolBarContent>
+        <Columns>
+            <PropertyColumn Property="x => x.TripId" Title="ID" Sortable="true" Filterable="false" Editable="false" />
+            <PropertyColumn Property="x => x.DepartureStationId" Title="Salida">
+                <EditTemplate>
+                    <AuthorizeView Roles="Admin">
+                        <Authorized Context="auth">
+                            <MudTextField Label="Salida" 
+                                          @bind-Value="_editTripDto.DepartureStationId" 
+                                          For="@(() => _editTripDto.DepartureStationId)"
+                                          Variant="Variant.Outlined" 
+                                          Margin="Margin.Dense" 
+                                          Immediate="true" />
+                        </Authorized>
+                        <NotAuthorized Context="auth">
+                            @context.Item.DepartureStationId
+                        </NotAuthorized>
+                    </AuthorizeView>
+                </EditTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.DepartureTime" Title="Hora salida">
+                <EditTemplate>
+                    <AuthorizeView Roles="Admin">
+                        <Authorized Context="auth">
+                            <MudDatePicker Date="_editTripDto.DepartureTime" 
+                                           DateChanged="v => _editTripDto.DepartureTime = v" 
+                                           DateFormat="dd/MM/yyyy" />
+                        </Authorized>
+                        <NotAuthorized Context="auth">
+                            @context.Item.DepartureTime
+                        </NotAuthorized>
+                    </AuthorizeView>
+                </EditTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.ArrivalStationId" Title="Llegada">
+                <EditTemplate>
+                    <AuthorizeView Roles="Admin">
+                        <Authorized Context="auth">
+                            <MudTextField Label="Llegada" 
+                                          @bind-Value="_editTripDto.ArrivalStationId" 
+                                          For="@(() => _editTripDto.ArrivalStationId)"
+                                          Variant="Variant.Outlined" 
+                                          Margin="Margin.Dense" 
+                                          Immediate="true" />
+                        </Authorized>
+                        <NotAuthorized Context="auth">
+                            @context.Item.ArrivalStationId
+                        </NotAuthorized>
+                    </AuthorizeView>
+                </EditTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.ArrivalTime" Title="Hora llegada">
+                <EditTemplate>
+                    <AuthorizeView Roles="Admin">
+                        <Authorized Context="auth">
+                            <MudDatePicker Date="_editTripDto.ArrivalTime" 
+                                           DateChanged="v => _editTripDto.ArrivalTime = v" 
+                                           DateFormat="dd/MM/yyyy" />
+                        </Authorized>
+                        <NotAuthorized Context="auth">
+                            @context.Item.ArrivalTime
+                        </NotAuthorized>
+                    </AuthorizeView>
+                </EditTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.AvailableSeats" Title="Asientos">
+                <EditTemplate>
+                    <AuthorizeView Roles="Admin">
+                        <Authorized Context="auth">
+                            <MudTextField Label="Asientos" 
+                                          @bind-Value="_editTripDto.AvailableSeats" 
+                                          For="@(() => _editTripDto.AvailableSeats)"
+                                          Variant="Variant.Outlined" 
+                                          Margin="Margin.Dense" 
+                                          Immediate="true" />
+                        </Authorized>
+                        <NotAuthorized Context="auth">
+                            @context.Item.AvailableSeats
+                        </NotAuthorized>
+                    </AuthorizeView>
+                </EditTemplate>
+            </PropertyColumn>
+            <TemplateColumn>
+                <CellTemplate>
+                    <AuthorizeView Roles="Admin">
+                        <Authorized Context="auth">
+                            <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Filled.Edit" OnClick="@(() => context.Actions.StartEditingItemAsync())" />
+                            <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => HandleDelete(context.Item))" />
+                        </Authorized>
+                    </AuthorizeView>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager T="Trip" />
+        </PagerContent>
+    </MudDataGrid>
+</MudContainer>
+
+@code {
+private MudDataGrid<Trip> dataGrid = null!;
+private MudForm _createForm = null!;
+private CreateTripDto _create = new();
+private UpdateTripDto _editTripDto = new();
+
+private async Task<GridData<Trip>> ServerReload(GridState<Trip> state)
+    {
+        try
+        {
+            var searchRequest = new PagedSearchRequestDto
+            {
+                Page = state.Page + 1,
+                PageSize = state.PageSize
+            };
+
+            var result = await TripService.SearchTripsAsync(searchRequest);
+            return new GridData<Trip>
+            {
+                Items = result.Items,
+                TotalItems = result.TotalCount
+            };
+        }
+        catch (ServiceBusinessException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (ServiceException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch
+        {
+            Snackbar.Add("Ocurrió un error al cargar los viajes.", Severity.Error);
+        }
+
+        return new GridData<Trip> { Items = Array.Empty<Trip>(), TotalItems = 0 };
+    }
+
+    private void HandleStartedEditingItem(Trip item)
+    {
+        _editTripDto = new UpdateTripDto
+        {
+            TripId = item.TripId,
+            DepartureStationId = item.DepartureStationId,
+            DepartureTime = item.DepartureTime,
+            ArrivalStationId = item.ArrivalStationId,
+            ArrivalTime = item.ArrivalTime,
+            AvailableSeats = item.AvailableSeats
+        };
+    }
+
+    private async Task HandleCommit(Trip item)
+    {
+        try
+        {
+            await TripService.UpdateTripAsync(_editTripDto);
+            Snackbar.Add("Viaje actualizado.", Severity.Success);
+            await dataGrid.ReloadServerData();
+        }
+        catch (ServiceNotFoundException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Warning);
+            await dataGrid.ReloadServerData();
+        }
+        catch (ServiceBusinessException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (ServiceException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch
+        {
+            Snackbar.Add("Error inesperado al actualizar.", Severity.Error);
+        }
+    }
+
+    private async Task HandleCreate()
+    {
+        try
+        {
+            if (_createForm is not null)
+            {
+                await _createForm.Validate();
+                if (!_createForm.IsValid) return;
+            }
+            await TripService.CreateTripAsync(_create);
+            Snackbar.Add("Viaje creado.", Severity.Success);
+            ClearForm();
+            await dataGrid.ReloadServerData();
+        }
+        catch (ServiceBusinessException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (ServiceException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch
+        {
+            Snackbar.Add("Error inesperado al crear.", Severity.Error);
+        }
+    }
+
+    private async Task HandleDelete(Trip item)
+    {
+        try
+        {
+            await TripService.DeleteTripAsync(new TripKeyDto { TripId = item.TripId });
+            Snackbar.Add("Viaje eliminado.", Severity.Success);
+            await dataGrid.ReloadServerData();
+        }
+        catch (ServiceNotFoundException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Warning);
+            await dataGrid.ReloadServerData();
+        }
+        catch (ServiceBusinessException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (ServiceException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch
+        {
+            Snackbar.Add("Error inesperado al eliminar.", Severity.Error);
+        }
+    }
+
+    private void ClearForm()
+    {
+        _create = new();
+        _createForm?.ResetValidation();
+    }
+}

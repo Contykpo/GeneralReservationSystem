@@ -19,6 +19,8 @@
 
   <ItemGroup>
     <Folder Include="Components\" />
+    <Folder Include="Services\Implementations\Administration\" />
+    <Folder Include="Services\Interfaces\Administration\" />
   </ItemGroup>
 
 </Project>

@@ -48,7 +48,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
 
             try
             {
-                var affected = await stationRepository.UpdateAsync(station, cancellationToken);
+                var affected = await stationRepository.UpdateAsync(station, cancellationToken: cancellationToken);
                 if (affected == 0)
                     throw new ServiceNotFoundException("No se encontró la estación para actualizar.");
                 return station;

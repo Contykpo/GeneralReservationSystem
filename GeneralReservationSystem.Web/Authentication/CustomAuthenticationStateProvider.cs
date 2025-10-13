@@ -5,28 +5,21 @@ using System.Security.Claims;
 
 namespace GeneralReservationSystem.Web.Authentication
 {
-    public class CustomAuthenticationStateProvider : AuthenticationStateProvider
+    public class CustomAuthenticationStateProvider(IClientAuthenticationService clientAuthenticationService) : AuthenticationStateProvider
     {
-        private readonly IClientAuthenticationService _clientAuthenticationService;
-
-        public CustomAuthenticationStateProvider(IClientAuthenticationService clientAuthenticationService)
-        {
-            _clientAuthenticationService = clientAuthenticationService;
-        }
-
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {
             try
             {
-                var currentUser = await _clientAuthenticationService.GetCurrentUserAsync();
+                var currentUser = await clientAuthenticationService.GetCurrentUserAsync();
                 if (currentUser == null)
                     return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
 
                 var claims = new List<Claim>
                 {
-                    new Claim(ClaimTypes.NameIdentifier, currentUser.UserId.ToString()),
-                    new Claim(ClaimTypes.Name, currentUser.UserName ?? string.Empty),
-                    new Claim(ClaimTypes.Email, currentUser.Email ?? string.Empty)
+                    new(ClaimTypes.NameIdentifier, currentUser.UserId.ToString()),
+                    new(ClaimTypes.Name, currentUser.UserName ?? string.Empty),
+                    new(ClaimTypes.Email, currentUser.Email ?? string.Empty)
                 };
 
                 if (currentUser.IsAdmin)
@@ -47,9 +40,9 @@ namespace GeneralReservationSystem.Web.Authentication
         {
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, userInfo.UserId.ToString()),
-                new Claim(ClaimTypes.Name, userInfo.UserName ?? string.Empty),
-                new Claim(ClaimTypes.Email, userInfo.Email ?? string.Empty)
+                new(ClaimTypes.NameIdentifier, userInfo.UserId.ToString()),
+                new(ClaimTypes.Name, userInfo.UserName ?? string.Empty),
+                new(ClaimTypes.Email, userInfo.Email ?? string.Empty)
             };
             if (userInfo.IsAdmin)
                 claims.Add(new Claim(ClaimTypes.Role, "Admin"));

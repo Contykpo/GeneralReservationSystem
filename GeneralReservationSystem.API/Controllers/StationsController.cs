@@ -33,9 +33,9 @@ namespace GeneralReservationSystem.API.Controllers
                 var station = await stationService.GetStationAsync(keyDto, cancellationToken);
                 return Ok(station);
             }
-            catch (ServiceNotFoundException)
+            catch (ServiceNotFoundException ex)
             {
-                return NotFound(new { error = $"No se encontró la estación con ID {stationId}." });
+                return NotFound(new { error = ex.Message });
             }
         }
 
@@ -48,9 +48,9 @@ namespace GeneralReservationSystem.API.Controllers
                 var station = await stationService.CreateStationAsync(dto, cancellationToken);
                 return CreatedAtAction(nameof(GetStation), new { stationId = station.StationId }, station);
             }
-            catch (ServiceBusinessException)
+            catch (ServiceBusinessException ex)
             {
-                return BadRequest(new { error = $"Ya existe una estación con el nombre '{dto.StationName}'. Por favor, use un nombre diferente." });
+                return Conflict(new { error = ex.Message });
             }
         }
 
@@ -64,13 +64,13 @@ namespace GeneralReservationSystem.API.Controllers
                 var station = await stationService.UpdateStationAsync(dto, cancellationToken);
                 return Ok(station);
             }
-            catch (ServiceNotFoundException)
+            catch (ServiceNotFoundException ex)
             {
-                return NotFound(new { error = $"No se encontró la estación con ID {stationId} para actualizar." });
+                return NotFound(new { error = ex.Message });
             }
-            catch (ServiceBusinessException)
+            catch (ServiceBusinessException ex)
             {
-                return BadRequest(new { error = "El nombre de estación ya está en uso por otra estación." });
+                return Conflict(new { error = ex.Message });
             }
         }
 
@@ -84,9 +84,9 @@ namespace GeneralReservationSystem.API.Controllers
                 await stationService.DeleteStationAsync(keyDto, cancellationToken);
                 return NoContent();
             }
-            catch (ServiceNotFoundException)
+            catch (ServiceNotFoundException ex)
             {
-                return NotFound(new { error = $"No se encontró la estación con ID {stationId} para eliminar." });
+                return NotFound(new { error = ex.Message });
             }
         }
     }

@@ -1,11 +1,11 @@
 using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.Entities;
-using GeneralReservationSystem.Application.Services.Interfaces;
+using GeneralReservationSystem.Web.Services.Interfaces;
 
 namespace GeneralReservationSystem.Web.Services.Implementations
 {
-    public class ReservationService(HttpClient httpClient) : ApiServiceBase(httpClient), IReservationService
+    public class ClientReservationService(HttpClient httpClient) : ApiServiceBase(httpClient), IClientReservationService
     {
         public async Task<Reservation> GetReservationAsync(ReservationKeyDto keyDto, CancellationToken cancellationToken = default)
         {
@@ -30,6 +30,11 @@ namespace GeneralReservationSystem.Web.Services.Implementations
         public async Task DeleteReservationAsync(ReservationKeyDto keyDto, CancellationToken cancellationToken = default)
         {
             await DeleteAsync($"/api/reservations/me/trip/{keyDto.TripId}", cancellationToken);
+        }
+
+        public async Task<IEnumerable<Reservation>> GetCurrentUserReservationsAsync(CancellationToken cancellationToken = default)
+        {
+            return await GetAsync<IEnumerable<Reservation>>("/api/reservations/me", cancellationToken);
         }
     }
 }

@@ -46,6 +46,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
         {
             _transaction?.Dispose();
             _connection?.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

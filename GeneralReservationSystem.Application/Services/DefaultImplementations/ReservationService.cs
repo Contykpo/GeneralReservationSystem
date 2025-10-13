@@ -16,7 +16,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             {
                 TripId = dto.TripId,
                 UserId = userId,
-                SeatNumber = dto.Seat
+                Seat = dto.Seat
             };
             try
             {

@@ -8,6 +8,27 @@ namespace GeneralReservationSystem.Application.Helpers
         public static ConcurrentDictionary<Type, PropertyInfo[]> TypePropertiesCache { get; private set; } = new();
         public static ConcurrentDictionary<MemberInfo, Attribute[]> AttributeCache { get; private set; } = new();
 
+        public static PropertyInfo[] GetSelectedProperties<T>(object? selectorResult, PropertyInfo[] allProps, PropertyInfo[] keyProps)
+        {
+            if (selectorResult == null)
+                return [.. allProps.Where(p => !keyProps.Contains(p))];
+
+            var entityType = typeof(T);
+            var selectedType = selectorResult.GetType();
+
+            if (selectedType == entityType)
+                return [.. allProps.Where(p => !keyProps.Contains(p))];
+
+            if (selectedType.IsPrimitive || selectedType == typeof(string))
+            {
+                var match = allProps.FirstOrDefault(p => !keyProps.Contains(p) && p.PropertyType == selectedType);
+                return match != null ? [match] : [];
+            }
+
+            var selectedNames = selectedType.GetProperties().Select(p => p.Name).ToHashSet();
+            return [.. allProps.Where(p => !keyProps.Contains(p) && selectedNames.Contains(p.Name))];
+        }
+
         public static PropertyInfo[] GetProperties(this Type type) => TypePropertiesCache.GetOrAdd(type, t => t.GetProperties());
 
         public static PropertyInfo[] GetProperties<TEntity>() => GetProperties(typeof(TEntity));

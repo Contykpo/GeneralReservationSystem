@@ -143,7 +143,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
             }
 
             cmd.CommandText = hasOutput
-                ? $"INSERT INTO [{_tableName}] (" + string.Join(",", columns) + ") " + SqlCommandHelper.BuildOutputClause(_computedProperties, _tableName) + " VALUES " + valueRows.ToString()
+                ? $"INSERT INTO [{_tableName}] (" + string.Join(",", columns) + ") " + SqlCommandHelper.BuildOutputClause(_computedProperties) + " VALUES " + valueRows.ToString()
                 : $"INSERT INTO [{_tableName}] (" + string.Join(",", columns) + ") VALUES " + valueRows.ToString();
 
             return hasOutput
@@ -151,12 +151,21 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                 : await SqlCommandHelper.ExecuteNonQueryAsync(cmd, cancellationToken);
         }
 
-        public async Task<int> UpdateAsync(T entity, CancellationToken cancellationToken = default)
+        public async Task<int> UpdateAsync(T entity, Func<T, object?>? selector = null, CancellationToken cancellationToken = default)
         {
             using var conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(connectionFactory, cancellationToken);
             using var cmd = SqlCommandHelper.CreateCommand(conn, transaction);
 
-            var setColumns = _nonComputedProperties.Where(p => !_keyProperties.Contains(p)).ToArray();
+            PropertyInfo[] setColumns;
+            if (selector == null)
+            {
+                setColumns = [.. _nonComputedProperties.Where(p => !_keyProperties.Contains(p))];
+            }
+            else
+            {
+                var selected = selector(entity);
+                setColumns = ReflectionHelpers.GetSelectedProperties<T>(selected, _nonComputedProperties, _keyProperties);
+            }
             var hasOutput = _computedProperties.Length != 0;
 
             cmd.CommandText = SqlCommandHelper.BuildUpdateStatement(_tableName, setColumns, _keyProperties, _computedProperties, (p, i) => $"@set{i}", (p, i) => $"@key{i}");
@@ -176,17 +185,26 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                 : await SqlCommandHelper.ExecuteNonQueryAsync(cmd, cancellationToken);
         }
 
-        public async Task<int> UpdateBulkAsync(IEnumerable<T> entities, CancellationToken cancellationToken = default)
+        public async Task<int> UpdateBulkAsync(IEnumerable<T> entities, Func<T, object?>? selector = null, CancellationToken cancellationToken = default)
         {
             var entityList = entities as IList<T> ?? [.. entities];
             if (entityList.Count == 0) return 0;
             if (entityList.Count == 1)
-                return await UpdateAsync(entityList[0], cancellationToken);
+                return await UpdateAsync(entityList[0], selector, cancellationToken);
 
             using var conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(connectionFactory, cancellationToken);
             using var cmd = SqlCommandHelper.CreateCommand(conn, transaction);
 
-            var setColumns = _nonComputedProperties.Where(p => !_keyProperties.Contains(p)).ToArray();
+            PropertyInfo[] setColumns;
+            if (selector == null)
+            {
+                setColumns = [.. _nonComputedProperties.Where(p => !_keyProperties.Contains(p))];
+            }
+            else
+            {
+                var selected = selector(entityList[0]);
+                setColumns = ReflectionHelpers.GetSelectedProperties<T>(selected, _nonComputedProperties, _keyProperties);
+            }
             var hasOutput = _computedProperties.Length != 0;
             var setClauses = new List<string>();
 
@@ -218,7 +236,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
 
             var whereClause = SqlCommandHelper.BuildBulkWhereClause(entityList, _keyProperties, cmd, "wkey");
             cmd.CommandText = hasOutput
-                ? $"UPDATE [{_tableName}] SET " + string.Join(",", setClauses) + " " + SqlCommandHelper.BuildOutputClause(_computedProperties, _tableName) + " WHERE " + whereClause
+                ? $"UPDATE [{_tableName}] SET " + string.Join(",", setClauses) + " " + SqlCommandHelper.BuildOutputClause(_computedProperties) + " WHERE " + whereClause
                 : $"UPDATE [{_tableName}] SET " + string.Join(",", setClauses) + " WHERE " + whereClause;
 
             return hasOutput
