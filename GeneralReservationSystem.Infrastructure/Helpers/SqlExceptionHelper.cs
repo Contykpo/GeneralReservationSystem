@@ -15,16 +15,12 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
 
     public static class SqlExceptionHelper
     {
-        private static readonly Regex ConstraintTypeRegex = new(
-            @"(?<PrimaryKey>PRIMARY KEY constraint)|(?<Unique>UNIQUE KEY constraint)|(?<ForeignKey>FOREIGN KEY constraint)|(?<Check>CHECK constraint)|(?<NotNull>NOT NULL)",
-            RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
         public static SqlConstraintViolationType? DetermineViolationType(string sqlErrorMessage)
         {
             if (string.IsNullOrEmpty(sqlErrorMessage))
                 return null;
 
-            var match = ConstraintTypeRegex.Match(sqlErrorMessage);
+            var match = RegexHelpers.ConstraintTypeRegex().Match(sqlErrorMessage);
             if (!match.Success)
                 return null;
             if (match.Groups["PrimaryKey"].Success)
@@ -45,7 +41,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             if (string.IsNullOrEmpty(sqlErrorMessage))
                 return null;
 
-            var match = Regex.Match(sqlErrorMessage, @"constraint ['\[]?(?<name>[\w\d_]+)['\]]?", RegexOptions.IgnoreCase);
+            var match = RegexHelpers.ConstraintNameRegex().Match(sqlErrorMessage);
             if (match.Success)
                 return match.Groups["name"].Value;
 
@@ -57,7 +53,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             if (string.IsNullOrEmpty(sqlErrorMessage))
                 return null;
 
-            var match = Regex.Match(sqlErrorMessage, @"Column ['\[]?(?<name>[\w\d_]+)['\]]? is defined as NOT NULL", RegexOptions.IgnoreCase);
+            var match = RegexHelpers.NotNullColumnRegex().Match(sqlErrorMessage);
             if (match.Success)
                 return match.Groups["name"].Value;
 

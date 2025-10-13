@@ -16,12 +16,12 @@ namespace GeneralReservationSystem.Application.Repositories.Util.Interfaces
     public sealed record JoinDescriptor<TOuter, TInner, TResult>(Expression<Func<TOuter, TInner, bool>> On, Expression<Func<TOuter, TInner, TResult>> ResultSelector, JoinType JoinType = JoinType.Inner);
 
     public sealed record QueryModel<T>(
-        IList<FilterDescriptor<T>> Filters,
+        List<FilterDescriptor<T>> Filters,
         ProjectionDescriptor<T, object>? Projection,
         GroupDescriptor<T, object>? Group,
-        IList<AggregateDescriptor<T, object>> Aggregates,
-        IList<JoinDescriptor<T, object, object>> Joins,
-        IList<OrderDescriptor<T, object>> Orders,
+        List<AggregateDescriptor<T, object>> Aggregates,
+        List<JoinDescriptor<T, object, object>> Joins,
+        List<OrderDescriptor<T, object>> Orders,
         PaginationDescriptor? Pagination,
         bool IsDistinct
     );
