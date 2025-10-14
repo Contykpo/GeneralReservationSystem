@@ -1,4 +1,6 @@
+using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.DTOs;
+using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -13,14 +15,14 @@ namespace GeneralReservationSystem.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAllStations(CancellationToken cancellationToken)
         {
-            IEnumerable<Application.Entities.Station> stations = await stationService.GetAllStationsAsync(cancellationToken);
+            IEnumerable<Station> stations = await stationService.GetAllStationsAsync(cancellationToken);
             return Ok(stations);
         }
 
         [HttpPost("search")]
         public async Task<IActionResult> SearchStations([FromBody] PagedSearchRequestDto searchDto, CancellationToken cancellationToken)
         {
-            Application.Common.PagedResult<Application.Entities.Station> result = await stationService.SearchStationsAsync(searchDto, cancellationToken);
+            PagedResult<Station> result = await stationService.SearchStationsAsync(searchDto, cancellationToken);
             return Ok(result);
         }
 
@@ -30,7 +32,7 @@ namespace GeneralReservationSystem.API.Controllers
             try
             {
                 StationKeyDto keyDto = new() { StationId = stationId };
-                Application.Entities.Station station = await stationService.GetStationAsync(keyDto, cancellationToken);
+                Station station = await stationService.GetStationAsync(keyDto, cancellationToken);
                 return Ok(station);
             }
             catch (ServiceNotFoundException ex)
@@ -45,7 +47,7 @@ namespace GeneralReservationSystem.API.Controllers
         {
             try
             {
-                Application.Entities.Station station = await stationService.CreateStationAsync(dto, cancellationToken);
+                Station station = await stationService.CreateStationAsync(dto, cancellationToken);
                 return CreatedAtAction(nameof(GetStation), new { stationId = station.StationId }, station);
             }
             catch (ServiceBusinessException ex)
@@ -61,7 +63,7 @@ namespace GeneralReservationSystem.API.Controllers
             try
             {
                 dto.StationId = stationId;
-                Application.Entities.Station station = await stationService.UpdateStationAsync(dto, cancellationToken);
+                Station station = await stationService.UpdateStationAsync(dto, cancellationToken);
                 return Ok(station);
             }
             catch (ServiceNotFoundException ex)

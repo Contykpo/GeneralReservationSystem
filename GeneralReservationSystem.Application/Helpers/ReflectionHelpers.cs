@@ -29,7 +29,7 @@ namespace GeneralReservationSystem.Application.Helpers
                 return match != null ? [match] : [];
             }
 
-            HashSet<string> selectedNames = selectedType.GetProperties().Select(p => p.Name).ToHashSet();
+            HashSet<string> selectedNames = [.. selectedType.GetProperties().Select(p => p.Name)];
             return [.. allProps.Where(p => !keyProps.Contains(p) && selectedNames.Contains(p.Name))];
         }
 

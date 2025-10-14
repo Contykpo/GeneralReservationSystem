@@ -17,9 +17,9 @@ namespace GeneralReservationSystem.Web.Services.Implementations
             return await GetAsync<IEnumerable<Trip>>("/api/trips", cancellationToken);
         }
 
-        public async Task<PagedResult<Trip>> SearchTripsAsync(PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default)
+        public async Task<PagedResult<TripWithDetailsDto>> SearchTripsAsync(PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default)
         {
-            return await PostAsync<PagedResult<Trip>>("/api/trips/search", searchDto, cancellationToken);
+            return await PostAsync<PagedResult<TripWithDetailsDto>>("/api/trips/search", searchDto, cancellationToken);
         }
 
         public async Task<Trip> CreateTripAsync(CreateTripDto dto, CancellationToken cancellationToken = default)

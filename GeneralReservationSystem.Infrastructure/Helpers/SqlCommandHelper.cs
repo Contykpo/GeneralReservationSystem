@@ -195,8 +195,8 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
 
         public static string BuildInsertStatement(string tableName, IEnumerable<PropertyInfo> nonComputedProperties, IEnumerable<PropertyInfo> computedProperties, Func<PropertyInfo, int, string> parameterNameFactory)
         {
-            string[] columns = nonComputedProperties.Select(EntityHelper.GetColumnName).ToArray();
-            string[] values = nonComputedProperties.Select((p, i) => parameterNameFactory(p, i)).ToArray();
+            string[] columns = [.. nonComputedProperties.Select(EntityHelper.GetColumnName)];
+            string[] values = [.. nonComputedProperties.Select((p, i) => parameterNameFactory(p, i))];
             bool hasOutput = computedProperties.Any();
 
             return hasOutput
@@ -206,8 +206,8 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
 
         public static string BuildUpdateStatement(string tableName, IEnumerable<PropertyInfo> setColumns, IEnumerable<PropertyInfo> keyProperties, IEnumerable<PropertyInfo> computedProperties, Func<PropertyInfo, int, string> setParamFactory, Func<PropertyInfo, int, string> keyParamFactory)
         {
-            string[] setClauses = setColumns.Select((p, i) => $"{EntityHelper.GetColumnName(p)} = {setParamFactory(p, i)}").ToArray();
-            string[] whereClauses = keyProperties.Select((p, i) => $"{EntityHelper.GetColumnName(p)} = {keyParamFactory(p, i)}").ToArray();
+            string[] setClauses = [.. setColumns.Select((p, i) => $"{EntityHelper.GetColumnName(p)} = {setParamFactory(p, i)}")];
+            string[] whereClauses = [.. keyProperties.Select((p, i) => $"{EntityHelper.GetColumnName(p)} = {keyParamFactory(p, i)}")];
             bool hasOutput = computedProperties.Any();
 
             return hasOutput
@@ -217,7 +217,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
 
         public static string BuildDeleteStatement(string tableName, IEnumerable<PropertyInfo> keyProperties, Func<PropertyInfo, int, string> keyParamFactory)
         {
-            string[] whereClauses = keyProperties.Select((p, i) => $"{EntityHelper.GetColumnName(p)} = {keyParamFactory(p, i)}").ToArray();
+            string[] whereClauses = [.. keyProperties.Select((p, i) => $"{EntityHelper.GetColumnName(p)} = {keyParamFactory(p, i)}")];
             return $"DELETE FROM [{tableName}] WHERE " + string.Join(" AND ", whereClauses);
         }
 

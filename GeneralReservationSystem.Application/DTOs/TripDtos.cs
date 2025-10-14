@@ -52,4 +52,16 @@ namespace GeneralReservationSystem.Application.DTOs
         [Range(1, int.MaxValue, ErrorMessage = "El Id de viaje debe ser un número positivo.")]
         public int TripId { get; set; }
     }
+
+    public class TripWithDetailsDto
+    {
+        public int TripId { get; set; }
+        public int DepartureStationId { get; set; }
+        public DateTime DepartureTime { get; set; }
+        public int ArrivalStationId { get; set; }
+        public DateTime ArrivalTime { get; set; }
+        public int AvailableSeats { get; set; }
+        public int ReservedSeats { get; set; }
+        public int FreeSeats => AvailableSeats - ReservedSeats;
+    }
 }

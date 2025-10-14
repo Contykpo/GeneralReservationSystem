@@ -29,8 +29,8 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             SymmetricSecurityKey key = GetIssuerSigningKeyFromString(settings.SecretKey);
             SigningCredentials credentials = new(key, SecurityAlgorithms.HmacSha256);
 
-            Claim[] claims = new[]
-            {
+            Claim[] claims =
+            [
                 new Claim(ClaimTypes.NameIdentifier, userSession.UserId.ToString()),
                 new Claim(ClaimTypes.Name, userSession.UserName),
                 new Claim(ClaimTypes.Email, userSession.Email),
@@ -38,7 +38,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim(JwtRegisteredClaimNames.Iss, settings.Issuer),
                 new Claim(JwtRegisteredClaimNames.Aud, settings.Audience)
-            };
+            ];
 
             JwtSecurityToken token = new(
                 issuer: settings.Issuer,

@@ -164,39 +164,44 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
         {
             ArgumentNullException.ThrowIfNull(onPredicate);
             ArgumentNullException.ThrowIfNull(resultSelector);
-
-            ParameterExpression outerParam = Expression.Parameter(typeof(T), "outer");
+            ParameterExpression resultOuterParam = Expression.Parameter(typeof(TResult), "outerRes");
             ParameterExpression innerObjParam = Expression.Parameter(typeof(object), "innerObj");
 
-            UnaryExpression convertedInnerForOn = Expression.Convert(innerObjParam, typeof(TInner));
-            InvocationExpression onInvoke = Expression.Invoke(onPredicate, outerParam, convertedInnerForOn);
-            Expression<Func<T, object, bool>> onWrapper = Expression.Lambda<Func<T, object, bool>>(onInvoke, outerParam, innerObjParam);
+            List<JoinDescriptor<TResult, object, object>> accumulatedJoins = [];
+            if (Model.Joins != null && Model.Joins.Count > 0)
+            {
+                foreach (var j in Model.Joins)
+                {
+                    var prevOnInvoke = Expression.Invoke(j.On, Expression.Default(typeof(T)), innerObjParam);
+                    var prevOnWrapped = Expression.Lambda<Func<TResult, object, bool>>(prevOnInvoke, resultOuterParam, innerObjParam);
 
-            InvocationExpression resultInvoke = Expression.Invoke(resultSelector, outerParam, convertedInnerForOn);
-            UnaryExpression resultConvertToObject = Expression.Convert(resultInvoke, typeof(object));
-            Expression<Func<T, object, object>> resultWrapper = Expression.Lambda<Func<T, object, object>>(resultConvertToObject, outerParam, innerObjParam);
+                    var prevResInvoke = Expression.Invoke(j.ResultSelector, Expression.Default(typeof(T)), innerObjParam);
+                    var prevResWrapped = Expression.Lambda<Func<TResult, object, object>>(Expression.Convert(prevResInvoke, typeof(object)), resultOuterParam, innerObjParam);
 
-            JoinDescriptor<T, object, object> joinDesc = new(
-                On: onWrapper,
-                ResultSelector: resultWrapper,
-                JoinType: joinType
+                    accumulatedJoins.Add(new JoinDescriptor<TResult, object, object>(prevOnWrapped, prevResWrapped, j.JoinType));
+                }
+            }
+
+            var onInvoke = Expression.Invoke(onPredicate, Expression.Default(typeof(T)), Expression.Convert(innerObjParam, typeof(TInner)));
+            var onWrapper = Expression.Lambda<Func<TResult, object, bool>>(onInvoke, resultOuterParam, innerObjParam);
+
+            var resultInvoke = Expression.Invoke(resultSelector, Expression.Default(typeof(T)), Expression.Convert(innerObjParam, typeof(TInner)));
+            var resultWrapper = Expression.Lambda<Func<TResult, object, object>>(Expression.Convert(resultInvoke, typeof(object)), resultOuterParam, innerObjParam);
+
+            accumulatedJoins.Add(new JoinDescriptor<TResult, object, object>(onWrapper, resultWrapper, joinType));
+
+            QueryModel<TResult> newModel = new(
+                Filters: [],
+                Projection: null,
+                Group: null,
+                Aggregates: [],
+                Joins: accumulatedJoins,
+                Orders: [],
+                Pagination: null,
+                IsDistinct: false
             );
 
-            List<JoinDescriptor<T, object, object>> joins = Model.Joins?.ToList() ?? [];
-            joins.Add(joinDesc);
-
-            Model = new QueryModel<T>(
-                Filters: Model.Filters,
-                Projection: Model.Projection,
-                Group: Model.Group,
-                Aggregates: Model.Aggregates,
-                Joins: joins,
-                Orders: Model.Orders,
-                Pagination: Model.Pagination,
-                IsDistinct: Model.IsDistinct
-            );
-
-            return new Query<TResult>(ConnectionFactory, Transaction, (QueryModel<TResult>)(object)Model);
+            return new Query<TResult>(ConnectionFactory, Transaction, newModel);
         }
 
         public IQuery<TResult> GroupBy<TKey, TResult>(Expression<Func<T, TKey>> keySelector, Expression<Func<IGrouping<TKey, T>, TResult>> resultSelector)
@@ -360,25 +365,61 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
         {
             private readonly List<KeyValuePair<string, object?>> _parameters = [];
             private int _paramCounter = 0;
+            private List<string>? _groupByExplicit;
+
+            private static bool TryGetOriginalJoinLambda(LambdaExpression onLambda, out LambdaExpression? original)
+            {
+                original = null;
+                if (onLambda.Body is InvocationExpression inv && inv.Expression is LambdaExpression le)
+                {
+                    original = le;
+                    return true;
+                }
+                if (onLambda.Parameters.Count == 2)
+                {
+                    original = onLambda;
+                    return true;
+                }
+                return false;
+            }
+
+            private static Type UnwrapGroupingIfNeeded(Type type)
+            {
+                if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IGrouping<,>))
+                {
+                    return type.GetGenericArguments()[1];
+                }
+                return type;
+            }
+
+            private Type ResolveSourceType()
+            {
+                if (model.Joins != null && model.Joins.Count > 0)
+                {
+                    var first = model.Joins[0];
+                    if (first.On is LambdaExpression onLe && TryGetOriginalJoinLambda(onLe, out var orig) && orig != null && orig.Parameters.Count >= 2)
+                    {
+                        return UnwrapGroupingIfNeeded(orig.Parameters[0].Type);
+                    }
+                }
+
+                if (model.Projection != null && model.Projection.Selector is LambdaExpression p && p.Parameters.Count > 0)
+                {
+                    return UnwrapGroupingIfNeeded(p.Parameters[0].Type);
+                }
+
+                return typeof(T);
+            }
 
             public (string SelectSql, IReadOnlyList<(string Column, string Alias)> Selected, bool SelectAll, Type SourceType) BuildSelectClause()
             {
-                Type sourceType = typeof(T);
-                LambdaExpression? projectionLambda = null;
-                if (model.Projection != null)
-                {
-                    projectionLambda = model.Projection.Selector as LambdaExpression;
-                    if (projectionLambda != null && projectionLambda.Parameters.Count > 0)
-                    {
-                        sourceType = projectionLambda.Parameters[0].Type;
-                    }
-                }
+                Type sourceType = ResolveSourceType();
 
                 string tableName = EntityHelper.GetTableName(sourceType);
 
                 List<(string Column, string Alias)> selected = [];
                 bool selectAll = false;
-                if (projectionLambda == null)
+                if (model.Projection?.Selector is not LambdaExpression projectionLambda)
                 {
                     foreach (PropertyInfo prop in sourceType.GetProperties())
                     {
@@ -389,10 +430,49 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
                 }
                 else
                 {
+                    bool isGrouping = projectionLambda.Parameters.Count > 0 && projectionLambda.Parameters[0].Type.IsGenericType && projectionLambda.Parameters[0].Type.GetGenericTypeDefinition() == typeof(IGrouping<,>);
                     Expression body = projectionLambda.Body;
-                    if (body is MemberInitExpression mi)
+                    if (isGrouping && body is MemberInitExpression mi)
                     {
+                        List<string> gbCols = [];
+                        List<string> fragmentParts = [];
                         foreach (MemberAssignment assign in mi.Bindings.Cast<MemberAssignment>())
+                        {
+                            string alias = assign.Member.Name;
+                            if (assign.Expression is MethodCallExpression mce && mce.Method.Name == nameof(Enumerable.Count))
+                            {
+                                fragmentParts.Add($"COUNT(1) AS [{alias}]");
+                                selected.Add((alias, alias));
+                                continue;
+                            }
+
+                            if (assign.Expression is MemberExpression mex && mex.Member is PropertyInfo pinfo)
+                            {
+                                string col = EntityHelper.GetColumnName(pinfo);
+                                string qualified = SqlCommandHelper.FormatQualifiedTableName(tableName);
+                                fragmentParts.Add($"{qualified}.[{col}] AS [{alias}]");
+                                selected.Add((col, alias));
+                                gbCols.Add(col);
+                                continue;
+                            }
+
+                            selectAll = true; // fallback if unknown pattern
+                            break;
+                        }
+
+                        if (!selectAll)
+                        {
+                            _groupByExplicit = [.. gbCols.Distinct()];
+                            System.Text.StringBuilder sbSel = new();
+                            _ = sbSel.Append("SELECT ");
+                            if (model.IsDistinct) _ = sbSel.Append("DISTINCT ");
+                            _ = sbSel.Append(string.Join(", ", fragmentParts));
+                            return (sbSel.ToString(), selected, false, sourceType);
+                        }
+                    }
+                    if (body is MemberInitExpression mi2)
+                    {
+                        foreach (MemberAssignment assign in mi2.Bindings.Cast<MemberAssignment>())
                         {
                             if (assign.Expression is MemberExpression mex && mex.Member is PropertyInfo pinfo)
                             {
@@ -643,6 +723,12 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
                     return string.Empty;
                 }
 
+                if (_groupByExplicit != null && _groupByExplicit.Count > 0)
+                {
+                    string qualified = SqlCommandHelper.FormatQualifiedTableName(tableName);
+                    return "GROUP BY " + string.Join(", ", _groupByExplicit.Select(c => $"{qualified}.[{c}]"));
+                }
+
                 if (model.Group.Selector is LambdaExpression gLE && gLE.Body is MemberExpression gm && gm.Member is PropertyInfo gpi)
                 {
                     string gcol = EntityHelper.GetColumnName(gpi);
@@ -655,7 +741,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
             public (string SqlFragment, IReadOnlyList<string> Names) BuildAggregates(IEnumerable<AggregateDescriptor<T, object>> aggregates)
             {
                 ArgumentNullException.ThrowIfNull(aggregates);
-                List<AggregateDescriptor<T, object>> aggs = aggregates.ToList();
+                List<AggregateDescriptor<T, object>> aggs = [.. aggregates];
                 if (aggs.Count == 0)
                 {
                     return (string.Empty, Array.Empty<string>());
@@ -718,14 +804,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
             public (string Sql, IReadOnlyList<KeyValuePair<string, object?>> Parameters, IReadOnlyList<string> AggregateNames) BuildAggregate(IEnumerable<AggregateDescriptor<T, object>> aggregates)
             {
                 ArgumentNullException.ThrowIfNull(aggregates);
-                Type sourceType = typeof(T);
-                if (model.Projection != null)
-                {
-                    if (model.Projection.Selector is LambdaExpression projectionLambda && projectionLambda.Parameters.Count > 0)
-                    {
-                        sourceType = projectionLambda.Parameters[0].Type;
-                    }
-                }
+                Type sourceType = ResolveSourceType();
                 string tableName = EntityHelper.GetTableName(sourceType);
                 string qualifiedTable = SqlCommandHelper.FormatQualifiedTableName(tableName);
 

@@ -511,7 +511,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
                         string qualifiedTableName = SqlCommandHelper.FormatQualifiedTableName(alias);
                         _ = _sb.Append("((");
                         _ = _sb.Append($"{qualifiedTableName}.[{col}] IS NULL OR {qualifiedTableName}.[{col}] = '')");
-                        _ = _sb.Append(")");
+                        _ = _sb.Append(')');
                         return node;
                     }
                 }

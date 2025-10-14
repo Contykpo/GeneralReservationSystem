@@ -160,14 +160,42 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             }
         }
 
-        public async Task<PagedResult<Trip>> SearchTripsAsync(PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default)
+        public async Task<PagedResult<TripWithDetailsDto>> SearchTripsAsync(PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default)
         {
             try
             {
-                Repositories.Util.Interfaces.IQuery<Trip> query = tripRepository.Query()
+                var query = tripRepository.Query()
                     .ApplyFilters(searchDto.Filters)
                     .ApplySorting(searchDto.Orders)
+                    .Join<Reservation, TripWithDetailsDto>(
+                        (trip, reservation) => trip.TripId == reservation.TripId,
+                        (trip, reservation) => new TripWithDetailsDto
+                        {
+                            TripId = trip.TripId,
+                            DepartureStationId = trip.DepartureStationId,
+                            DepartureTime = trip.DepartureTime,
+                            ArrivalStationId = trip.ArrivalStationId,
+                            ArrivalTime = trip.ArrivalTime,
+                            AvailableSeats = trip.AvailableSeats,
+                            ReservedSeats = reservation == null ? 0 : 1
+                        },
+                        Repositories.Util.Interfaces.JoinType.Left
+                    )
+                    .GroupBy(
+                        t => t.TripId,
+                        g => new TripWithDetailsDto
+                        {
+                            TripId = g.First().TripId,
+                            DepartureStationId = g.First().DepartureStationId,
+                            DepartureTime = g.First().DepartureTime,
+                            ArrivalStationId = g.First().ArrivalStationId,
+                            ArrivalTime = g.First().ArrivalTime,
+                            AvailableSeats = g.First().AvailableSeats,
+                            ReservedSeats = g.Count(),
+                        }
+                    )
                     .Page(searchDto.Page, searchDto.PageSize);
+
                 return await query.ToPagedResultAsync(cancellationToken);
             }
             catch (RepositoryException ex)

@@ -129,7 +129,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
             using DbConnection conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(connectionFactory, cancellationToken);
             using DbCommand cmd = SqlCommandHelper.CreateCommand(conn, transaction);
 
-            string[] columns = _nonComputedProperties.Select(EntityHelper.GetColumnName).ToArray();
+            string[] columns = [.. _nonComputedProperties.Select(EntityHelper.GetColumnName)];
             bool hasOutput = _computedProperties.Length != 0;
             StringBuilder valueRows = new();
 

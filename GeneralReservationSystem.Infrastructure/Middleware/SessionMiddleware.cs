@@ -17,13 +17,13 @@ namespace GeneralReservationSystem.Infrastructure.Middleware
                     if (userSession != null)
                     {
                         context.Items["UserSession"] = userSession;
-                        Claim[] claims = new[]
-                        {
+                        Claim[] claims =
+                        [
                             new Claim(ClaimTypes.NameIdentifier, userSession.UserId.ToString()),
                             new Claim(ClaimTypes.Name, userSession.UserName),
                             new Claim(ClaimTypes.Email, userSession.Email),
                             new Claim(ClaimTypes.Role, userSession.IsAdmin ? "Admin" : "User")
-                        };
+                        ];
                         ClaimsIdentity identity = new(claims, "Cookie");
                         context.User = new ClaimsPrincipal(identity);
                     }
