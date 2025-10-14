@@ -1,5 +1,6 @@
 @page "/admin/users"
 @attribute [Authorize(Roles = "Admin")]
+@using GeneralReservationSystem.Web.Helpers
 @using Microsoft.AspNetCore.Authorization
 @using GeneralReservationSystem.Application.Common
 @using GeneralReservationSystem.Application.DTOs
@@ -75,7 +76,9 @@ private async Task<GridData<UserInfo>> ServerReload(GridState<UserInfo> state)
             var search = new PagedSearchRequestDto
             {
                 Page = state.Page + 1,
-                PageSize = state.PageSize
+                PageSize = state.PageSize,
+                Filters = GridHelpers.BuildFilters(state),
+                Orders = GridHelpers.BuildOrders(state)
             };
             var result = await UserService.SearchUsersAsync(search);
             return new GridData<UserInfo> { Items = result.Items, TotalItems = result.TotalCount };

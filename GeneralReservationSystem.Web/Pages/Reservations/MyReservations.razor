@@ -10,7 +10,7 @@
 @using GeneralReservationSystem.Application.Exceptions.Services
 @using GeneralReservationSystem.Application.Services.Interfaces
 
-@inject IClientReservationService ReservationService
+@inject IClientReservationService ClientReservationService
 @inject ISnackbar Snackbar
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
@@ -41,7 +41,7 @@
     {
         try
         {
-            var list = await ReservationService.GetCurrentUserReservationsAsync();
+            var list = await ClientReservationService.GetCurrentUserReservationsAsync();
             return new GridData<Reservation> { Items = list, TotalItems = list.Count() };
         }
         catch (ServiceException ex)
@@ -59,7 +59,7 @@
     {
         try
         {
-            await ReservationService.DeleteReservationAsync(new ReservationKeyDto { TripId = item.TripId });
+            await ClientReservationService.DeleteReservationAsync(new ReservationKeyDto { TripId = item.TripId });
             Snackbar.Add("Reserva eliminada.", Severity.Success);
             await dataGrid.ReloadServerData();
         }

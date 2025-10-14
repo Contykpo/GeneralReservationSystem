@@ -1,12 +1,17 @@
 @page "/admin/reservations"
+
 @attribute [Authorize(Roles = "Admin")]
+
+@using GeneralReservationSystem.Web.Helpers
+@using GeneralReservationSystem.Web.Services.Interfaces
 @using Microsoft.AspNetCore.Authorization
 @using GeneralReservationSystem.Application.Common
 @using GeneralReservationSystem.Application.DTOs
 @using GeneralReservationSystem.Application.Entities
 @using GeneralReservationSystem.Application.Exceptions.Services
 @using GeneralReservationSystem.Application.Services.Interfaces
-@inject IReservationService ReservationService
+
+@inject IClientReservationService ClientReservationService
 @inject ISnackbar Snackbar
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
@@ -42,9 +47,11 @@
             var search = new PagedSearchRequestDto
             {
                 Page = state.Page + 1,
-                PageSize = state.PageSize
+                PageSize = state.PageSize,
+                Filters = GridHelpers.BuildFilters(state),
+                Orders = GridHelpers.BuildOrders(state)
             };
-            var result = await ReservationService.SearchReservationsAsync(search);
+            var result = await ClientReservationService.SearchReservationsAsync(search);
             return new GridData<Reservation> { Items = result.Items, TotalItems = result.TotalCount };
         }
         catch (ServiceException ex)
@@ -62,7 +69,7 @@
     {
         try
         {
-            await ReservationService.DeleteReservationAsync(new ReservationKeyDto { TripId = item.TripId, UserId = item.UserId });
+            await ClientReservationService.DeleteReservationAsync(new ReservationKeyDto { TripId = item.TripId, UserId = item.UserId });
             Snackbar.Add("Reserva eliminada.", Severity.Success);
             await dataGrid.ReloadServerData();
         }
