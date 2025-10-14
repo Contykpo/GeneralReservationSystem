@@ -12,7 +12,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
     {
         public async Task<Trip> CreateTripAsync(CreateTripDto dto, CancellationToken cancellationToken = default)
         {
-            var trip = new Trip
+            Trip trip = new()
             {
                 DepartureStationId = dto.DepartureStationId,
                 DepartureTime = dto.DepartureTime,
@@ -22,7 +22,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             };
             try
             {
-                await tripRepository.CreateAsync(trip, cancellationToken);
+                _ = await tripRepository.CreateAsync(trip, cancellationToken);
                 return trip;
             }
             catch (ForeignKeyViolationException ex)
@@ -32,11 +32,20 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             catch (CheckConstraintViolationException ex)
             {
                 if (ex.ConstraintName.Contains("CK_Trip_Departure_Arrival"))
+                {
                     throw new ServiceBusinessException("La estación de salida y llegada deben ser diferentes.", ex);
+                }
+
                 if (ex.ConstraintName.Contains("CK_Trip_Times"))
+                {
                     throw new ServiceBusinessException("La hora de llegada debe ser posterior a la de salida.", ex);
+                }
+
                 if (ex.ConstraintName.Contains("CK_Trip_AvailableSeats"))
+                {
                     throw new ServiceBusinessException("El número de asientos disponibles debe ser un número positivo.", ex);
+                }
+
                 throw new ServiceBusinessException("Restricción de datos inválida en el viaje.", ex);
             }
             catch (RepositoryException ex)
@@ -47,24 +56,36 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
 
         public async Task<Trip> UpdateTripAsync(UpdateTripDto dto, CancellationToken cancellationToken = default)
         {
-            var trip = new Trip { TripId = dto.TripId };
+            Trip trip = new() { TripId = dto.TripId };
             if (dto.DepartureStationId.HasValue)
+            {
                 trip.DepartureStationId = dto.DepartureStationId.Value;
+            }
+
             if (dto.DepartureTime.HasValue)
+            {
                 trip.DepartureTime = dto.DepartureTime.Value;
+            }
+
             if (dto.ArrivalStationId.HasValue)
+            {
                 trip.ArrivalStationId = dto.ArrivalStationId.Value;
+            }
+
             if (dto.ArrivalTime.HasValue)
+            {
                 trip.ArrivalTime = dto.ArrivalTime.Value;
+            }
+
             if (dto.AvailableSeats.HasValue)
+            {
                 trip.AvailableSeats = dto.AvailableSeats.Value;
+            }
 
             try
             {
-                var affected = await tripRepository.UpdateAsync(trip, cancellationToken: cancellationToken);
-                if (affected == 0)
-                    throw new ServiceNotFoundException("No se encontró el viaje para actualizar.");
-                return trip;
+                int affected = await tripRepository.UpdateAsync(trip, cancellationToken: cancellationToken);
+                return affected == 0 ? throw new ServiceNotFoundException("No se encontró el viaje para actualizar.") : trip;
             }
             catch (ForeignKeyViolationException ex)
             {
@@ -73,11 +94,20 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             catch (CheckConstraintViolationException ex)
             {
                 if (ex.ConstraintName.Contains("CK_Trip_Departure_Arrival"))
+                {
                     throw new ServiceBusinessException("La estación de salida y llegada deben ser diferentes.", ex);
+                }
+
                 if (ex.ConstraintName.Contains("CK_Trip_Times"))
+                {
                     throw new ServiceBusinessException("La hora de llegada debe ser posterior a la de salida.", ex);
+                }
+
                 if (ex.ConstraintName.Contains("CK_Trip_AvailableSeats"))
+                {
                     throw new ServiceBusinessException("El número de asientos disponibles debe ser un número positivo.", ex);
+                }
+
                 throw new ServiceBusinessException("Restricción de datos inválida en el viaje.", ex);
             }
             catch (RepositoryException ex)
@@ -88,12 +118,14 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
 
         public async Task DeleteTripAsync(TripKeyDto keyDto, CancellationToken cancellationToken = default)
         {
-            var trip = new Trip { TripId = keyDto.TripId };
+            Trip trip = new() { TripId = keyDto.TripId };
             try
             {
-                var affected = await tripRepository.DeleteAsync(trip, cancellationToken);
+                int affected = await tripRepository.DeleteAsync(trip, cancellationToken);
                 if (affected == 0)
+                {
                     throw new ServiceNotFoundException("No se encontró el viaje para eliminar.");
+                }
             }
             catch (RepositoryException ex)
             {
@@ -105,7 +137,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                var trip = await tripRepository.Query()
+                Trip trip = await tripRepository.Query()
                     .Where(t => t.TripId == keyDto.TripId)
                     .FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el viaje solicitado.");
                 return trip;
@@ -132,7 +164,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                var query = tripRepository.Query()
+                Repositories.Util.Interfaces.IQuery<Trip> query = tripRepository.Query()
                     .ApplyFilters(searchDto.Filters)
                     .ApplySorting(searchDto.Orders)
                     .Page(searchDto.Page, searchDto.PageSize);

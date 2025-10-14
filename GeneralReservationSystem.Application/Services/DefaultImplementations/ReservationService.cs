@@ -12,7 +12,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
     {
         public async Task CreateReservationAsync(CreateReservationDto dto, int userId, CancellationToken cancellationToken = default)
         {
-            var reservation = new Reservation
+            Reservation reservation = new()
             {
                 TripId = dto.TripId,
                 UserId = userId,
@@ -20,7 +20,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             };
             try
             {
-                await reservationRepository.CreateAsync(reservation, cancellationToken);
+                _ = await reservationRepository.CreateAsync(reservation, cancellationToken);
             }
             catch (ForeignKeyViolationException ex)
             {
@@ -38,16 +38,18 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
 
         public async Task DeleteReservationAsync(ReservationKeyDto keyDto, CancellationToken cancellationToken = default)
         {
-            var reservation = new Reservation
+            Reservation reservation = new()
             {
                 TripId = keyDto.TripId,
                 UserId = keyDto.UserId
             };
             try
             {
-                var affected = await reservationRepository.DeleteAsync(reservation, cancellationToken);
+                int affected = await reservationRepository.DeleteAsync(reservation, cancellationToken);
                 if (affected == 0)
+                {
                     throw new ServiceNotFoundException("No se encontró la reserva para eliminar.");
+                }
             }
             catch (RepositoryException ex)
             {
@@ -59,7 +61,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                var reservation = await reservationRepository.Query()
+                Reservation? reservation = await reservationRepository.Query()
                     .Where(r => r.TripId == keyDto.TripId && r.UserId == keyDto.UserId)
                     .FirstOrDefaultAsync(cancellationToken);
                 return reservation ?? throw new ServiceNotFoundException("No se encontró la reserva solicitada.");
@@ -88,7 +90,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                var query = reservationRepository.Query()
+                Repositories.Util.Interfaces.IQuery<Reservation> query = reservationRepository.Query()
                     .ApplyFilters(searchDto.Filters)
                     .ApplySorting(searchDto.Orders)
                     .Page(searchDto.Page, searchDto.PageSize);

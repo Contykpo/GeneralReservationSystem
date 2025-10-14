@@ -20,14 +20,16 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
         public const string CookieName = "jwt_token";
 
         public static SymmetricSecurityKey GetIssuerSigningKeyFromString(string secretKey)
-            => new(Encoding.UTF8.GetBytes(secretKey));
+        {
+            return new(Encoding.UTF8.GetBytes(secretKey));
+        }
 
         public static string GenerateJwtToken(UserSessionInfo userSession, JwtSettings settings)
         {
-            var key = GetIssuerSigningKeyFromString(settings.SecretKey);
-            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            SymmetricSecurityKey key = GetIssuerSigningKeyFromString(settings.SecretKey);
+            SigningCredentials credentials = new(key, SecurityAlgorithms.HmacSha256);
 
-            var claims = new[]
+            Claim[] claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, userSession.UserId.ToString()),
                 new Claim(ClaimTypes.Name, userSession.UserName),
@@ -38,7 +40,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
                 new Claim(JwtRegisteredClaimNames.Aud, settings.Audience)
             };
 
-            var token = new JwtSecurityToken(
+            JwtSecurityToken token = new(
                 issuer: settings.Issuer,
                 audience: settings.Audience,
                 claims: claims,
@@ -51,7 +53,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
 
         public static void SetJwtCookie(HttpContext context, string token, JwtSettings settings)
         {
-            var options = new CookieOptions
+            CookieOptions options = new()
             {
                 HttpOnly = true,
                 Secure = true,
@@ -66,7 +68,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
 
         public static string GenerateAndSetJwtCookie(HttpContext context, UserSessionInfo userSession, JwtSettings settings)
         {
-            var token = GenerateJwtToken(userSession, settings);
+            string token = GenerateJwtToken(userSession, settings);
             SetJwtCookie(context, token, settings);
 
             return token;

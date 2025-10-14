@@ -21,15 +21,15 @@ namespace GeneralReservationSystem.Web.Services.Implementations
 
         private static HttpRequestMessage CreateRequestWithCredentials(HttpMethod method, string url)
         {
-            var request = new HttpRequestMessage(method, url);
-            request.SetBrowserRequestCredentials(BrowserRequestCredentials.Include);
+            HttpRequestMessage request = new(method, url);
+            _ = request.SetBrowserRequestCredentials(BrowserRequestCredentials.Include);
             return request;
         }
 
         protected async Task<T> GetAsync<T>(string url, CancellationToken cancellationToken = default)
         {
-            var request = CreateRequestWithCredentials(HttpMethod.Get, url);
-            var response = await _httpClient.SendAsync(request, cancellationToken);
+            HttpRequestMessage request = CreateRequestWithCredentials(HttpMethod.Get, url);
+            HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
             await EnsureSuccessOrThrow(response);
             return await response.Content.ReadFromJsonAsync<T>(_jsonOptions, cancellationToken)
                 ?? throw new ServiceException("La respuesta del servidor está vacía.");
@@ -37,9 +37,9 @@ namespace GeneralReservationSystem.Web.Services.Implementations
 
         protected async Task<T> PostAsync<T>(string url, object content, CancellationToken cancellationToken = default)
         {
-            var request = CreateRequestWithCredentials(HttpMethod.Post, url);
+            HttpRequestMessage request = CreateRequestWithCredentials(HttpMethod.Post, url);
             request.Content = JsonContent.Create(content);
-            var response = await _httpClient.SendAsync(request, cancellationToken);
+            HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
             await EnsureSuccessOrThrow(response);
             return await response.Content.ReadFromJsonAsync<T>(_jsonOptions, cancellationToken)
                 ?? throw new ServiceException("La respuesta del servidor está vacía.");
@@ -47,17 +47,17 @@ namespace GeneralReservationSystem.Web.Services.Implementations
 
         protected async Task PostAsync(string url, object content, CancellationToken cancellationToken = default)
         {
-            var request = CreateRequestWithCredentials(HttpMethod.Post, url);
+            HttpRequestMessage request = CreateRequestWithCredentials(HttpMethod.Post, url);
             request.Content = JsonContent.Create(content);
-            var response = await _httpClient.SendAsync(request, cancellationToken);
+            HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
             await EnsureSuccessOrThrow(response);
         }
 
         protected async Task<T> PutAsync<T>(string url, object content, CancellationToken cancellationToken = default)
         {
-            var request = CreateRequestWithCredentials(HttpMethod.Put, url);
+            HttpRequestMessage request = CreateRequestWithCredentials(HttpMethod.Put, url);
             request.Content = JsonContent.Create(content);
-            var response = await _httpClient.SendAsync(request, cancellationToken);
+            HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
             await EnsureSuccessOrThrow(response);
             return await response.Content.ReadFromJsonAsync<T>(_jsonOptions, cancellationToken)
                 ?? throw new ServiceException("La respuesta del servidor está vacía.");
@@ -65,24 +65,28 @@ namespace GeneralReservationSystem.Web.Services.Implementations
 
         protected async Task DeleteAsync(string url, CancellationToken cancellationToken = default)
         {
-            var request = CreateRequestWithCredentials(HttpMethod.Delete, url);
-            var response = await _httpClient.SendAsync(request, cancellationToken);
+            HttpRequestMessage request = CreateRequestWithCredentials(HttpMethod.Delete, url);
+            HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
             await EnsureSuccessOrThrow(response);
         }
 
         private async Task EnsureSuccessOrThrow(HttpResponseMessage response)
         {
             if (response.IsSuccessStatusCode)
+            {
                 return;
+            }
 
-            var errorContent = await response.Content.ReadAsStringAsync();
+            string errorContent = await response.Content.ReadAsStringAsync();
             string errorMessage = "Error en la solicitud al servidor.";
 
             try
             {
-                var errorObj = JsonSerializer.Deserialize<ErrorResponse>(errorContent, _jsonOptions);
+                ErrorResponse? errorObj = JsonSerializer.Deserialize<ErrorResponse>(errorContent, _jsonOptions);
                 if (errorObj?.Error != null)
+                {
                     errorMessage = errorObj.Error;
+                }
             }
             catch
             {

@@ -28,7 +28,7 @@ namespace GeneralReservationSystem.API.Middleware
             {
                 if (serviceEx.InnerException is RepositoryException repoEx)
                 {
-                    var dbEx = GetInnermostDbException(repoEx);
+                    DbException? dbEx = GetInnermostDbException(repoEx);
                     if (dbEx != null)
                     {
                         logger.LogError(dbEx, "DbException: {Message}", dbEx.Message);
@@ -57,7 +57,10 @@ namespace GeneralReservationSystem.API.Middleware
             while (innerEx != null)
             {
                 if (innerEx is DbException dbEx)
+                {
                     return dbEx;
+                }
+
                 innerEx = innerEx.InnerException;
             }
             return null;

@@ -4,26 +4,27 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
     {
         public static object? ConvertToDbValue(object? clrValue, Type targetType)
         {
-            if (clrValue == null) return DBNull.Value;
+            if (clrValue == null)
+            {
+                return DBNull.Value;
+            }
 
-            var underlying = Nullable.GetUnderlyingType(targetType) ?? targetType;
+            Type underlying = Nullable.GetUnderlyingType(targetType) ?? targetType;
 
             if (underlying == typeof(byte[]))
             {
-                if (clrValue == null)
-                    return DBNull.Value;
-                if (clrValue is byte[] bytes && bytes.Length == 0)
-                    return DBNull.Value;
-                return clrValue;
+                return clrValue == null ? DBNull.Value : clrValue is byte[] bytes && bytes.Length == 0 ? DBNull.Value : clrValue;
             }
 
             if (underlying == typeof(TimeZoneInfo))
             {
                 if (clrValue is TimeZoneInfo tzi)
+                {
                     return tzi.Id;
+                }
 
-                var strValue = clrValue.ToString();
-                return string.IsNullOrEmpty(strValue) ? (object)DBNull.Value : strValue;
+                string? strValue = clrValue.ToString();
+                return string.IsNullOrEmpty(strValue) ? DBNull.Value : strValue;
             }
 
             if (underlying.IsEnum)
@@ -44,18 +45,24 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
         public static object? ConvertFromDbValue(object? dbValue, Type targetType)
         {
             if (dbValue == null || dbValue == DBNull.Value)
+            {
                 return GetDefaultValue(targetType);
+            }
 
-            var underlying = Nullable.GetUnderlyingType(targetType) ?? targetType;
+            Type underlying = Nullable.GetUnderlyingType(targetType) ?? targetType;
 
             if (underlying == typeof(TimeZoneInfo))
             {
                 if (dbValue is TimeZoneInfo tzi)
+                {
                     return tzi;
+                }
 
-                var timeZoneId = dbValue?.ToString();
+                string? timeZoneId = dbValue?.ToString();
                 if (string.IsNullOrEmpty(timeZoneId))
+                {
                     return TimeZoneInfo.Utc;
+                }
 
                 try
                 {
@@ -65,11 +72,14 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
                 {
                     try
                     {
-                        var tz = TimeZoneInfo.GetSystemTimeZones()
+                        TimeZoneInfo? tz = TimeZoneInfo.GetSystemTimeZones()
                             .FirstOrDefault(z => z.DisplayName == timeZoneId ||
                                                z.StandardName == timeZoneId ||
                                                z.DaylightName == timeZoneId);
-                        if (tz != null) return tz;
+                        if (tz != null)
+                        {
+                            return tz;
+                        }
                     }
                     catch { }
 
@@ -82,9 +92,11 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
                 try
                 {
                     if (dbValue is string str)
+                    {
                         return Enum.Parse(underlying, str);
+                    }
 
-                    var value = Convert.ChangeType(dbValue, Enum.GetUnderlyingType(underlying));
+                    object value = Convert.ChangeType(dbValue, Enum.GetUnderlyingType(underlying));
                     return Enum.ToObject(underlying, value!);
                 }
                 catch
@@ -107,7 +119,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
 
         public static bool IsScalar(Type type)
         {
-            var underlying = Nullable.GetUnderlyingType(type) ?? type;
+            Type underlying = Nullable.GetUnderlyingType(type) ?? type;
 
             return underlying.IsPrimitive ||
                    underlying == typeof(string) ||
@@ -121,10 +133,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
 
         private static object? GetDefaultValue(Type type)
         {
-            if (type.IsValueType)
-                return Activator.CreateInstance(type);
-
-            return null;
+            return type.IsValueType ? Activator.CreateInstance(type) : null;
         }
 
         private static bool IsCompatibleType(Type sourceType, Type targetType)

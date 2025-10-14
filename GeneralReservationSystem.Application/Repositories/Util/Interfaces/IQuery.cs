@@ -30,18 +30,21 @@ namespace GeneralReservationSystem.Application.Repositories.Util.Interfaces
     {
         private readonly Dictionary<string, object?> _values = [];
 
-        internal AggregateResult(Dictionary<string, object?> values) => _values = values ?? [];
+        internal AggregateResult(Dictionary<string, object?> values)
+        {
+            _values = values ?? [];
+        }
 
         public TResult Get<TResult>(string name)
         {
-            if (_values.TryGetValue(name, out var value) && value is TResult typed)
-                return typed;
-            throw new InvalidOperationException($"Aggregate '{name}' not found or wrong type.");
+            return _values.TryGetValue(name, out object? value) && value is TResult typed
+                ? typed
+                : throw new InvalidOperationException($"Aggregate '{name}' not found or wrong type.");
         }
 
         public bool TryGet<TResult>(string name, out TResult? value)
         {
-            if (_values.TryGetValue(name, out var raw) && raw is TResult typed)
+            if (_values.TryGetValue(name, out object? raw) && raw is TResult typed)
             {
                 value = typed;
                 return true;
@@ -50,7 +53,10 @@ namespace GeneralReservationSystem.Application.Repositories.Util.Interfaces
             return false;
         }
 
-        public IReadOnlyDictionary<string, object?> AsDictionary() => new ReadOnlyDictionary<string, object?>(_values);
+        public IReadOnlyDictionary<string, object?> AsDictionary()
+        {
+            return new ReadOnlyDictionary<string, object?>(_values);
+        }
     }
 
     public sealed class GroupResult<TKey, TElement>

@@ -10,11 +10,11 @@ namespace GeneralReservationSystem.Infrastructure
             string connectionStringName)
             where TConnection : DbConnection, new()
         {
-            var connectionString = config.GetConnectionString(connectionStringName);
+            string? connectionString = config.GetConnectionString(connectionStringName);
 
             return () =>
             {
-                var conn = new TConnection
+                TConnection conn = new()
                 {
                     ConnectionString = connectionString
                 };

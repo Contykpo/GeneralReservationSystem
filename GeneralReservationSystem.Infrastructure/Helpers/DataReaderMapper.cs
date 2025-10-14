@@ -8,15 +8,15 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
     {
         public static T MapReaderToEntity<T>(DbDataReader reader, PropertyInfo[] properties) where T : class, new()
         {
-            var entity = new T();
-            foreach (var prop in properties)
+            T entity = new();
+            foreach (PropertyInfo prop in properties)
             {
-                var colName = EntityHelper.GetColumnName(prop);
-                var ordinal = reader.GetOrdinal(colName);
+                string colName = EntityHelper.GetColumnName(prop);
+                int ordinal = reader.GetOrdinal(colName);
                 if (!reader.IsDBNull(ordinal))
                 {
-                    var dbValue = reader.GetValue(ordinal);
-                    var convertedValue = EntityTypeConverter.ConvertFromDbValue(dbValue, prop.PropertyType);
+                    object dbValue = reader.GetValue(ordinal);
+                    object? convertedValue = EntityTypeConverter.ConvertFromDbValue(dbValue, prop.PropertyType);
                     prop.SetValue(entity, convertedValue);
                 }
             }
@@ -29,8 +29,8 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             {
                 if (!reader.IsDBNull(i))
                 {
-                    var dbValue = reader.GetValue(i);
-                    var convertedValue = EntityTypeConverter.ConvertFromDbValue(dbValue, computedProperties[i].PropertyType);
+                    object dbValue = reader.GetValue(i);
+                    object? convertedValue = EntityTypeConverter.ConvertFromDbValue(dbValue, computedProperties[i].PropertyType);
                     computedProperties[i].SetValue(entity, convertedValue);
                 }
             }
@@ -41,35 +41,33 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             IReadOnlyList<(string Column, string Alias)> selectedColumns,
             bool selectAll)
         {
-            var targetType = typeof(T);
-            var props = targetType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            Type targetType = typeof(T);
+            PropertyInfo[] props = targetType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
             if (EntityTypeConverter.IsScalar(targetType))
             {
-                var val = reader.IsDBNull(0) ? default : reader.GetValue(0);
-                if (val is null || val == DBNull.Value)
-                {
-                    if (default(T) is null)
-                    {
-                        return default!;
-                    }
-                    throw new InvalidOperationException("Cannot map null value to non-nullable scalar type.");
-                }
-                return (T)Convert.ChangeType(val, targetType)!;
+                object? val = reader.IsDBNull(0) ? default : reader.GetValue(0);
+                return val is null || val == DBNull.Value
+                    ? default(T) is null ? default! : throw new InvalidOperationException("Cannot map null value to non-nullable scalar type.")
+                    : (T)Convert.ChangeType(val, targetType)!;
             }
 
-            var instance = Activator.CreateInstance<T>() ?? throw new InvalidOperationException($"Cannot create instance of type {targetType.Name}");
+            T instance = Activator.CreateInstance<T>() ?? throw new InvalidOperationException($"Cannot create instance of type {targetType.Name}");
             if (selectAll)
             {
                 for (int i = 0; i < selectedColumns.Count; i++)
                 {
-                    var alias = selectedColumns[i].Alias;
-                    var prop = props.FirstOrDefault(p => p.Name == alias);
-                    if (prop == null) continue;
+                    string alias = selectedColumns[i].Alias;
+                    PropertyInfo? prop = props.FirstOrDefault(p => p.Name == alias);
+                    if (prop == null)
+                    {
+                        continue;
+                    }
+
                     if (!reader.IsDBNull(i))
                     {
-                        var raw = reader.GetValue(i);
-                        var converted = EntityTypeConverter.ConvertFromDbValue(raw, prop.PropertyType);
+                        object raw = reader.GetValue(i);
+                        object? converted = EntityTypeConverter.ConvertFromDbValue(raw, prop.PropertyType);
                         prop.SetValue(instance, converted);
                     }
                 }
@@ -78,12 +76,12 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             {
                 for (int i = 0; i < selectedColumns.Count; i++)
                 {
-                    var alias = selectedColumns[i].Alias;
-                    var prop = props.FirstOrDefault(p => p.Name == alias);
+                    string alias = selectedColumns[i].Alias;
+                    PropertyInfo? prop = props.FirstOrDefault(p => p.Name == alias);
                     if (prop != null && !reader.IsDBNull(i))
                     {
-                        var raw = reader.GetValue(i);
-                        var converted = EntityTypeConverter.ConvertFromDbValue(raw, prop.PropertyType);
+                        object raw = reader.GetValue(i);
+                        object? converted = EntityTypeConverter.ConvertFromDbValue(raw, prop.PropertyType);
                         prop.SetValue(instance, converted);
                     }
                 }
@@ -98,35 +96,33 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             bool selectAll,
             CancellationToken cancellationToken = default)
         {
-            var targetType = typeof(T);
-            var props = targetType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            Type targetType = typeof(T);
+            PropertyInfo[] props = targetType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
             if (EntityTypeConverter.IsScalar(targetType))
             {
-                var val = await reader.IsDBNullAsync(0, cancellationToken) ? default : reader.GetValue(0);
-                if (val is null || val == DBNull.Value)
-                {
-                    if (default(T) is null)
-                    {
-                        return default!;
-                    }
-                    throw new InvalidOperationException("Cannot map null value to non-nullable scalar type.");
-                }
-                return (T)Convert.ChangeType(val, targetType)!;
+                object? val = await reader.IsDBNullAsync(0, cancellationToken) ? default : reader.GetValue(0);
+                return val is null || val == DBNull.Value
+                    ? default(T) is null ? default! : throw new InvalidOperationException("Cannot map null value to non-nullable scalar type.")
+                    : (T)Convert.ChangeType(val, targetType)!;
             }
 
-            var instance = Activator.CreateInstance<T>() ?? throw new InvalidOperationException($"Cannot create instance of type {targetType.Name}");
+            T instance = Activator.CreateInstance<T>() ?? throw new InvalidOperationException($"Cannot create instance of type {targetType.Name}");
             if (selectAll)
             {
                 for (int i = 0; i < selectedColumns.Count; i++)
                 {
-                    var alias = selectedColumns[i].Alias;
-                    var prop = props.FirstOrDefault(p => p.Name == alias);
-                    if (prop == null) continue;
+                    string alias = selectedColumns[i].Alias;
+                    PropertyInfo? prop = props.FirstOrDefault(p => p.Name == alias);
+                    if (prop == null)
+                    {
+                        continue;
+                    }
+
                     if (!await reader.IsDBNullAsync(i, cancellationToken))
                     {
-                        var raw = reader.GetValue(i);
-                        var converted = EntityTypeConverter.ConvertFromDbValue(raw, prop.PropertyType);
+                        object raw = reader.GetValue(i);
+                        object? converted = EntityTypeConverter.ConvertFromDbValue(raw, prop.PropertyType);
                         prop.SetValue(instance, converted);
                     }
                 }
@@ -135,12 +131,12 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             {
                 for (int i = 0; i < selectedColumns.Count; i++)
                 {
-                    var alias = selectedColumns[i].Alias;
-                    var prop = props.FirstOrDefault(p => p.Name == alias);
+                    string alias = selectedColumns[i].Alias;
+                    PropertyInfo? prop = props.FirstOrDefault(p => p.Name == alias);
                     if (prop != null && !await reader.IsDBNullAsync(i, cancellationToken))
                     {
-                        var raw = reader.GetValue(i);
-                        var converted = EntityTypeConverter.ConvertFromDbValue(raw, prop.PropertyType);
+                        object raw = reader.GetValue(i);
+                        object? converted = EntityTypeConverter.ConvertFromDbValue(raw, prop.PropertyType);
                         prop.SetValue(instance, converted);
                     }
                 }

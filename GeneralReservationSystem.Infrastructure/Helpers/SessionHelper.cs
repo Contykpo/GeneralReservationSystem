@@ -17,14 +17,14 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
 
         public static void SetUserSessionCookie(HttpContext context, UserSessionInfo userSession)
         {
-            var options = new CookieOptions
+            CookieOptions options = new()
             {
                 HttpOnly = true,
                 Secure = true,
                 SameSite = SameSiteMode.Strict,
                 Expires = DateTimeOffset.UtcNow.AddDays(7)
             };
-            var value = JsonSerializer.Serialize(userSession);
+            string value = JsonSerializer.Serialize(userSession);
             context.Response.Cookies.Append(CookieName, value, options);
         }
 

@@ -20,26 +20,26 @@ namespace GeneralReservationSystem.Infrastructure
         public static IServiceCollection AddInfrastructureRepositories(this IServiceCollection services)
         {
             // Register default DbConnection factory
-            services.AddScoped<Func<DbConnection>>(sp =>
+            _ = services.AddScoped<Func<DbConnection>>(sp =>
                 DbConnectionFactory.CreateFactory<SqlConnection>(
                     sp.GetRequiredService<IConfiguration>(),
                     "DefaultConnection"));
 
             // Register all default repository implementations
-            services.AddScoped<IUserRepository, UserRepository>();
-            services.AddScoped<IStationRepository, StationRepository>();
-            services.AddScoped<IReservationRepository, ReservationRepository>();
-            services.AddScoped<ITripRepository, TripRepository>();
+            _ = services.AddScoped<IUserRepository, UserRepository>();
+            _ = services.AddScoped<IStationRepository, StationRepository>();
+            _ = services.AddScoped<IReservationRepository, ReservationRepository>();
+            _ = services.AddScoped<ITripRepository, TripRepository>();
 
             // Register all default service implementations
-            services.AddScoped<IAuthenticationService, AuthenticationService>();
-            services.AddScoped<IUserService, UserService>();
-            services.AddScoped<IStationService, StationService>();
-            services.AddScoped<IReservationService, ReservationService>();
-            services.AddScoped<ITripService, TripService>();
+            _ = services.AddScoped<IAuthenticationService, AuthenticationService>();
+            _ = services.AddScoped<IUserService, UserService>();
+            _ = services.AddScoped<IStationService, StationService>();
+            _ = services.AddScoped<IReservationService, ReservationService>();
+            _ = services.AddScoped<ITripService, TripService>();
 
             // Register UnitOfWork
-            services.AddScoped<IUnitOfWork, UnitOfWork>();
+            _ = services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             return services;
         }

@@ -15,7 +15,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
         {
             try
             {
-                var user = await userRepository.Query()
+                User user = await userRepository.Query()
                     .Where(u => u.UserId == keyDto.UserId)
                     .FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el usuario solicitado.");
                 return user;
@@ -28,7 +28,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
 
         public async Task<User> UpdateUserAsync(UpdateUserDto dto, CancellationToken cancellationToken = default)
         {
-            var user = new User { UserId = dto.UserId };
+            User user = new() { UserId = dto.UserId };
             bool hasUpdates = false;
 
             if (dto.UserName != null)
@@ -51,28 +51,15 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
             try
             {
                 // Build selector based on what properties are being updated
-                Func<User, object?> selector;
-                if (dto.UserName != null && dto.Email != null)
-                {
-                    selector = u => new { u.UserName, u.Email };
-                }
-                else if (dto.UserName != null)
-                {
-                    selector = u => u.UserName;
-                }
-                else // dto.Email != null
-                {
-                    selector = u => u.Email;
-                }
-
-                var affected = await userRepository.UpdateAsync(
+                Func<User, object?> selector = dto.UserName != null && dto.Email != null
+                    ? (u => new { u.UserName, u.Email })
+                    : dto.UserName != null ? (u => u.UserName) : (u => u.Email);
+                int affected = await userRepository.UpdateAsync(
                     user,
                     selector,
                     cancellationToken: cancellationToken
                 );
-                if (affected == 0)
-                    throw new ServiceNotFoundException("No se encontró el usuario para actualizar.");
-                return user;
+                return affected == 0 ? throw new ServiceNotFoundException("No se encontró el usuario para actualizar.") : user;
             }
             catch (UniqueConstraintViolationException ex)
             {
@@ -86,12 +73,14 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
 
         public async Task DeleteUserAsync(UserKeyDto keyDto, CancellationToken cancellationToken = default)
         {
-            var user = new User { UserId = keyDto.UserId };
+            User user = new() { UserId = keyDto.UserId };
             try
             {
-                var affected = await userRepository.DeleteAsync(user, cancellationToken);
+                int affected = await userRepository.DeleteAsync(user, cancellationToken);
                 if (affected == 0)
+                {
                     throw new ServiceNotFoundException("No se encontró el usuario para eliminar.");
+                }
             }
             catch (RepositoryException ex)
             {
@@ -115,7 +104,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
         {
             try
             {
-                var query = userRepository.Query()
+                Repositories.Util.Interfaces.IQuery<UserInfo> query = userRepository.Query()
                     .Select(u => new UserInfo
                     {
                         UserId = u.UserId,

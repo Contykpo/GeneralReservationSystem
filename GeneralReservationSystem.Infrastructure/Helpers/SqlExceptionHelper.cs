@@ -17,32 +17,56 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
         public static SqlConstraintViolationType? DetermineViolationType(string sqlErrorMessage)
         {
             if (string.IsNullOrEmpty(sqlErrorMessage))
+            {
                 return null;
+            }
 
-            var match = RegexHelpers.ConstraintTypeRegex().Match(sqlErrorMessage);
+            System.Text.RegularExpressions.Match match = RegexHelpers.ConstraintTypeRegex().Match(sqlErrorMessage);
             if (!match.Success)
+            {
                 return null;
+            }
+
             if (match.Groups["PrimaryKey"].Success)
+            {
                 return SqlConstraintViolationType.PrimaryKey;
+            }
+
             if (match.Groups["Unique"].Success)
+            {
                 return SqlConstraintViolationType.Unique;
+            }
+
             if (match.Groups["ForeignKey"].Success)
+            {
                 return SqlConstraintViolationType.ForeignKey;
+            }
+
             if (match.Groups["Check"].Success)
+            {
                 return SqlConstraintViolationType.Check;
+            }
+
             if (match.Groups["NotNull"].Success)
+            {
                 return SqlConstraintViolationType.NotNull;
+            }
+
             return null; // Maybe not a constraint violation.
         }
 
         public static string? ExtractConstraintName(string sqlErrorMessage)
         {
             if (string.IsNullOrEmpty(sqlErrorMessage))
+            {
                 return null;
+            }
 
-            var match = RegexHelpers.ConstraintNameRegex().Match(sqlErrorMessage);
+            System.Text.RegularExpressions.Match match = RegexHelpers.ConstraintNameRegex().Match(sqlErrorMessage);
             if (match.Success)
+            {
                 return match.Groups["name"].Value;
+            }
 
             return null; // Constraint name not found.
         }
@@ -50,11 +74,15 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
         public static string? ExtractNotNullColumnName(string sqlErrorMessage)
         {
             if (string.IsNullOrEmpty(sqlErrorMessage))
+            {
                 return null;
+            }
 
-            var match = RegexHelpers.NotNullColumnRegex().Match(sqlErrorMessage);
+            System.Text.RegularExpressions.Match match = RegexHelpers.NotNullColumnRegex().Match(sqlErrorMessage);
             if (match.Success)
+            {
                 return match.Groups["name"].Value;
+            }
 
             return null; // Does not apply.
         }
@@ -69,9 +97,11 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
         // they will be caught as their actual type.
         public static RepositoryConstraintException? GetConstraintViolationException(DbException ex)
         {
-            var violationType = DetermineViolationType(ex.Message);
+            SqlConstraintViolationType? violationType = DetermineViolationType(ex.Message);
             if (violationType == null)
+            {
                 return null; // Not a recognized constraint violation.  
+            }
 
             return violationType switch
             {
@@ -86,15 +116,17 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
 
         public static RepositoryException ToRepositoryException(DbException ex)
         {
-            var constraintException = GetConstraintViolationException(ex);
+            RepositoryConstraintException? constraintException = GetConstraintViolationException(ex);
             if (constraintException != null)
+            {
                 return constraintException;
+            }
 
             // Try to use error codes if available (SQL Server)
             int? errorCode = null;
             if (ex.GetType().Name == "SqlException")
             {
-                var numberProp = ex.GetType().GetProperty("Number");
+                System.Reflection.PropertyInfo? numberProp = ex.GetType().GetProperty("Number");
                 if (numberProp != null)
                 {
                     errorCode = numberProp.GetValue(ex) as int?;

@@ -9,27 +9,31 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
     {
         public static string FormatQualifiedTableName(string tableName)
         {
-            if (string.IsNullOrWhiteSpace(tableName)) return tableName;
-            var parts = tableName.Split(['.'], StringSplitOptions.RemoveEmptyEntries);
+            if (string.IsNullOrWhiteSpace(tableName))
+            {
+                return tableName;
+            }
+
+            string[] parts = tableName.Split(['.'], StringSplitOptions.RemoveEmptyEntries);
             return string.Join('.', parts.Select(p => "[" + p + "]"));
         }
 
         public static void AddParameter(DbCommand cmd, string parameterName, object? value, Type propertyType)
         {
-            var param = cmd.CreateParameter();
+            DbParameter param = cmd.CreateParameter();
             param.ParameterName = parameterName;
             param.Value = EntityTypeConverter.ConvertToDbValue(value, propertyType);
-            cmd.Parameters.Add(param);
+            _ = cmd.Parameters.Add(param);
         }
 
         public static void AddParameters(DbCommand cmd, IEnumerable<KeyValuePair<string, object?>> parameters)
         {
-            foreach (var p in parameters)
+            foreach (KeyValuePair<string, object?> p in parameters)
             {
-                var param = cmd.CreateParameter();
+                DbParameter param = cmd.CreateParameter();
                 param.ParameterName = p.Key;
                 param.Value = p.Value ?? DBNull.Value;
-                cmd.Parameters.Add(param);
+                _ = cmd.Parameters.Add(param);
             }
         }
 
@@ -39,9 +43,12 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
         {
             try
             {
-                var conn = connectionFactory();
+                DbConnection conn = connectionFactory();
                 if (conn.State != System.Data.ConnectionState.Open)
+                {
                     await conn.OpenAsync(cancellationToken);
+                }
+
                 return conn;
             }
             catch (DbException ex)
@@ -66,18 +73,21 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
 
         public static DbCommand CreateCommand(DbConnection connection, DbTransaction? transaction = null)
         {
-            var cmd = connection.CreateCommand();
+            DbCommand cmd = connection.CreateCommand();
             if (transaction != null)
+            {
                 cmd.Transaction = transaction;
+            }
+
             return cmd;
         }
 
         public static string BuildColumnList(IEnumerable<PropertyInfo> properties, string? tableAlias = null)
         {
-            var columns = properties.Select(p =>
+            IEnumerable<string> columns = properties.Select(p =>
             {
-                var colName = EntityHelper.GetColumnName(p);
-                var prefix = string.IsNullOrEmpty(tableAlias) ? "" : $"{FormatQualifiedTableName(tableAlias)}.";
+                string colName = EntityHelper.GetColumnName(p);
+                string prefix = string.IsNullOrEmpty(tableAlias) ? "" : $"{FormatQualifiedTableName(tableAlias)}.";
                 return $"{prefix}[{colName}]";
             });
             return string.Join(", ", columns);
@@ -87,7 +97,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             IEnumerable<(string Column, string Alias)> columns,
             string tableName)
         {
-            var qualifiedTable = FormatQualifiedTableName(tableName);
+            string qualifiedTable = FormatQualifiedTableName(tableName);
             return string.Join(", ", columns.Select(s => $"{qualifiedTable}.[{s.Column}] AS [{s.Alias}]"));
         }
 
@@ -100,8 +110,8 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
         {
             try
             {
-                await using var conn = await CreateAndOpenConnectionAsync(connectionFactory, cancellationToken);
-                await using var cmd = CreateCommand(conn, transaction);
+                await using DbConnection conn = await CreateAndOpenConnectionAsync(connectionFactory, cancellationToken);
+                await using DbCommand cmd = CreateCommand(conn, transaction);
                 cmd.CommandText = sql;
                 AddParameters(cmd, parameters);
                 return await cmd.ExecuteScalarAsync(cancellationToken);
@@ -120,10 +130,13 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
         {
             try
             {
-                using var conn = connectionFactory();
+                using DbConnection conn = connectionFactory();
                 if (conn.State != System.Data.ConnectionState.Open)
+                {
                     conn.Open();
-                using var cmd = CreateCommand(conn, transaction);
+                }
+
+                using DbCommand cmd = CreateCommand(conn, transaction);
                 cmd.CommandText = sql;
                 AddParameters(cmd, parameters);
                 return cmd.ExecuteScalar();
@@ -176,15 +189,15 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
 
         public static string BuildOutputClause(IEnumerable<PropertyInfo> computedProperties)
         {
-            var outputColumns = computedProperties.Select(p => $"INSERTED.[{EntityHelper.GetColumnName(p)}]");
+            IEnumerable<string> outputColumns = computedProperties.Select(p => $"INSERTED.[{EntityHelper.GetColumnName(p)}]");
             return "OUTPUT " + string.Join(",", outputColumns);
         }
 
         public static string BuildInsertStatement(string tableName, IEnumerable<PropertyInfo> nonComputedProperties, IEnumerable<PropertyInfo> computedProperties, Func<PropertyInfo, int, string> parameterNameFactory)
         {
-            var columns = nonComputedProperties.Select(p => EntityHelper.GetColumnName(p)).ToArray();
-            var values = nonComputedProperties.Select((p, i) => parameterNameFactory(p, i)).ToArray();
-            var hasOutput = computedProperties.Any();
+            string[] columns = nonComputedProperties.Select(EntityHelper.GetColumnName).ToArray();
+            string[] values = nonComputedProperties.Select((p, i) => parameterNameFactory(p, i)).ToArray();
+            bool hasOutput = computedProperties.Any();
 
             return hasOutput
                 ? $"INSERT INTO [{tableName}] (" + string.Join(",", columns) + ") " + BuildOutputClause(computedProperties) + " VALUES (" + string.Join(",", values) + ")"
@@ -193,9 +206,9 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
 
         public static string BuildUpdateStatement(string tableName, IEnumerable<PropertyInfo> setColumns, IEnumerable<PropertyInfo> keyProperties, IEnumerable<PropertyInfo> computedProperties, Func<PropertyInfo, int, string> setParamFactory, Func<PropertyInfo, int, string> keyParamFactory)
         {
-            var setClauses = setColumns.Select((p, i) => $"{EntityHelper.GetColumnName(p)} = {setParamFactory(p, i)}").ToArray();
-            var whereClauses = keyProperties.Select((p, i) => $"{EntityHelper.GetColumnName(p)} = {keyParamFactory(p, i)}").ToArray();
-            var hasOutput = computedProperties.Any();
+            string[] setClauses = setColumns.Select((p, i) => $"{EntityHelper.GetColumnName(p)} = {setParamFactory(p, i)}").ToArray();
+            string[] whereClauses = keyProperties.Select((p, i) => $"{EntityHelper.GetColumnName(p)} = {keyParamFactory(p, i)}").ToArray();
+            bool hasOutput = computedProperties.Any();
 
             return hasOutput
                 ? $"UPDATE [{tableName}] SET " + string.Join(",", setClauses) + " " + BuildOutputClause(computedProperties) + " WHERE " + string.Join(" AND ", whereClauses)
@@ -204,22 +217,22 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
 
         public static string BuildDeleteStatement(string tableName, IEnumerable<PropertyInfo> keyProperties, Func<PropertyInfo, int, string> keyParamFactory)
         {
-            var whereClauses = keyProperties.Select((p, i) => $"{EntityHelper.GetColumnName(p)} = {keyParamFactory(p, i)}").ToArray();
+            string[] whereClauses = keyProperties.Select((p, i) => $"{EntityHelper.GetColumnName(p)} = {keyParamFactory(p, i)}").ToArray();
             return $"DELETE FROM [{tableName}] WHERE " + string.Join(" AND ", whereClauses);
         }
 
         public static string BuildBulkWhereClause<T>(IList<T> entities, PropertyInfo[] keyProperties, DbCommand cmd, string paramPrefix) where T : class
         {
-            var whereClauses = new List<string>();
+            List<string> whereClauses = [];
             for (int idx = 0; idx < entities.Count; idx++)
             {
-                var clauseParts = new List<string>();
+                List<string> clauseParts = [];
                 for (int k = 0; k < keyProperties.Length; k++)
                 {
-                    var keyProp = keyProperties[k];
-                    var colName = EntityHelper.GetColumnName(keyProp);
-                    var paramName = $"@{paramPrefix}{idx}_{k}";
-                    var rawValue = keyProp.GetValue(entities[idx]);
+                    PropertyInfo keyProp = keyProperties[k];
+                    string colName = EntityHelper.GetColumnName(keyProp);
+                    string paramName = $"@{paramPrefix}{idx}_{k}";
+                    object? rawValue = keyProp.GetValue(entities[idx]);
                     AddParameter(cmd, paramName, rawValue, keyProp.PropertyType);
                     clauseParts.Add($"{colName} = {paramName}");
                 }

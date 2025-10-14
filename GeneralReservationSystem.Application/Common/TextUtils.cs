@@ -7,15 +7,21 @@ namespace GeneralReservationSystem.Application.Common
     {
         public static string Normalize(string? input)
         {
-            if (string.IsNullOrWhiteSpace(input)) return string.Empty;
-            var normalized = input.Trim().ToUpperInvariant();
-            normalized = normalized.Normalize(NormalizationForm.FormKD);
-            var sb = new StringBuilder();
-            foreach (var c in normalized)
+            if (string.IsNullOrWhiteSpace(input))
             {
-                var uc = CharUnicodeInfo.GetUnicodeCategory(c);
+                return string.Empty;
+            }
+
+            string normalized = input.Trim().ToUpperInvariant();
+            normalized = normalized.Normalize(NormalizationForm.FormKD);
+            StringBuilder sb = new();
+            foreach (char c in normalized)
+            {
+                UnicodeCategory uc = CharUnicodeInfo.GetUnicodeCategory(c);
                 if (uc != UnicodeCategory.NonSpacingMark)
-                    sb.Append(c);
+                {
+                    _ = sb.Append(c);
+                }
             }
             return sb.ToString();
         }

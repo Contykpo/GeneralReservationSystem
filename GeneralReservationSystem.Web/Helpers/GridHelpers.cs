@@ -8,19 +8,23 @@ namespace GeneralReservationSystem.Web.Helpers
     {
         public static IList<Filter> BuildFilters<T>(GridState<T> state)
         {
-            var filters = new List<Filter>();
+            List<Filter> filters = [];
 
             if (state?.FilterDefinitions is null)
-                return filters;
-
-            foreach (var def in state.FilterDefinitions)
             {
-                var field = def?.Column?.PropertyName;
-                if (string.IsNullOrWhiteSpace(field))
-                    continue;
+                return filters;
+            }
 
-                var op = FilterOperatorExtensions.ToFilterOperator(def!.Operator!);
-                var value = def!.Value;
+            foreach (IFilterDefinition<T> def in state.FilterDefinitions)
+            {
+                string? field = def?.Column?.PropertyName;
+                if (string.IsNullOrWhiteSpace(field))
+                {
+                    continue;
+                }
+
+                Application.Common.FilterOperator op = FilterOperatorExtensions.ToFilterOperator(def!.Operator!);
+                object? value = def!.Value;
 
                 filters.Add(new Filter(field!, op, value));
             }
@@ -30,18 +34,22 @@ namespace GeneralReservationSystem.Web.Helpers
 
         public static IList<SortOption> BuildOrders<T>(GridState<T> state)
         {
-            var orders = new List<SortOption>();
+            List<SortOption> orders = [];
 
             if (state?.SortDefinitions is null)
-                return orders;
-
-            foreach (var def in state.SortDefinitions)
             {
-                var field = def.SortBy;
-                if (string.IsNullOrWhiteSpace(field))
-                    continue;
+                return orders;
+            }
 
-                var direction = def.Descending
+            foreach (SortDefinition<T> def in state.SortDefinitions)
+            {
+                string field = def.SortBy;
+                if (string.IsNullOrWhiteSpace(field))
+                {
+                    continue;
+                }
+
+                SortDirection direction = def.Descending
                     ? SortDirection.Desc
                     : SortDirection.Asc;
 

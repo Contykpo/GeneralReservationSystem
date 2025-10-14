@@ -12,8 +12,8 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
     {
         public async Task<UserInfo> RegisterUserAsync(RegisterUserDto dto, CancellationToken cancellationToken = default)
         {
-            var (hash, salt) = PasswordHelper.HashPassword(dto.Password);
-            var user = new User
+            (byte[] hash, byte[] salt) = PasswordHelper.HashPassword(dto.Password);
+            User user = new()
             {
                 UserName = dto.UserName,
                 Email = dto.Email,
@@ -23,7 +23,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
             };
             try
             {
-                await userRepository.CreateAsync(user, cancellationToken);
+                _ = await userRepository.CreateAsync(user, cancellationToken);
                 return new UserInfo
                 {
                     UserId = user.UserId,
@@ -46,19 +46,19 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
         {
             try
             {
-                var normalizedInput = dto.UserNameOrEmail.Trim().ToUpperInvariant();
-                var user = await userRepository.Query()
+                string normalizedInput = dto.UserNameOrEmail.Trim().ToUpperInvariant();
+                User? user = await userRepository.Query()
                     .Where(u => u.NormalizedUserName == normalizedInput || u.NormalizedEmail == normalizedInput)
                     .FirstOrDefaultAsync(cancellationToken);
-                if (user == null || !PasswordHelper.VerifyPassword(dto.Password, user.PasswordHash, user.PasswordSalt))
-                    throw new ServiceBusinessException("Usuario o contraseña incorrectos.");
-                return new UserInfo
-                {
-                    UserId = user.UserId,
-                    UserName = user.UserName,
-                    Email = user.Email,
-                    IsAdmin = user.IsAdmin
-                };
+                return user == null || !PasswordHelper.VerifyPassword(dto.Password, user.PasswordHash, user.PasswordSalt)
+                    ? throw new ServiceBusinessException("Usuario o contraseña incorrectos.")
+                    : new UserInfo
+                    {
+                        UserId = user.UserId,
+                        UserName = user.UserName,
+                        Email = user.Email,
+                        IsAdmin = user.IsAdmin
+                    };
             }
             catch (ServiceBusinessException)
             {
@@ -74,19 +74,23 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
         {
             try
             {
-                var user = await userRepository.Query()
+                User user = await userRepository.Query()
                     .Where(u => u.UserId == dto.UserId)
                     .FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el usuario para cambiar la contraseña.");
 
                 if (!PasswordHelper.VerifyPassword(dto.CurrentPassword, user.PasswordHash, user.PasswordSalt))
+                {
                     throw new ServiceBusinessException("La contraseña actual es incorrecta.");
+                }
 
-                var (hash, salt) = PasswordHelper.HashPassword(dto.NewPassword);
+                (byte[] hash, byte[] salt) = PasswordHelper.HashPassword(dto.NewPassword);
                 user.PasswordHash = hash;
                 user.PasswordSalt = salt;
-                var affected = await userRepository.UpdateAsync(user, cancellationToken: cancellationToken);
+                int affected = await userRepository.UpdateAsync(user, cancellationToken: cancellationToken);
                 if (affected == 0)
+                {
                     throw new ServiceNotFoundException("No se pudo cambiar la contraseña.");
+                }
             }
             catch (ServiceNotFoundException)
             {

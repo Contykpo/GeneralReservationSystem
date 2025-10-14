@@ -21,7 +21,7 @@ namespace GeneralReservationSystem.Web.Services.Implementations.Authentication
 
         public async Task LogoutAsync(CancellationToken cancellationToken = default)
         {
-            await PostAsync<object>($"/api/auth/logout", content: null!, cancellationToken: cancellationToken);
+            _ = await PostAsync<object>($"/api/auth/logout", content: null!, cancellationToken: cancellationToken);
         }
 
         public async Task ChangePasswordAsync(ChangePasswordDto dto, CancellationToken cancellationToken = default)

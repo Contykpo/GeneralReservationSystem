@@ -16,7 +16,7 @@ namespace GeneralReservationSystem.API.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> SearchReservations([FromBody] PagedSearchRequestDto searchDto, CancellationToken cancellationToken)
         {
-            var result = await reservationService.SearchReservationsAsync(searchDto, cancellationToken);
+            Application.Common.PagedResult<Application.Entities.Reservation> result = await reservationService.SearchReservationsAsync(searchDto, cancellationToken);
             return Ok(result);
         }
 
@@ -24,11 +24,13 @@ namespace GeneralReservationSystem.API.Controllers
         [Authorize]
         public async Task<IActionResult> GetMyReservations(CancellationToken cancellationToken)
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            string? userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
+            {
                 return Unauthorized();
+            }
 
-            var reservations = await reservationService.GetUserReservationsAsync(int.Parse(userId), cancellationToken);
+            IEnumerable<Application.Entities.Reservation> reservations = await reservationService.GetUserReservationsAsync(int.Parse(userId), cancellationToken);
             return Ok(reservations);
         }
 
@@ -36,7 +38,7 @@ namespace GeneralReservationSystem.API.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetUserReservations([FromRoute] int userId, CancellationToken cancellationToken)
         {
-            var reservations = await reservationService.GetUserReservationsAsync(userId, cancellationToken);
+            IEnumerable<Application.Entities.Reservation> reservations = await reservationService.GetUserReservationsAsync(userId, cancellationToken);
             return Ok(reservations);
         }
 
@@ -44,14 +46,16 @@ namespace GeneralReservationSystem.API.Controllers
         [Authorize]
         public async Task<IActionResult> GetMyReservationForTrip([FromRoute] int tripId, CancellationToken cancellationToken)
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            string? userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
+            {
                 return Unauthorized();
+            }
 
             try
             {
-                var keyDto = new ReservationKeyDto { TripId = tripId, UserId = int.Parse(userId) };
-                var reservation = await reservationService.GetReservationAsync(keyDto, cancellationToken);
+                ReservationKeyDto keyDto = new() { TripId = tripId, UserId = int.Parse(userId) };
+                Application.Entities.Reservation reservation = await reservationService.GetReservationAsync(keyDto, cancellationToken);
                 return Ok(reservation);
             }
             catch (ServiceNotFoundException ex)
@@ -66,8 +70,8 @@ namespace GeneralReservationSystem.API.Controllers
         {
             try
             {
-                var keyDto = new ReservationKeyDto { TripId = tripId, UserId = userId };
-                var reservation = await reservationService.GetReservationAsync(keyDto, cancellationToken);
+                ReservationKeyDto keyDto = new() { TripId = tripId, UserId = userId };
+                Application.Entities.Reservation reservation = await reservationService.GetReservationAsync(keyDto, cancellationToken);
                 return Ok(reservation);
             }
             catch (ServiceNotFoundException ex)
@@ -80,9 +84,11 @@ namespace GeneralReservationSystem.API.Controllers
         [Authorize]
         public async Task<IActionResult> CreateReservation([FromBody] CreateReservationDto dto, CancellationToken cancellationToken)
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            string? userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
+            {
                 return Unauthorized();
+            }
 
             try
             {
@@ -99,13 +105,15 @@ namespace GeneralReservationSystem.API.Controllers
         [Authorize]
         public async Task<IActionResult> DeleteMyReservation([FromRoute] int tripId, CancellationToken cancellationToken)
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            string? userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
+            {
                 return Unauthorized();
+            }
 
             try
             {
-                var keyDto = new ReservationKeyDto { TripId = tripId, UserId = int.Parse(userId) };
+                ReservationKeyDto keyDto = new() { TripId = tripId, UserId = int.Parse(userId) };
                 await reservationService.DeleteReservationAsync(keyDto, cancellationToken);
                 return NoContent();
             }
@@ -121,7 +129,7 @@ namespace GeneralReservationSystem.API.Controllers
         {
             try
             {
-                var keyDto = new ReservationKeyDto { TripId = tripId, UserId = userId };
+                ReservationKeyDto keyDto = new() { TripId = tripId, UserId = userId };
                 await reservationService.DeleteReservationAsync(keyDto, cancellationToken);
                 return NoContent();
             }

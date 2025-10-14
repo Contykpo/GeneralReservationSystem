@@ -5,7 +5,7 @@ using GeneralReservationSystem.Infrastructure.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
@@ -13,7 +13,7 @@ builder.Services.AddInfrastructureRepositories();
 builder.Services.AddHttpContextAccessor();
 
 // Configure JWT settings
-var jwtSettings = new JwtSettings
+JwtSettings jwtSettings = new()
 {
     SecretKey = builder.Configuration["Jwt:SecretKey"] ?? "YourSuperSecretKeyThatIsAtLeast32CharactersLong!",
     Issuer = builder.Configuration["Jwt:Issuer"] ?? "GeneralReservationSystemAPI",
@@ -28,10 +28,10 @@ builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>
     {
         // Read allowed origins from environment variable (comma-separated)
-        var allowedOrigins = builder.Configuration["CorsOrigins"]?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        string[] allowedOrigins = builder.Configuration["CorsOrigins"]?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             ?? []; // No origins allowed
 
-        policy.WithOrigins(allowedOrigins)
+        _ = policy.WithOrigins(allowedOrigins)
             .AllowAnyMethod()
             .AllowAnyHeader()
             .AllowCredentials();
@@ -66,7 +66,7 @@ builder.Services.AddAuthentication(options =>
     {
         OnMessageReceived = context =>
         {
-            if (context.Request.Cookies.TryGetValue(JwtHelper.CookieName, out var token))
+            if (context.Request.Cookies.TryGetValue(JwtHelper.CookieName, out string? token))
             {
                 context.Token = token;
             }
@@ -90,7 +90,7 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-var app = builder.Build();
+WebApplication app = builder.Build();
 
 app.UseMiddleware<ExceptionsMiddleware>();
 app.UseMiddleware<SessionMiddleware>();

@@ -13,14 +13,14 @@ namespace GeneralReservationSystem.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAllTrips(CancellationToken cancellationToken)
         {
-            var trips = await tripService.GetAllTripsAsync(cancellationToken);
+            IEnumerable<Application.Entities.Trip> trips = await tripService.GetAllTripsAsync(cancellationToken);
             return Ok(trips);
         }
 
         [HttpPost("search")]
         public async Task<IActionResult> SearchTrips([FromBody] PagedSearchRequestDto searchDto, CancellationToken cancellationToken)
         {
-            var result = await tripService.SearchTripsAsync(searchDto, cancellationToken);
+            Application.Common.PagedResult<Application.Entities.Trip> result = await tripService.SearchTripsAsync(searchDto, cancellationToken);
             return Ok(result);
         }
 
@@ -29,8 +29,8 @@ namespace GeneralReservationSystem.API.Controllers
         {
             try
             {
-                var keyDto = new TripKeyDto { TripId = tripId };
-                var trip = await tripService.GetTripAsync(keyDto, cancellationToken);
+                TripKeyDto keyDto = new() { TripId = tripId };
+                Application.Entities.Trip trip = await tripService.GetTripAsync(keyDto, cancellationToken);
                 return Ok(trip);
             }
             catch (ServiceNotFoundException ex)
@@ -45,7 +45,7 @@ namespace GeneralReservationSystem.API.Controllers
         {
             try
             {
-                var trip = await tripService.CreateTripAsync(dto, cancellationToken);
+                Application.Entities.Trip trip = await tripService.CreateTripAsync(dto, cancellationToken);
                 return CreatedAtAction(nameof(GetTrip), new { tripId = trip.TripId }, trip);
             }
             catch (ServiceBusinessException ex)
@@ -61,7 +61,7 @@ namespace GeneralReservationSystem.API.Controllers
             try
             {
                 dto.TripId = tripId;
-                var trip = await tripService.UpdateTripAsync(dto, cancellationToken);
+                Application.Entities.Trip trip = await tripService.UpdateTripAsync(dto, cancellationToken);
                 return Ok(trip);
             }
             catch (ServiceNotFoundException ex)
@@ -80,7 +80,7 @@ namespace GeneralReservationSystem.API.Controllers
         {
             try
             {
-                var keyDto = new TripKeyDto { TripId = tripId };
+                TripKeyDto keyDto = new() { TripId = tripId };
                 await tripService.DeleteTripAsync(keyDto, cancellationToken);
                 return NoContent();
             }

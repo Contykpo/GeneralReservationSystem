@@ -20,7 +20,7 @@ namespace GeneralReservationSystem.API.Controllers
         {
             try
             {
-                var userInfo = await authenticationService.RegisterUserAsync(dto, cancellationToken);
+                UserInfo userInfo = await authenticationService.RegisterUserAsync(dto, cancellationToken);
 
                 CreateSessionAndLogin(userInfo);
 
@@ -41,7 +41,7 @@ namespace GeneralReservationSystem.API.Controllers
         {
             try
             {
-                var userInfo = await authenticationService.AuthenticateAsync(dto, cancellationToken);
+                UserInfo userInfo = await authenticationService.AuthenticateAsync(dto, cancellationToken);
 
                 CreateSessionAndLogin(userInfo);
 
@@ -65,21 +65,20 @@ namespace GeneralReservationSystem.API.Controllers
         [Authorize]
         public IActionResult GetCurrentUser()
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var userName = User.FindFirst(ClaimTypes.Name)?.Value;
-            var email = User.FindFirst(ClaimTypes.Email)?.Value;
-            var isAdmin = User.IsInRole("Admin");
+            string? userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            string? userName = User.FindFirst(ClaimTypes.Name)?.Value;
+            string? email = User.FindFirst(ClaimTypes.Email)?.Value;
+            bool isAdmin = User.IsInRole("Admin");
 
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized();
-
-            return Ok(new UserInfo
-            {
-                UserId = int.Parse(userId),
-                UserName = userName ?? string.Empty,
-                Email = email ?? string.Empty,
-                IsAdmin = isAdmin
-            });
+            return string.IsNullOrEmpty(userId)
+                ? Unauthorized()
+                : Ok(new UserInfo
+                {
+                    UserId = int.Parse(userId),
+                    UserName = userName ?? string.Empty,
+                    Email = email ?? string.Empty,
+                    IsAdmin = isAdmin
+                });
         }
 
         [HttpPost("change-password")]
@@ -88,9 +87,11 @@ namespace GeneralReservationSystem.API.Controllers
         {
             try
             {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                string? userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userIdClaim) || int.Parse(userIdClaim) != dto.UserId)
+                {
                     return Unauthorized();
+                }
 
                 await authenticationService.ChangePasswordAsync(dto, cancellationToken);
                 return Ok(new { message = "Contraseña cambiada exitosamente." });
@@ -109,7 +110,7 @@ namespace GeneralReservationSystem.API.Controllers
         {
             ThrowHelpers.ThrowIfNull(userInfo, nameof(userInfo));
 
-            var session = new UserSessionInfo
+            UserSessionInfo session = new()
             {
                 UserId = userInfo.UserId,
                 UserName = userInfo.UserName,
@@ -117,7 +118,7 @@ namespace GeneralReservationSystem.API.Controllers
                 IsAdmin = userInfo.IsAdmin
             };
 
-            JwtHelper.GenerateAndSetJwtCookie(HttpContext, session, _jwtSettings);
+            _ = JwtHelper.GenerateAndSetJwtCookie(HttpContext, session, _jwtSettings);
         }
     }
 }

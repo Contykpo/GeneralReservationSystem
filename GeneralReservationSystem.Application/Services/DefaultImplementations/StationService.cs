@@ -12,7 +12,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
     {
         public async Task<Station> CreateStationAsync(CreateStationDto dto, CancellationToken cancellationToken = default)
         {
-            var station = new Station
+            Station station = new()
             {
                 StationName = dto.StationName,
                 City = dto.City,
@@ -21,7 +21,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             };
             try
             {
-                await stationRepository.CreateAsync(station, cancellationToken);
+                _ = await stationRepository.CreateAsync(station, cancellationToken);
                 return station;
             }
             catch (UniqueConstraintViolationException ex)
@@ -36,22 +36,31 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
 
         public async Task<Station> UpdateStationAsync(UpdateStationDto dto, CancellationToken cancellationToken = default)
         {
-            var station = new Station { StationId = dto.StationId };
+            Station station = new() { StationId = dto.StationId };
             if (dto.StationName != null)
+            {
                 station.StationName = dto.StationName;
+            }
+
             if (dto.City != null)
+            {
                 station.City = dto.City;
+            }
+
             if (dto.Region != null)
+            {
                 station.Region = dto.Region;
+            }
+
             if (dto.Country != null)
+            {
                 station.Country = dto.Country;
+            }
 
             try
             {
-                var affected = await stationRepository.UpdateAsync(station, cancellationToken: cancellationToken);
-                if (affected == 0)
-                    throw new ServiceNotFoundException("No se encontró la estación para actualizar.");
-                return station;
+                int affected = await stationRepository.UpdateAsync(station, cancellationToken: cancellationToken);
+                return affected == 0 ? throw new ServiceNotFoundException("No se encontró la estación para actualizar.") : station;
             }
             catch (UniqueConstraintViolationException ex)
             {
@@ -65,12 +74,14 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
 
         public async Task DeleteStationAsync(StationKeyDto keyDto, CancellationToken cancellationToken = default)
         {
-            var station = new Station { StationId = keyDto.StationId };
+            Station station = new() { StationId = keyDto.StationId };
             try
             {
-                var affected = await stationRepository.DeleteAsync(station, cancellationToken);
+                int affected = await stationRepository.DeleteAsync(station, cancellationToken);
                 if (affected == 0)
+                {
                     throw new ServiceNotFoundException("No se encontró la estación para eliminar.");
+                }
             }
             catch (RepositoryException ex)
             {
@@ -82,7 +93,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                var station = await stationRepository.Query()
+                Station station = await stationRepository.Query()
                     .Where(s => s.StationId == keyDto.StationId)
                     .FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró la estación solicitada.");
                 return station;
@@ -109,7 +120,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                var query = stationRepository.Query()
+                Repositories.Util.Interfaces.IQuery<Station> query = stationRepository.Query()
                     .ApplyFilters(searchDto.Filters)
                     .ApplySorting(searchDto.Orders)
                     .Page(searchDto.Page, searchDto.PageSize);

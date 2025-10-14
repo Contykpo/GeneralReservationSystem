@@ -15,19 +15,19 @@ namespace GeneralReservationSystem.Web
         {
             // HttpClient for API calls
             // Credentials (cookies) are configured per-request in ApiServiceBase
-            services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(apiBaseUrl) });
+            _ = services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(apiBaseUrl) });
 
             // Register authentication state provider for Blazor client
-            services.AddOptions();
-            services.AddScoped<CustomAuthenticationStateProvider>();
-            services.AddScoped<AuthenticationStateProvider>(provider => provider.GetRequiredService<CustomAuthenticationStateProvider>());
-            services.AddAuthorizationCore();
+            _ = services.AddOptions();
+            _ = services.AddScoped<CustomAuthenticationStateProvider>();
+            _ = services.AddScoped<AuthenticationStateProvider>(provider => provider.GetRequiredService<CustomAuthenticationStateProvider>());
+            _ = services.AddAuthorizationCore();
 
-            services.AddScoped<IClientAuthenticationService, ClientAuthenticationService>();
-            services.AddScoped<IUserService, UserService>();
-            services.AddScoped<IStationService, StationService>();
-            services.AddScoped<ITripService, TripService>();
-            services.AddScoped<IClientReservationService, ClientReservationService>();
+            _ = services.AddScoped<IClientAuthenticationService, ClientAuthenticationService>();
+            _ = services.AddScoped<IUserService, UserService>();
+            _ = services.AddScoped<IStationService, StationService>();
+            _ = services.AddScoped<ITripService, TripService>();
+            _ = services.AddScoped<IClientReservationService, ClientReservationService>();
 
             return services;
         }

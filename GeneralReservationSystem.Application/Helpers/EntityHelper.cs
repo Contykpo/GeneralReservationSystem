@@ -8,26 +8,34 @@ namespace GeneralReservationSystem.Application.Helpers
     {
         public static string GetTableName(Type entityType)
         {
-            var attr = entityType.TryGetAttribute<TableNameAttribute>();
+            TableNameAttribute? attr = entityType.TryGetAttribute<TableNameAttribute>();
 
             return attr?.Name ?? entityType.Name;
         }
 
-        public static string GetTableName<TEntity>() => GetTableName(typeof(TEntity));
+        public static string GetTableName<TEntity>()
+        {
+            return GetTableName(typeof(TEntity));
+        }
 
         public static PropertyInfo[] GetKeyProperties<TEntity>()
         {
-            var keys = ReflectionHelpers.GetPropertiesWithAttribute<TEntity, KeyAttribute>();
+            PropertyInfo[] keys = ReflectionHelpers.GetPropertiesWithAttribute<TEntity, KeyAttribute>();
 
-            if (keys.Length == 0)
-                throw new InvalidOperationException($"Entity {typeof(TEntity).Name} must have at least one [Key] property.");
-
-            return keys;
+            return keys.Length == 0
+                ? throw new InvalidOperationException($"Entity {typeof(TEntity).Name} must have at least one [Key] property.")
+                : keys;
         }
 
-        public static PropertyInfo[] GetComputedProperties<TEntity>() => ReflectionHelpers.GetPropertiesWithAttribute<TEntity, ComputedAttribute>();
+        public static PropertyInfo[] GetComputedProperties<TEntity>()
+        {
+            return ReflectionHelpers.GetPropertiesWithAttribute<TEntity, ComputedAttribute>();
+        }
 
-        public static PropertyInfo[] GetNonComputedProperties<TEntity>() => ReflectionHelpers.GetPropertiesWithoutAttribute<TEntity, ComputedAttribute>();
+        public static PropertyInfo[] GetNonComputedProperties<TEntity>()
+        {
+            return ReflectionHelpers.GetPropertiesWithoutAttribute<TEntity, ComputedAttribute>();
+        }
 
         public static string GetColumnName<TEntity, TProperty>(Expression<Func<TEntity, TProperty>> propertyExpression)
         {
@@ -41,14 +49,15 @@ namespace GeneralReservationSystem.Application.Helpers
                 _ => null
             } ?? throw new ArgumentException("Expression must be a member expression e => e.m", nameof(propertyExpression));
 
-            if (me.Member is not PropertyInfo pi)
-                throw new ArgumentException($"{nameof(MemberExpression)} must refer to a property, not a method or a field", nameof(propertyExpression));
-
-            return GetColumnName(pi);
+            return me.Member is not PropertyInfo pi
+                ? throw new ArgumentException($"{nameof(MemberExpression)} must refer to a property, not a method or a field", nameof(propertyExpression))
+                : GetColumnName(pi);
         }
 
-        public static string GetColumnName(PropertyInfo prop) =>
+        public static string GetColumnName(PropertyInfo prop)
+        {
             //TODO: Tal vez sea mas conveniente tirar una excepcion si no tiene el atributo
-            prop.GetCustomAttribute<ColumnNameAttribute>()?.Name ?? prop.Name;
+            return prop.GetCustomAttribute<ColumnNameAttribute>()?.Name ?? prop.Name;
+        }
     }
 }
