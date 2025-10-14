@@ -1,0 +1,96 @@
+﻿@page "/trips/view"
+
+@using GeneralReservationSystem.Application.Services.Interfaces
+@using Application.Entities
+
+@inject ITripService tripService
+
+<MudTable Items="@trips" Hover="true">
+
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Viajes</MudText>
+        <MudSpacer/>
+    </ToolBarContent>
+
+    <HeaderContent>
+
+        <MudTh>
+            <MudTableSortLabel
+                SortBy="new Func<Trip, object>(t => t.TripId)">
+                Id
+            </MudTableSortLabel>
+        </MudTh>
+
+        <MudTh>
+            <MudTableSortLabel 
+                SortBy="new Func<Trip, object>(t => t.DepartureStationId)">
+                Origen
+            </MudTableSortLabel>
+        </MudTh>
+
+        <MudTh>
+            <MudTableSortLabel 
+                SortBy="new Func<Trip, object>(t => t.ArrivalStationId)">
+                Destino
+            </MudTableSortLabel>
+        </MudTh>
+
+        <MudTh>
+            <MudTableSortLabel 
+                SortBy="new Func<Trip, object>(t => t.DepartureTime)">
+                Fecha de Salida
+            </MudTableSortLabel>
+        </MudTh>
+
+        <MudTh>
+            <MudTableSortLabel 
+                SortBy="new Func<Trip, object>(t => t.ArrivalTime)">
+                Fecha de Llegada
+            </MudTableSortLabel>
+        </MudTh>
+
+    </HeaderContent>
+
+    <RowTemplate>
+        @*TODO: Modificar para que no muestre id de las estaciones, sino el nombre*@
+        <MudTd DataLabel="Id">@context.TripId</MudTd>
+        <MudTd DataLabel="Origen">@context.DepartureStationId</MudTd>
+        <MudTd DataLabel="Destino">@context.ArrivalStationId</MudTd>
+        <MudTd DataLabel="Fecha de Salida">@context.DepartureTime.ToString("g")</MudTd>
+        <MudTd DataLabel="Fecha de Llegada">@context.ArrivalTime.ToString("g")</MudTd>
+    </RowTemplate>
+
+    <PagerContent>
+        <MudTablePager />
+    </PagerContent>
+</MudTable>
+
+@code {
+
+    List<Trip> trips = new List<Trip>(new[]
+    {
+        new Trip
+        {
+            TripId=10,
+            DepartureStationId=1,
+            ArrivalStationId=2,
+            DepartureTime=DateTime.UtcNow.AddHours(2),
+            ArrivalTime=DateTime.UtcNow.AddHours(4)
+        },
+        new Trip
+        {
+            TripId=10,
+            DepartureStationId=1,
+            ArrivalStationId=2,
+            DepartureTime=DateTime.UtcNow.AddDays(20).AddHours(2),
+            ArrivalTime=DateTime.UtcNow.AddDays(22).AddHours(4)
+        },
+    });
+
+    protected override async Task OnInitializedAsync()
+    {
+        //TODO: Paginar
+        //trips = (await tripService.GetAllTripsAsync()).ToList();
+    }
+
+}
