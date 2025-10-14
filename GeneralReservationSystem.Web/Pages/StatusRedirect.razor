@@ -1,0 +1,12 @@
+@using Microsoft.AspNetCore.Components
+@inject NavigationManager Navigation
+
+@code {
+    [Parameter]
+    public int StatusCode { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Navigation.NavigateTo($"/status/{StatusCode}");
+    }
+}

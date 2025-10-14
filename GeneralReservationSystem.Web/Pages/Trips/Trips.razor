@@ -1,0 +1,372 @@
+@page "/trips"
+
+@using GeneralReservationSystem.Application.Common
+@using GeneralReservationSystem.Application.DTOs
+@using GeneralReservationSystem.Application.Entities
+@using GeneralReservationSystem.Application.Exceptions.Services
+@using GeneralReservationSystem.Application.Services.Interfaces
+@using Microsoft.AspNetCore.Authorization
+@using System.ComponentModel.DataAnnotations
+
+@inject ITripService TripService
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <PageTitle>Viajes</PageTitle>
+
+    <AuthorizeView Roles="Admin">
+        <Authorized>
+            <MudExpansionPanels Class="mb-4">
+                <MudExpansionPanel Text="Agregar nuevo viaje" Icon="@Icons.Material.Filled.Add">
+                    <MudCard Class="pd-2">
+                        <MudCardContent>
+                            <MudForm @ref="_createForm" Model="_createTripDto" Spacing="3">
+                                <MudTextField Label="Estación salida" For="@(() => _createTripDto.DepartureStationId)" @bind-Value="_createTripDto.DepartureStationId" Variant="Variant.Outlined" Immediate="true" />
+                                <MudDatePicker Label="Fecha salida" Date="_createTripDto.DepartureTime" DateChanged="OnCreateDepartureDateChanged" DateFormat="dd/MM/yyyy" />
+                                <MudTimePicker Label="Hora salida" Time="_createTripDto.DepartureTime.TimeOfDay" TimeChanged="OnCreateDepartureTimeChanged" TimeFormat="HH:mm" />
+                                <MudTextField Label="Estación llegada" For="@(() => _createTripDto.ArrivalStationId)" @bind-Value="_createTripDto.ArrivalStationId" Variant="Variant.Outlined" Immediate="true" />
+                                <MudDatePicker Label="Fecha llegada" Date="_createTripDto.ArrivalTime" DateChanged="OnCreateArrivalDateChanged" DateFormat="dd/MM/yyyy" />
+                                <MudTimePicker Label="Hora llegada" Time="_createTripDto.ArrivalTime.TimeOfDay" TimeChanged="OnCreateArrivalTimeChanged" TimeFormat="HH:mm" />
+                                <MudTextField Label="Asientos" For="@(() => _createTripDto.AvailableSeats)" @bind-Value="_createTripDto.AvailableSeats" Variant="Variant.Outlined" Immediate="true" />
+                            </MudForm>
+                        </MudCardContent>
+                        <MudCardActions Class="gap-2">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="HandleCreate" StartIcon="@Icons.Material.Filled.Save">Guardar</MudButton>
+                            <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ClearForm">Limpiar</MudButton>
+                        </MudCardActions>
+                    </MudCard>
+                </MudExpansionPanel>
+            </MudExpansionPanels>
+        </Authorized>
+    </AuthorizeView>
+
+    <MudDataGrid @ref="dataGrid"
+             T="TripWithDetailsDto"
+             ServerData="ServerReload"
+                 Filterable="true"
+                 FilterMode="DataGridFilterMode.ColumnFilterMenu"
+                 FilterCaseSensitivity="DataGridFilterCaseSensitivity.CaseInsensitive"
+                 SortMode="SortMode.Multiple"
+                 EditMode="DataGridEditMode.Form"
+                 EditTrigger="DataGridEditTrigger.Manual"
+                 CommittedItemChanges="HandleCommit"
+                 StartedEditingItem="HandleStartedEditingItem"
+                 ReadOnly="false"
+                 RowsPerPage="10">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Viajes</MudText>
+            <MudSpacer />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => dataGrid.ReloadServerData())" StartIcon="@Icons.Material.Filled.Refresh">Actualizar</MudButton>
+        </ToolBarContent>
+        <Columns>
+            <PropertyColumn Property="x => x.TripId" Title="ID" Sortable="true" Filterable="false" Editable="false" />
+            <PropertyColumn Property="x => x.DepartureStationId" Title="Salida">
+                <EditTemplate>
+                    <MudTextField Label="Salida"
+                                  @bind-Value="_editTripDto.DepartureStationId"
+                                  For="@(() => _editTripDto.DepartureStationId)"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Immediate="true" />
+                </EditTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.DepartureTime" Title="Hora salida">
+                <EditTemplate>
+                    <MudDatePicker Date="_editTripDto.DepartureTime"
+                                   DateChanged="OnEditDepartureDateChanged"
+                                   DateFormat="dd/MM/yyyy" />
+                    <MudTimePicker Time="_editTripDto.DepartureTime?.TimeOfDay ?? TimeSpan.Zero"
+                                   TimeChanged="OnEditDepartureTimeChanged"
+                                   TimeFormat="HH:mm" />
+                </EditTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.ArrivalStationId" Title="Llegada">
+                <EditTemplate>
+                    <MudTextField Label="Llegada"
+                                  @bind-Value="_editTripDto.ArrivalStationId"
+                                  For="@(() => _editTripDto.ArrivalStationId)"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Immediate="true" />
+                </EditTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.ArrivalTime" Title="Hora llegada">
+                <EditTemplate>
+                    <MudDatePicker Date="_editTripDto.ArrivalTime"
+                                   DateChanged="OnEditArrivalDateChanged"
+                                   DateFormat="dd/MM/yyyy" />
+                    <MudTimePicker Time="_editTripDto.ArrivalTime?.TimeOfDay ?? TimeSpan.Zero"
+                                   TimeChanged="OnEditArrivalTimeChanged"
+                                   TimeFormat="HH:mm" />
+                </EditTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.AvailableSeats" Title="Asientos">
+                <EditTemplate>
+                    <MudTextField Label="Asientos"
+                                  @bind-Value="_editTripDto.AvailableSeats"
+                                  For="@(() => _editTripDto.AvailableSeats)"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Immediate="true" />
+                </EditTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.ReservedSeats" Title="Asientos reservados" Editable="false" />
+            <PropertyColumn Property="x => x.FreeSeats" Title="Asientos libres" Editable="false" />
+            <TemplateColumn>
+                <CellTemplate>
+                    <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Filled.Edit" OnClick="@(() => context.Actions.StartEditingItemAsync())" />
+                    <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => HandleDelete(context.Item))" />
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager T="TripWithDetailsDto" />
+        </PagerContent>
+    </MudDataGrid>
+</MudContainer>
+
+@code {
+    private MudDataGrid<TripWithDetailsDto> dataGrid = null!;
+    private MudForm _createForm = null!;
+    private static DateTime DefaultDepartureDate => DateTime.Now;
+    private static DateTime DefaultArrivalDate => DateTime.Now.AddHours(12);
+    private CreateTripDto _createTripDto = new()
+    {
+        DepartureTime = DefaultDepartureDate,
+        ArrivalTime = DefaultArrivalDate
+    };
+    // Edit DTO uses nullable dates; initialize with the same defaults so pickers show values when needed
+    private UpdateTripDto _editTripDto = new()
+    {
+        DepartureTime = DefaultDepartureDate,
+        ArrivalTime = DefaultArrivalDate
+    };
+
+    private async Task<GridData<TripWithDetailsDto>> ServerReload(GridState<TripWithDetailsDto> state)
+    {
+        try
+        {
+            var searchRequest = new PagedSearchRequestDto
+            {
+                Page = state.Page + 1,
+                PageSize = state.PageSize
+            };
+
+            var result = await TripService.SearchTripsAsync(searchRequest);
+            return new GridData<TripWithDetailsDto>
+            {
+                Items = result.Items,
+                TotalItems = result.TotalCount
+            };
+        }
+        catch (ServiceBusinessException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (ServiceException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch
+        {
+            Snackbar.Add("Ocurrió un error al cargar los viajes.", Severity.Error);
+        }
+
+        return new GridData<TripWithDetailsDto> { Items = Array.Empty<TripWithDetailsDto>(), TotalItems = 0 };
+    }
+
+    private void HandleStartedEditingItem(TripWithDetailsDto item)
+    {
+        _editTripDto = new UpdateTripDto
+        {
+            TripId = item.TripId,
+            DepartureStationId = item.DepartureStationId,
+            DepartureTime = item.DepartureTime,
+            ArrivalStationId = item.ArrivalStationId,
+            ArrivalTime = item.ArrivalTime,
+            AvailableSeats = item.AvailableSeats
+        };
+    }
+
+    private async Task HandleCommit(TripWithDetailsDto item)
+    {
+        try
+        {
+            // Validate DTO using DataAnnotations
+            if (!TryValidate(_editTripDto, out var results))
+            {
+                foreach (var r in results)
+                    Snackbar.Add(r.ErrorMessage, Severity.Error);
+                return;
+            }
+
+            // Business validation: if both dates provided ensure arrival is after departure
+            if (_editTripDto.DepartureTime.HasValue && _editTripDto.ArrivalTime.HasValue && _editTripDto.ArrivalTime <= _editTripDto.DepartureTime)
+            {
+                Snackbar.Add("La fecha/hora de llegada debe ser posterior a la salida.", Severity.Error);
+                return;
+            }
+
+            // Validate available seats if provided
+            if (_editTripDto.AvailableSeats.HasValue && _editTripDto.AvailableSeats <= 0)
+            {
+                Snackbar.Add("El número de asientos debe ser un número positivo.", Severity.Error);
+                return;
+            }
+
+            await TripService.UpdateTripAsync(_editTripDto);
+            Snackbar.Add("Viaje actualizado.", Severity.Success);
+            await dataGrid.ReloadServerData();
+        }
+        catch (ServiceNotFoundException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Warning);
+            await dataGrid.ReloadServerData();
+        }
+        catch (ServiceBusinessException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (ServiceException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch
+        {
+            Snackbar.Add("Error inesperado al actualizar.", Severity.Error);
+        }
+    }
+
+    private async Task HandleCreate()
+    {
+        try
+        {
+            if (_createForm is not null)
+            {
+                await _createForm.Validate();
+                if (!_createForm.IsValid) return;
+            }
+            // Additional business validation
+            if (_createTripDto.ArrivalTime <= _createTripDto.DepartureTime)
+            {
+                Snackbar.Add("La fecha/hora de llegada debe ser posterior a la salida.", Severity.Error);
+                return;
+            }
+            if (_createTripDto.AvailableSeats <= 0)
+            {
+                Snackbar.Add("El número de asientos debe ser un número positivo.", Severity.Error);
+                return;
+            }
+
+            await TripService.CreateTripAsync(_createTripDto);
+            Snackbar.Add("Viaje creado.", Severity.Success);
+            ClearForm();
+            await dataGrid.ReloadServerData();
+        }
+        catch (ServiceBusinessException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (ServiceException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch
+        {
+            Snackbar.Add("Error inesperado al crear.", Severity.Error);
+        }
+    }
+
+    private async Task HandleDelete(TripWithDetailsDto item)
+    {
+        try
+        {
+            await TripService.DeleteTripAsync(new TripKeyDto { TripId = item.TripId });
+            Snackbar.Add("Viaje eliminado.", Severity.Success);
+            await dataGrid.ReloadServerData();
+        }
+        catch (ServiceNotFoundException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Warning);
+            await dataGrid.ReloadServerData();
+        }
+        catch (ServiceBusinessException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (ServiceException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch
+        {
+            Snackbar.Add("Error inesperado al eliminar.", Severity.Error);
+        }
+    }
+
+    private void ClearForm()
+    {
+        _createTripDto = new()
+        {
+            DepartureTime = DefaultDepartureDate,
+            ArrivalTime = DefaultArrivalDate
+        };
+        _createForm?.ResetValidation();
+    }
+
+    // Create form handlers: combine selected date and time into the non-nullable DateTime DTO fields
+    private void OnCreateDepartureDateChanged(DateTime? date)
+    {
+        _createTripDto.DepartureTime = Combine(date, _createTripDto.DepartureTime.TimeOfDay);
+    }
+
+    private void OnCreateDepartureTimeChanged(TimeSpan? time)
+    {
+        _createTripDto.DepartureTime = Combine(_createTripDto.DepartureTime.Date, time);
+    }
+
+    private void OnCreateArrivalDateChanged(DateTime? date)
+    {
+        _createTripDto.ArrivalTime = Combine(date, _createTripDto.ArrivalTime.TimeOfDay);
+    }
+
+    private void OnCreateArrivalTimeChanged(TimeSpan? time)
+    {
+        _createTripDto.ArrivalTime = Combine(_createTripDto.ArrivalTime.Date, time);
+    }
+
+    // Edit form handlers: Update nullable DateTime? fields by combining date and time; preserve existing parts when possible
+    private void OnEditDepartureDateChanged(DateTime? date)
+    {
+        _editTripDto.DepartureTime = Combine(date, _editTripDto.DepartureTime?.TimeOfDay);
+    }
+
+    private void OnEditDepartureTimeChanged(TimeSpan? time)
+    {
+        _editTripDto.DepartureTime = Combine(_editTripDto.DepartureTime?.Date, time);
+    }
+
+    private void OnEditArrivalDateChanged(DateTime? date)
+    {
+        _editTripDto.ArrivalTime = Combine(date, _editTripDto.ArrivalTime?.TimeOfDay);
+    }
+
+    private void OnEditArrivalTimeChanged(TimeSpan? time)
+    {
+        _editTripDto.ArrivalTime = Combine(_editTripDto.ArrivalTime?.Date, time);
+    }
+
+    private static DateTime Combine(DateTime? date, TimeSpan? time)
+    {
+        var d = date ?? DateTime.Today;
+        var t = time ?? TimeSpan.Zero;
+        return d.Date + t;
+    }
+
+    private static bool TryValidate<T>(T model, out List<ValidationResult> results)
+    {
+        var ctx = new ValidationContext(model);
+        results = new List<ValidationResult>();
+        return Validator.TryValidateObject(model, ctx, results, true);
+    }
+}

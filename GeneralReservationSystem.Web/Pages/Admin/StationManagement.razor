@@ -1,0 +1,269 @@
+@page "/admin/stations"
+
+@attribute [Authorize(Roles = "Admin")]
+
+@using GeneralReservationSystem.Application.Entities
+@using GeneralReservationSystem.Application.Services.Interfaces
+@using GeneralReservationSystem.Application.DTOs
+@using GeneralReservationSystem.Application.Common
+@using GeneralReservationSystem.Application.Exceptions.Services
+@using System.ComponentModel.DataAnnotations
+@using System.Linq.Expressions
+@using Microsoft.AspNetCore.Authorization
+
+@using AppFilterOperator = GeneralReservationSystem.Application.Common.FilterOperator
+@using AppSortDirection = GeneralReservationSystem.Application.Common.SortDirection
+@using GeneralReservationSystem.Web.Helpers
+
+@inject IStationService StationService
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <PageTitle>Gestión de Estaciones</PageTitle>
+
+    <MudExpansionPanels Class="mb-4">
+        <MudExpansionPanel Text="Agregar nueva estación" Icon="@Icons.Material.Filled.Add">
+            <MudCard Class="pd-2">
+                <MudCardContent>
+                    <MudForm @ref="_createForm" Spacing="3">
+                        <AntiforgeryToken />
+                        <MudTextField Label="Nombre" For="@(() => _createStationDto.StationName)" @bind-Value="_createStationDto.StationName" Variant="Variant.Outlined" Immediate="true" />
+                        <MudTextField Label="Ciudad" For="@(() => _createStationDto.City)" @bind-Value="_createStationDto.City" Variant="Variant.Outlined" Immediate="true" />
+                        <MudTextField Label="Región" For="@(() => _createStationDto.Region)" @bind-Value="_createStationDto.Region" Variant="Variant.Outlined" Immediate="true" />
+                        <MudTextField Label="País" For="@(() => _createStationDto.Country)" @bind-Value="_createStationDto.Country" Variant="Variant.Outlined" Immediate="true" />
+                    </MudForm>
+                </MudCardContent>
+                <MudCardActions Class="gap-2">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="HandleCreateStation" StartIcon="@Icons.Material.Filled.Save">Guardar</MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ClearCreateForm">Limpiar</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudExpansionPanel>
+    </MudExpansionPanels>
+
+    <MudDataGrid @ref="dataGrid"
+                 T="Station"
+                 ServerData="ServerReload"
+                 Filterable="true"
+                 FilterMode="DataGridFilterMode.ColumnFilterMenu"
+                 FilterCaseSensitivity="DataGridFilterCaseSensitivity.CaseInsensitive"
+                 SortMode="SortMode.Multiple"
+                 EditMode="DataGridEditMode.Form"
+                 EditTrigger="DataGridEditTrigger.Manual"
+                 CommittedItemChanges="HandleCommittedItemChanges"
+                 StartedEditingItem="HandleStartedEditingItem"
+                 ReadOnly="false"
+                 EditDialogOptions="editDialogOptions"
+                 RowsPerPage="10">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Estaciones</MudText>
+            <MudSpacer />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => dataGrid.ReloadServerData())" StartIcon="@Icons.Material.Filled.Refresh">Actualizar</MudButton>
+        </ToolBarContent>
+        <Columns>
+            <PropertyColumn Property="x => x.StationId" Title="ID" Sortable="true" Filterable="false" Editable="false" />
+            <PropertyColumn Property="x => x.StationName" Title="Nombre" Sortable="true" Filterable="true">
+                <EditTemplate>
+                    <MudTextField Label="Nombre" 
+                                  @bind-Value="_editStationDto.StationName" 
+                                  For="@(() => _editStationDto.StationName)"
+                                  Variant="Variant.Outlined" 
+                                  Margin="Margin.Dense" 
+                                  Immediate="true" />
+                </EditTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.City" Title="Ciudad" Sortable="true" Filterable="true">
+                <EditTemplate>
+                    <MudTextField Label="Ciudad" 
+                                  @bind-Value="_editStationDto.City" 
+                                  For="@(() => _editStationDto.City)"
+                                  Variant="Variant.Outlined" 
+                                  Margin="Margin.Dense" 
+                                  Immediate="true" />
+                </EditTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.Region" Title="Región" Sortable="true" Filterable="true">
+                <EditTemplate>
+                    <MudTextField Label="Región" 
+                                  @bind-Value="_editStationDto.Region" 
+                                  For="@(() => _editStationDto.Region)"
+                                  Variant="Variant.Outlined" 
+                                  Margin="Margin.Dense" 
+                                  Immediate="true" />
+                </EditTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.Country" Title="País" Sortable="true" Filterable="true">
+                <EditTemplate>
+                    <MudTextField Label="País" 
+                                  @bind-Value="_editStationDto.Country" 
+                                  For="@(() => _editStationDto.Country)"
+                                  Variant="Variant.Outlined" 
+                                  Margin="Margin.Dense" 
+                                  Immediate="true" />
+                </EditTemplate>
+            </PropertyColumn>
+            <TemplateColumn CellClass="w-auto text-nowrap text-md-center justify-end align-center" Sortable="false" Filterable="false">
+                <CellTemplate>
+                    <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Filled.Edit" OnClick="@(() => context.Actions.StartEditingItemAsync())" />
+                    <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => HandleDeleteStation(context.Item))" />
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager T="Station" />
+        </PagerContent>
+    </MudDataGrid>
+</MudContainer>
+
+@code {
+    private MudDataGrid<Station> dataGrid = null!;
+    private MudForm _createForm = null!;
+    private CreateStationDto _createStationDto = new();
+    private UpdateStationDto _editStationDto = new();
+
+    private DialogOptions editDialogOptions = new()
+    {
+        MaxWidth = MaxWidth.Medium,
+        FullWidth = true,
+        CloseButton = true,
+        Position = DialogPosition.Center,
+        CloseOnEscapeKey = true
+    };
+
+    private async Task<GridData<Station>> ServerReload(GridState<Station> state)
+    {
+        try
+        {
+            var searchRequest = new PagedSearchRequestDto
+            {
+                Page = state.Page + 1,
+                PageSize = state.PageSize,
+                Filters = GridHelpers.BuildFilters(state),
+                Orders = GridHelpers.BuildOrders(state)
+            };
+
+            var result = await StationService.SearchStationsAsync(searchRequest);
+            return new GridData<Station>
+            {
+                Items = result.Items,
+                TotalItems = result.TotalCount
+            };
+        }
+        catch (ServiceBusinessException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (ServiceException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Ocurrió un error inesperado al cargar las estaciones.", Severity.Error);
+        }
+
+        return new GridData<Station> { Items = Array.Empty<Station>(), TotalItems = 0 };
+    }
+
+    private void HandleStartedEditingItem(Station item)
+    {
+        _editStationDto = new UpdateStationDto
+        {
+            StationId = item.StationId,
+            StationName = item.StationName,
+            City = item.City,
+            Region = item.Region,
+            Country = item.Country
+        };
+    }
+
+    private async Task HandleCommittedItemChanges(Station item)
+    {
+        try
+        {
+            await StationService.UpdateStationAsync(_editStationDto);
+            Snackbar.Add("Estación actualizada correctamente.", Severity.Success);
+            await dataGrid.ReloadServerData();
+        }
+        catch (ServiceNotFoundException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Warning);
+            await dataGrid.ReloadServerData();
+        }
+        catch (ServiceBusinessException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (ServiceException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Ocurrió un error inesperado al actualizar la estación.", Severity.Error);
+        }
+    }
+
+    private async Task HandleCreateStation()
+    {
+        try
+        {
+            if (_createForm is not null)
+            {
+                await _createForm.Validate();
+                if (!_createForm.IsValid)
+                    return;
+            }
+
+            await StationService.CreateStationAsync(_createStationDto);
+            Snackbar.Add("Estación creada correctamente.", Severity.Success);
+            ClearCreateForm();
+            await dataGrid.ReloadServerData();
+        }
+        catch (ServiceBusinessException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (ServiceException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Ocurrió un error inesperado al crear la estación.", Severity.Error);
+        }
+    }
+
+    private async Task HandleDeleteStation(Station item)
+    {
+        try
+        {
+            await StationService.DeleteStationAsync(new StationKeyDto { StationId = item.StationId });
+            Snackbar.Add("Estación eliminada correctamente.", Severity.Success);
+            await dataGrid.ReloadServerData();
+        }
+        catch (ServiceNotFoundException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Warning);
+            await dataGrid.ReloadServerData();
+        }
+        catch (ServiceBusinessException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (ServiceException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Ocurrió un error inesperado al eliminar la estación.", Severity.Error);
+        }
+    }
+
+    private void ClearCreateForm()
+    {
+        _createStationDto = new CreateStationDto();
+        _createForm?.ResetValidation();
+    }
+}

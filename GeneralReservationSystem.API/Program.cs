@@ -1,90 +1,104 @@
+using GeneralReservationSystem.API.Middleware;
 using GeneralReservationSystem.Infrastructure;
-using Microsoft.Net.Http.Headers;
-using Microsoft.OpenApi.Models;
+using GeneralReservationSystem.Infrastructure.Helpers;
+using GeneralReservationSystem.Infrastructure.Middleware;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 
-var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddInfrastructureRepositories();
+builder.Services.AddHttpContextAccessor();
 
-builder.Services.AddInfrastructure();
-
-//builder.WebHost.UseKestrel(options =>
-//{
-//    var httpPort = Environment.GetEnvironmentVariable("API_HTTP_PORTS") ?? "8082";
-//    var httpsPort = Environment.GetEnvironmentVariable("API_HTTP_PORTS") ?? "8083";
-
-//    options.ListenAnyIP(int.Parse(httpPort)); // HTTP
-//    options.ListenAnyIP(int.Parse(httpsPort), listenOptions =>
-//    {
-//        listenOptions.UseHttps(); // HTTPS
-//    });
-//});
-
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(swagger =>
+// Configure JWT settings
+JwtSettings jwtSettings = new()
 {
-    // Generate the default UI of Swagger Documentation.
-    swagger.SwaggerDoc("v1", new OpenApiInfo
+    SecretKey = builder.Configuration["Jwt:SecretKey"] ?? "YourSuperSecretKeyThatIsAtLeast32CharactersLong!",
+    Issuer = builder.Configuration["Jwt:Issuer"] ?? "GeneralReservationSystemAPI",
+    Audience = builder.Configuration["Jwt:Audience"] ?? "GeneralReservationSystemClient",
+
+    ExpirationDays = int.Parse(builder.Configuration["Jwt:ExpirationDays"] ?? "7")
+};
+builder.Services.AddSingleton(jwtSettings);
+
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
     {
-        Version = "v1",
-        Title = "General-Reservation-System",
-        Description = "GRS-API"
-    });
-    // Enable authorization using Swagger (JWT).
-    //swagger.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
-    //{
-    //    Name = "Authorization",
-    //    Type = SecuritySchemeType.ApiKey,
-    //    Scheme = "Bearer",
-    //    BearerFormat = "JWT",
-    //    In = ParameterLocation.Header
-    //});
-    swagger.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
+        // Read allowed origins from environment variable (comma-separated)
+        string[] allowedOrigins = builder.Configuration["CorsOrigins"]?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            ?? []; // No origins allowed
+
+        _ = policy.WithOrigins(allowedOrigins)
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
     });
 });
 
-builder.Services.AddProblemDetails();
-
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+// Configure JWT Bearer authentication
+builder.Services.AddAuthentication(options =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "General Reservation System API v1");
-        // Makes Swagger UI available at the root URL.
-        c.RoutePrefix = string.Empty;
-    });
-}
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
 
-// Only use HTTPS redirection if certs are set up
-if (!app.Environment.IsEnvironment("Docker"))
-{
-    app.UseHttpsRedirection();
-}
+        ValidIssuer = jwtSettings.Issuer,
+        ValidAudience = jwtSettings.Audience,
+
+        IssuerSigningKey = JwtHelper.GetIssuerSigningKeyFromString(jwtSettings.SecretKey),
+
+        ClockSkew = TimeSpan.Zero
+    };
+
+    // Read JWT token from cookie instead of Authorization header
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            if (context.Request.Cookies.TryGetValue(JwtHelper.CookieName, out string? token))
+            {
+                context.Token = token;
+            }
+            return Task.CompletedTask;
+        },
+        OnChallenge = context =>
+        {
+            context.HandleResponse();
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            context.Response.ContentType = "application/json";
+            return context.Response.WriteAsJsonAsync(new { error = "No está autorizado para realizar esta acción." });
+        },
+        OnForbidden = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            context.Response.ContentType = "application/json";
+            return context.Response.WriteAsJsonAsync(new { error = "No tiene permisos para realizar esta acción." });
+        }
+    };
+});
+
+builder.Services.AddAuthorization();
+
+WebApplication app = builder.Build();
+
+app.UseMiddleware<ExceptionsMiddleware>();
+app.UseMiddleware<SessionMiddleware>();
 
 app.UseHttpsRedirection();
-
+app.UseCors();
+app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
-
+app.MapOpenApi();
 app.Run();

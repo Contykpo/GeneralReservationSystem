@@ -1,0 +1,84 @@
+@page "/reservations"
+
+@attribute [Authorize]
+
+@using GeneralReservationSystem.Web.Services.Interfaces
+@using Microsoft.AspNetCore.Authorization
+@using GeneralReservationSystem.Application.Common
+@using GeneralReservationSystem.Application.DTOs
+@using GeneralReservationSystem.Application.Entities
+@using GeneralReservationSystem.Application.Exceptions.Services
+@using GeneralReservationSystem.Application.Services.Interfaces
+
+@inject IClientReservationService ClientReservationService
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <PageTitle>Mis Reservas</PageTitle>
+    <MudDataGrid @ref="dataGrid"
+                 T="Reservation"
+                 ServerData="ServerReload"
+                 RowsPerPage="10">
+        <Columns>
+            <PropertyColumn Property="x => x.TripId" Title="Viaje" />
+            <PropertyColumn Property="x => x.Seat" Title="Asiento" />
+            <TemplateColumn>
+                <CellTemplate>
+                    <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => HandleDelete(context.Item))" />
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager T="Reservation" />
+        </PagerContent>
+    </MudDataGrid>
+</MudContainer>
+
+@code {
+    private MudDataGrid<Reservation> dataGrid = null!;
+
+    private async Task<GridData<Reservation>> ServerReload(GridState<Reservation> state)
+    {
+        try
+        {
+            var list = await ClientReservationService.GetCurrentUserReservationsAsync();
+            return new GridData<Reservation> { Items = list, TotalItems = list.Count() };
+        }
+        catch (ServiceException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch
+        {
+            Snackbar.Add("Error al cargar reservas.", Severity.Error);
+        }
+        return new GridData<Reservation> { Items = Array.Empty<Reservation>(), TotalItems = 0 };
+    }
+
+    private async Task HandleDelete(Reservation item)
+    {
+        try
+        {
+            await ClientReservationService.DeleteReservationAsync(new ReservationKeyDto { TripId = item.TripId });
+            Snackbar.Add("Reserva eliminada.", Severity.Success);
+            await dataGrid.ReloadServerData();
+        }
+        catch (ServiceNotFoundException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Warning);
+            await dataGrid.ReloadServerData();
+        }
+        catch (ServiceBusinessException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (ServiceException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch
+        {
+            Snackbar.Add("Error inesperado.", Severity.Error);
+        }
+    }
+}

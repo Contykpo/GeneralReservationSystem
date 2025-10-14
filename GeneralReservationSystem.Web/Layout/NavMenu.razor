@@ -1,0 +1,20 @@
+﻿<MudNavMenu>
+    <AuthorizeView>
+        <Authorized>
+            <MudNavLink Href="/trips">Viajes</MudNavLink>
+            <MudNavLink Href="/reservations">Mis Reservas</MudNavLink>
+            <MudNavLink Href="/profile">Perfil</MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Roles="Admin">
+        <Authorized>
+            <MudDivider Class="my-2" />
+            <MudText Class="mx-2" Typo="Typo.caption">Administración</MudText>
+            <MudNavLink Href="/admin/stations">Estaciones</MudNavLink>
+            
+            <MudNavLink Href="/admin/reservations">Reservas</MudNavLink>
+            <MudNavLink Href="/admin/users">Usuarios</MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+    <LoginDisplay />
+</MudNavMenu>

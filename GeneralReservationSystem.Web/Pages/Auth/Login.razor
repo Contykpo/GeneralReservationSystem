@@ -1,0 +1,63 @@
+@page "/authentication/login"
+
+@using GeneralReservationSystem.Application.DTOs.Authentication
+@using GeneralReservationSystem.Application.Exceptions.Services
+@using GeneralReservationSystem.Web.Authentication
+@using GeneralReservationSystem.Web.Services
+@using GeneralReservationSystem.Web.Services.Interfaces.Authentication
+@using Microsoft.AspNetCore.Components.Authorization
+
+@inject IClientAuthenticationService ClientAuthenticationService
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
+
+<AuthorizeView>
+    <Authorized>
+        <RedirectToHome />
+    </Authorized>
+    <NotAuthorized>
+        @* TODO: Find a better way to center it. The calculation is BAD. *@
+        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Style="min-height: calc(100vh - 64px); padding: 1rem;">
+            <MudPaper Class="pa-4" MaxWidth="300px" Width="100%" Elevation="6">
+                <MudText Typo="Typo.h5" Class="mb-4">Iniciar sesión</MudText>
+                <MudForm @ref="_form" Spacing="3">
+                    <AntiforgeryToken />
+                    <MudTextField Label="Usuario o Correo electrónico" For="@(() => _loginDto.UserNameOrEmail)" @bind-Value="_loginDto.UserNameOrEmail" />
+                    <MudTextField Label="Contraseña" For="@(() => _loginDto.Password)" @bind-Value="_loginDto.Password" InputType="InputType.Password" />
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="w-100" OnClick="HandleLogin">Iniciar sesión</MudButton>
+                    @if (!string.IsNullOrEmpty(_error))
+                    {
+                        <MudAlert Severity="Severity.Error" Class="mt-3">@_error</MudAlert>
+                    }
+                </MudForm>
+            </MudPaper>
+        </MudStack>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private LoginDto _loginDto = new();
+    private MudForm _form = null!;
+    private string _error = string.Empty;
+
+    private async Task HandleLogin()
+    {
+        _error = string.Empty;
+        await _form.Validate();
+        if (!_form.IsValid)
+            return;
+        try
+        {
+            var user = await ClientAuthenticationService.AuthenticateAsync(_loginDto);
+            if (AuthStateProvider is CustomAuthenticationStateProvider custom)
+            {
+                custom.MarkUserAsAuthenticated(user);
+            }
+            Navigation.NavigateTo("/");
+        }
+        catch (ServiceBusinessException ex)
+        {
+            _error = ex.Message;
+        }
+    }
+}

@@ -1,15 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using GeneralReservationSystem.Application.Common;
 
 namespace GeneralReservationSystem.Application.Entities
 {
     public class Reservation
     {
-        public required int TripId { get; set; }
-        public required int SeatId { get; set; }
-        public required Guid UserId { get; set; }
+        [Key]
+        public int TripId { get; set; }
+        [Key]
+        public int UserId { get; set; }
+        public int Seat { get; set; }
     }
 }

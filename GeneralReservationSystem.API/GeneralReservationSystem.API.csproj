@@ -4,29 +4,14 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>c19d0efa-0985-4a3b-8a22-1d13c930688d</UserSecretsId>
+    <UserSecretsId>3304640a-fabc-4925-a48f-4ba587f3ed29</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
   </PropertyGroup>
 
-  <PropertyGroup>
-  	<GenerateDocumentationFile>true</GenerateDocumentationFile>
-  	<NoWarn>$(NoWarn);1591</NoWarn>
-  </PropertyGroup>
-
   <ItemGroup>
-    <Content Remove="Properties\serviceDependencies.json" />
-    <Content Remove="Properties\serviceDependencies.local.json" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="Properties\serviceDependencies.local.json" />
-  </ItemGroup>
-	
-  <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.8" />
-    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.5" />
-    <PackageReference Include="Swashbuckle.AspNetCore.Swagger" Version="9.0.5" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.9" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.9" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
   </ItemGroup>
 
   <ItemGroup>

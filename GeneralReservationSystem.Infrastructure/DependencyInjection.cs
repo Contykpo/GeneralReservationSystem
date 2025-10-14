@@ -1,10 +1,17 @@
-using Microsoft.Extensions.DependencyInjection;
 using GeneralReservationSystem.Application.Repositories.Interfaces;
 using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication;
-using GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations;
-using GeneralReservationSystem.Infrastructure.Repositories.DefaultImplementations.Authentication;
-using GeneralReservationSystem.Application.Services.Interfaces;
+using GeneralReservationSystem.Application.Repositories.Util.Interfaces;
 using GeneralReservationSystem.Application.Services.DefaultImplementations;
+using GeneralReservationSystem.Application.Services.DefaultImplementations.Authentication;
+using GeneralReservationSystem.Application.Services.Interfaces;
+using GeneralReservationSystem.Application.Services.Interfaces.Authentication;
+using GeneralReservationSystem.Infrastructure.Repositories.Sql;
+using GeneralReservationSystem.Infrastructure.Repositories.Sql.Authentication;
+using GeneralReservationSystem.Infrastructure.Repositories.Util.Sql;
+using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using System.Data.Common;
 
 namespace GeneralReservationSystem.Infrastructure
 {
@@ -12,28 +19,27 @@ namespace GeneralReservationSystem.Infrastructure
     {
         public static IServiceCollection AddInfrastructure(this IServiceCollection services)
         {
-            services.AddSingleton<DbConnectionHelper>();
+            // Register default DbConnection factory
+            _ = services.AddScoped<Func<DbConnection>>(sp =>
+                DbConnectionFactory.CreateFactory<SqlConnection>(
+                    sp.GetRequiredService<IConfiguration>(),
+                    "DefaultConnection"));
 
             // Register all default repository implementations
-            services.AddScoped<IDestinationRepository, DefaultDestinationRepository>();
-            services.AddScoped<IDriverRepository, DefaultDriverRepository>();
-            services.AddScoped<IReservationRepository, DefaultReservationRepository>();
-            services.AddScoped<ISeatRepository, DefaultSeatRepository>();
-            services.AddScoped<ITripRepository, DefaultTripRepository>();
-            services.AddScoped<IVehicleModelRepository, DefaultVehicleModelRepository>();
-            services.AddScoped<IVehicleRepository, DefaultVehicleRepository>();
-            services.AddScoped<IUserRepository, DefaultUserRepository>();
-            services.AddScoped<IRoleRepository, DefaultRoleRepository>();
-            services.AddScoped<ISessionRepository, DefaultSessionRepository>();
+            _ = services.AddScoped<IUserRepository, UserRepository>();
+            _ = services.AddScoped<IStationRepository, StationRepository>();
+            _ = services.AddScoped<IReservationRepository, ReservationRepository>();
+            _ = services.AddScoped<ITripRepository, TripRepository>();
 
             // Register all default service implementations
-            services.AddScoped<IDestinationService, DefaultDestinationService>();
-            services.AddScoped<IDriverService, DefaultDriverService>();
-            services.AddScoped<IReservationService, DefaultReservationService>();
-            services.AddScoped<ISeatService, DefaultSeatService>();
-            services.AddScoped<ITripService, DefaultTripService>();
-            services.AddScoped<IVehicleModelService, DefaultVehicleModelService>();
-            services.AddScoped<IVehicleService, DefaultVehicleService>();
+            _ = services.AddScoped<IAuthenticationService, AuthenticationService>();
+            _ = services.AddScoped<IUserService, UserService>();
+            _ = services.AddScoped<IStationService, StationService>();
+            _ = services.AddScoped<IReservationService, ReservationService>();
+            _ = services.AddScoped<ITripService, TripService>();
+
+            // Register UnitOfWork
+            _ = services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             return services;
         }
