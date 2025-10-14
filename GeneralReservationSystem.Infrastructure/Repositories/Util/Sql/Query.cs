@@ -45,24 +45,6 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
             return Expression.Lambda<Func<T, object>>(body, param);
         }
 
-        public IQuery<T> Where(Expression<Func<T, bool>> predicate)
-        {
-            ArgumentNullException.ThrowIfNull(predicate);
-            var filters = Model.Filters?.ToList() ?? [];
-            filters.Add(new FilterDescriptor<T>(predicate));
-            Model = new QueryModel<T>(
-                Filters: filters,
-                Projection: Model.Projection,
-                Group: Model.Group,
-                Aggregates: Model.Aggregates,
-                Joins: Model.Joins,
-                Orders: Model.Orders,
-                Pagination: Model.Pagination,
-                IsDistinct: Model.IsDistinct
-            );
-            return this;
-        }
-
         public IQuery<T> ApplyFilters(IEnumerable<Filter> filters)
         {
             ArgumentNullException.ThrowIfNull(filters);
@@ -107,6 +89,24 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
             }
 
             return query;
+        }
+
+        public IQuery<T> Where(Expression<Func<T, bool>> predicate)
+        {
+            ArgumentNullException.ThrowIfNull(predicate);
+            var filters = Model.Filters?.ToList() ?? [];
+            filters.Add(new FilterDescriptor<T>(predicate));
+            Model = new QueryModel<T>(
+                Filters: filters,
+                Projection: Model.Projection,
+                Group: Model.Group,
+                Aggregates: Model.Aggregates,
+                Joins: Model.Joins,
+                Orders: Model.Orders,
+                Pagination: Model.Pagination,
+                IsDistinct: Model.IsDistinct
+            );
+            return this;
         }
 
         public IQuery<TResult> Select<TResult>(Expression<Func<T, TResult>> selector)
@@ -493,7 +493,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
             public (string Sql, IReadOnlyList<KeyValuePair<string, object?>> Parameters) BuildWhereClause(string tableName)
             {
                 if (model.Filters == null || model.Filters.Count == 0)
-                    return (string.Empty, Array.Empty<KeyValuePair<string, object?>>().ToList());
+                    return (string.Empty, []);
 
                 var parts = new List<string>();
                 foreach (var f in model.Filters)
@@ -504,7 +504,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql
                         parts.Add(SqlExpressionBuilder.TranslateExpression(le.Body, resolver, _parameters, ref _paramCounter));
                     }
                 }
-                if (parts.Count == 0) return (string.Empty, Array.Empty<KeyValuePair<string, object?>>().ToList());
+                if (parts.Count == 0) return (string.Empty, []);
                 return ("WHERE " + string.Join(" AND ", parts), _parameters.ToList());
             }
 

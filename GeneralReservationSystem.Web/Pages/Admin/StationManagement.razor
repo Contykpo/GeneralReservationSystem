@@ -13,6 +13,7 @@
 
 @using AppFilterOperator = GeneralReservationSystem.Application.Common.FilterOperator
 @using AppSortDirection = GeneralReservationSystem.Application.Common.SortDirection
+@using GeneralReservationSystem.Web.Helpers
 
 @inject IStationService StationService
 @inject ISnackbar Snackbar
@@ -115,19 +116,19 @@
 </MudContainer>
 
 @code {
-private MudDataGrid<Station> dataGrid = null!;
-private MudForm _createForm = null!;
-private CreateStationDto _createStationDto = new();
-private UpdateStationDto _editStationDto = new();
+    private MudDataGrid<Station> dataGrid = null!;
+    private MudForm _createForm = null!;
+    private CreateStationDto _createStationDto = new();
+    private UpdateStationDto _editStationDto = new();
 
-private DialogOptions editDialogOptions = new()
-{
-    MaxWidth = MaxWidth.Medium,
-    FullWidth = true,
-    CloseButton = true,
-    Position = DialogPosition.Center,
-    CloseOnEscapeKey = true
-};
+    private DialogOptions editDialogOptions = new()
+    {
+        MaxWidth = MaxWidth.Medium,
+        FullWidth = true,
+        CloseButton = true,
+        Position = DialogPosition.Center,
+        CloseOnEscapeKey = true
+    };
 
     private async Task<GridData<Station>> ServerReload(GridState<Station> state)
     {
@@ -137,8 +138,8 @@ private DialogOptions editDialogOptions = new()
             {
                 Page = state.Page + 1,
                 PageSize = state.PageSize,
-                Filters = BuildFilters(state),
-                Orders = BuildOrders(state)
+                Filters = GridHelpers.BuildFilters(state),
+                Orders = GridHelpers.BuildOrders(state)
             };
 
             var result = await StationService.SearchStationsAsync(searchRequest);
@@ -264,131 +265,5 @@ private DialogOptions editDialogOptions = new()
     {
         _createStationDto = new CreateStationDto();
         _createForm?.ResetValidation();
-    }
-
-    private static IList<Filter> BuildFilters(GridState<Station> state)
-    {
-        var filters = new List<Filter>();
-
-        if (state?.FilterDefinitions is null)
-            return filters;
-
-        foreach (var def in state.FilterDefinitions)
-        {
-            try
-            {
-                var field = GetFilterField(def);
-                if (string.IsNullOrWhiteSpace(field))
-                    continue;
-
-                var op = MapFilterOperator(def.Operator);
-                var value = def.Value;
-
-                filters.Add(new Filter(field!, op, value));
-            }
-            catch
-            {
-                // ignore invalid filter
-            }
-        }
-
-        return filters;
-    }
-
-    private static string? GetFilterField(IFilterDefinition<Station> def)
-    {
-        try
-        {
-            // Try the Column.PropertyName if present
-            var columnProp = def.GetType().GetProperty("Column");
-            var column = columnProp?.GetValue(def);
-            var propName = column?.GetType().GetProperty("PropertyName")?.GetValue(column) as string;
-            if (!string.IsNullOrWhiteSpace(propName))
-                return propName;
-
-            // Fallback: try Field or PropertyName directly on definition
-            propName = def.GetType().GetProperty("Field")?.GetValue(def) as string
-                       ?? def.GetType().GetProperty("PropertyName")?.GetValue(def) as string;
-            if (!string.IsNullOrWhiteSpace(propName))
-                return propName;
-        }
-        catch
-        {
-            // ignore
-        }
-        return null;
-    }
-
-    private static IList<SortOption> BuildOrders(GridState<Station> state)
-    {
-        var orders = new List<SortOption>();
-
-        if (state?.SortDefinitions is null)
-            return orders;
-
-        foreach (var def in state.SortDefinitions)
-        {
-            var field = GetSortField(def);
-            if (string.IsNullOrWhiteSpace(field))
-                continue;
-
-            var direction = def.Descending ? AppSortDirection.Desc : AppSortDirection.Asc;
-
-            orders.Add(new SortOption(field!, direction));
-        }
-
-        return orders;
-    }
-
-    private static string? GetSortField(SortDefinition<Station> def)
-    {
-        // Preferred: extract from SortBy expression if available
-        try
-        {
-            var sortByProp = typeof(SortDefinition<Station>).GetProperty("SortBy");
-            if (sortByProp is not null)
-            {
-                var sortBy = sortByProp.GetValue(def) as LambdaExpression;
-                if (sortBy is not null)
-                {
-                    Expression body = sortBy.Body;
-                    if (body is UnaryExpression ue && ue.NodeType == ExpressionType.Convert)
-                        body = ue.Operand;
-                    if (body is MemberExpression me)
-                        return me.Member.Name;
-                }
-            }
-
-            // Fallback: try SortLabel string property
-            var label = typeof(SortDefinition<Station>).GetProperty("SortLabel")?.GetValue(def) as string;
-            if (!string.IsNullOrWhiteSpace(label))
-                return label;
-        }
-        catch
-        {
-            // ignore and return null
-        }
-
-        return null;
-    }
-
-    private static AppFilterOperator MapFilterOperator(object? op)
-    {
-        var name = op?.ToString();
-        return name switch
-        {
-            "Equals" => AppFilterOperator.Equals,
-            "NotEquals" => AppFilterOperator.NotEquals,
-            "GreaterThan" => AppFilterOperator.GreaterThan,
-            "GreaterThanOrEqual" => AppFilterOperator.GreaterThanOrEqual,
-            "LessThan" => AppFilterOperator.LessThan,
-            "LessThanOrEqual" => AppFilterOperator.LessThanOrEqual,
-            "Contains" => AppFilterOperator.Contains,
-            "StartsWith" => AppFilterOperator.StartsWith,
-            "EndsWith" => AppFilterOperator.EndsWith,
-            "IsNullOrEmpty" => AppFilterOperator.IsNullOrEmpty,
-            "IsNotNullOrEmpty" => AppFilterOperator.IsNotNullOrEmpty,
-            _ => AppFilterOperator.Equals
-        };
     }
 }

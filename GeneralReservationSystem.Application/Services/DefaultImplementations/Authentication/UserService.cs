@@ -30,7 +30,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
         {
             var user = new User { UserId = dto.UserId };
             bool hasUpdates = false;
-            
+
             if (dto.UserName != null)
             {
                 user.UserName = dto.UserName;
@@ -41,13 +41,13 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
                 user.Email = dto.Email;
                 hasUpdates = true;
             }
-            
+
             if (!hasUpdates)
             {
                 // Nothing to update, return the existing user
                 return await GetUserAsync(new UserKeyDto { UserId = dto.UserId }, cancellationToken);
             }
-            
+
             try
             {
                 // Build selector based on what properties are being updated
@@ -64,7 +64,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
                 {
                     selector = u => u.Email;
                 }
-                
+
                 var affected = await userRepository.UpdateAsync(
                     user,
                     selector,

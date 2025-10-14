@@ -11,11 +11,13 @@ namespace GeneralReservationSystem.Web.Authentication
         {
             try
             {
-                var currentUser = await clientAuthenticationService.GetCurrentUserAsync();
+                UserInfo currentUser = await clientAuthenticationService.GetCurrentUserAsync();
                 if (currentUser == null)
+                {
                     return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+                }
 
-                var claims = new List<Claim>
+                List<Claim> claims = new()
                 {
                     new(ClaimTypes.NameIdentifier, currentUser.UserId.ToString()),
                     new(ClaimTypes.Name, currentUser.UserName ?? string.Empty),
@@ -23,10 +25,12 @@ namespace GeneralReservationSystem.Web.Authentication
                 };
 
                 if (currentUser.IsAdmin)
+                {
                     claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+                }
 
-                var identity = new ClaimsIdentity(claims, "cookie");
-                var principal = new ClaimsPrincipal(identity);
+                ClaimsIdentity identity = new(claims, "cookie");
+                ClaimsPrincipal principal = new(identity);
                 return new AuthenticationState(principal);
             }
             catch
@@ -38,23 +42,25 @@ namespace GeneralReservationSystem.Web.Authentication
         // Called after successful login/register to update the UI
         public void MarkUserAsAuthenticated(UserInfo userInfo)
         {
-            var claims = new List<Claim>
+            List<Claim> claims = new()
             {
                 new(ClaimTypes.NameIdentifier, userInfo.UserId.ToString()),
                 new(ClaimTypes.Name, userInfo.UserName ?? string.Empty),
                 new(ClaimTypes.Email, userInfo.Email ?? string.Empty)
             };
             if (userInfo.IsAdmin)
+            {
                 claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+            }
 
-            var identity = new ClaimsIdentity(claims, "cookie");
-            var principal = new ClaimsPrincipal(identity);
+            ClaimsIdentity identity = new(claims, "cookie");
+            ClaimsPrincipal principal = new(identity);
             NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(principal)));
         }
 
         public void MarkUserAsLoggedOut()
         {
-            var anonymous = new ClaimsPrincipal(new ClaimsIdentity());
+            ClaimsPrincipal anonymous = new(new ClaimsIdentity());
             NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(anonymous)));
         }
     }

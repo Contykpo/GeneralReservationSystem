@@ -14,7 +14,9 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             ref int paramCounter)
         {
             var visitor = new ExpressionToSqlVisitor(aliasResolver, parameters, ref paramCounter);
-            return visitor.Translate(expression);
+            var sql = visitor.Translate(expression);
+            paramCounter = visitor.ParamCounter;
+            return sql;
         }
 
         public static MemberExpression? ExtractMember(Expression expr)
@@ -43,27 +45,71 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             var propertyAccess = Expression.Property(parameter, property);
 
             Expression? body = null;
-            try
+            var propertyType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+            switch (filter.Operator)
             {
-                body = filter.Operator switch
-                {
-                    FilterOperator.Equals => BuildEqualsExpression(propertyAccess, filter.Value),
-                    FilterOperator.NotEquals => BuildNotEqualsExpression(propertyAccess, filter.Value),
-                    FilterOperator.GreaterThan => BuildComparisonExpression(propertyAccess, filter.Value, ExpressionType.GreaterThan),
-                    FilterOperator.GreaterThanOrEqual => BuildComparisonExpression(propertyAccess, filter.Value, ExpressionType.GreaterThanOrEqual),
-                    FilterOperator.LessThan => BuildComparisonExpression(propertyAccess, filter.Value, ExpressionType.LessThan),
-                    FilterOperator.LessThanOrEqual => BuildComparisonExpression(propertyAccess, filter.Value, ExpressionType.LessThanOrEqual),
-                    FilterOperator.Contains => BuildStringMethodExpression(propertyAccess, filter.Value, nameof(string.Contains)),
-                    FilterOperator.StartsWith => BuildStringMethodExpression(propertyAccess, filter.Value, nameof(string.StartsWith)),
-                    FilterOperator.EndsWith => BuildStringMethodExpression(propertyAccess, filter.Value, nameof(string.EndsWith)),
-                    FilterOperator.IsNullOrEmpty => BuildIsNullOrEmptyExpression(propertyAccess),
-                    FilterOperator.IsNotNullOrEmpty => Expression.Not(BuildIsNullOrEmptyExpression(propertyAccess)),
-                    _ => null
-                };
-            }
-            catch
-            {
-                return null;
+                case FilterOperator.Equals:
+                    if (propertyType == typeof(string))
+                    {
+                        // For string, use case-insensitive
+                        var valueStr = filter.Value?.ToString();
+                        body = Expression.Equal(propertyAccess, Expression.Constant(valueStr, typeof(string)));
+                    }
+                    else
+                    {
+                        body = BuildEqualsExpression(propertyAccess, filter.Value);
+                    }
+                    break;
+                case FilterOperator.NotEquals:
+                    if (propertyType == typeof(string))
+                    {
+                        var valueStr = filter.Value?.ToString();
+                        body = Expression.NotEqual(propertyAccess, Expression.Constant(valueStr, typeof(string)));
+                    }
+                    else
+                    {
+                        body = BuildNotEqualsExpression(propertyAccess, filter.Value);
+                    }
+                    break;
+                case FilterOperator.GreaterThan:
+                    body = BuildComparisonExpression(propertyAccess, filter.Value, ExpressionType.GreaterThan);
+                    break;
+                case FilterOperator.GreaterThanOrEqual:
+                    body = BuildComparisonExpression(propertyAccess, filter.Value, ExpressionType.GreaterThanOrEqual);
+                    break;
+                case FilterOperator.LessThan:
+                    body = BuildComparisonExpression(propertyAccess, filter.Value, ExpressionType.LessThan);
+                    break;
+                case FilterOperator.LessThanOrEqual:
+                    body = BuildComparisonExpression(propertyAccess, filter.Value, ExpressionType.LessThanOrEqual);
+                    break;
+                case FilterOperator.Contains:
+                    if (propertyType == typeof(string))
+                        body = BuildStringMethodExpression(propertyAccess, filter.Value, nameof(string.Contains));
+                    else
+                        throw new InvalidOperationException($"Contains operator can only be used on string properties. Property '{property.Name}' is of type '{propertyType.Name}'.");
+                    break;
+                case FilterOperator.StartsWith:
+                    if (propertyType == typeof(string))
+                        body = BuildStringMethodExpression(propertyAccess, filter.Value, nameof(string.StartsWith));
+                    else
+                        throw new InvalidOperationException($"StartsWith operator can only be used on string properties. Property '{property.Name}' is of type '{propertyType.Name}'.");
+                    break;
+                case FilterOperator.EndsWith:
+                    if (propertyType == typeof(string))
+                        body = BuildStringMethodExpression(propertyAccess, filter.Value, nameof(string.EndsWith));
+                    else
+                        throw new InvalidOperationException($"EndsWith operator can only be used on string properties. Property '{property.Name}' is of type '{propertyType.Name}'.");
+                    break;
+                case FilterOperator.IsNullOrEmpty:
+                    body = BuildIsNullOrEmptyExpression(propertyAccess);
+                    break;
+                case FilterOperator.IsNotNullOrEmpty:
+                    body = Expression.Not(BuildIsNullOrEmptyExpression(propertyAccess));
+                    break;
+                default:
+                    body = null;
+                    break;
             }
 
             if (body == null)
@@ -170,7 +216,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             }
         }
 
-        private static Expression BuildStringMethodExpression(MemberExpression property, object? value, string methodName)
+        private static MethodCallExpression? BuildStringMethodExpression(MemberExpression property, object? value, string methodName)
         {
             ArgumentNullException.ThrowIfNull(property);
 
@@ -183,15 +229,20 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
                 throw new InvalidOperationException($"String method '{methodName}' can only be used on string properties. Property '{property.Member.Name}' is of type '{property.Type.Name}'.");
 
             if (value == null)
-                return Expression.Constant(false);
+                return null;
 
             var stringValue = value.ToString();
-            if (stringValue == null)
-                return Expression.Constant(false);
+            if (string.IsNullOrEmpty(stringValue))
+                return null;
 
             var method = typeof(string).GetMethod(methodName, [typeof(string)]) ?? throw new InvalidOperationException($"Method '{methodName}' not found on string type.");
             var constant = Expression.Constant(stringValue, typeof(string));
-            return Expression.Call(property, method, constant);
+
+            var nonNullableProperty = property.Type != typeof(string) && propertyType == typeof(string)
+                ? Expression.Convert(property, typeof(string))
+                : (Expression)property;
+
+            return Expression.Call(nonNullableProperty, method, constant);
         }
 
         private static Expression BuildIsNullOrEmptyExpression(MemberExpression property)
@@ -322,6 +373,8 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             private readonly System.Text.StringBuilder _sb = new();
             private int _paramCounter;
 
+            public int ParamCounter => _paramCounter;
+
             public ExpressionToSqlVisitor(
                 Func<ParameterExpression, string> aliasResolver,
                 List<KeyValuePair<string, object?>> parameters,
@@ -347,6 +400,17 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
 
             protected override Expression VisitBinary(BinaryExpression node)
             {
+                if ((node.NodeType == ExpressionType.Equal || node.NodeType == ExpressionType.NotEqual) &&
+                    ((node.Left is ConstantExpression lce && lce.Value == null) || (node.Right is ConstantExpression rce && rce.Value == null)))
+                {
+                    _sb.Append('(');
+                    var nonNullSide = node.Left is ConstantExpression ? node.Right : node.Left;
+                    Visit(nonNullSide);
+                    _sb.Append(node.NodeType == ExpressionType.Equal ? " IS NULL" : " IS NOT NULL");
+                    _sb.Append(')');
+                    return node;
+                }
+
                 _sb.Append('(');
                 Visit(node.Left);
 
@@ -401,6 +465,13 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
                     Visit(node.Operand);
                     return node;
                 }
+                if (node.NodeType == ExpressionType.Not)
+                {
+                    _sb.Append("(NOT ");
+                    Visit(node.Operand);
+                    _sb.Append(')');
+                    return node;
+                }
                 return base.VisitUnary(node);
             }
 
@@ -409,6 +480,26 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
                 if (TryHandleStringMethod(node, out var handled) && handled)
                 {
                     return node;
+                }
+
+                if (node.Method.DeclaringType == typeof(string) && node.Method.Name == nameof(string.IsNullOrEmpty) && node.Arguments.Count == 1)
+                {
+                    var arg = node.Arguments[0];
+                    var memberExpr = arg;
+                    while (memberExpr is UnaryExpression { NodeType: ExpressionType.Convert or ExpressionType.ConvertChecked } ue)
+                    {
+                        memberExpr = ue.Operand;
+                    }
+                    if (memberExpr is MemberExpression mex && mex.Expression is ParameterExpression pex && mex.Member is PropertyInfo pi)
+                    {
+                        var col = EntityHelper.GetColumnName(pi);
+                        var alias = _aliasResolver(pex);
+                        var qualifiedTableName = SqlCommandHelper.FormatQualifiedTableName(alias);
+                        _sb.Append("((");
+                        _sb.Append($"{qualifiedTableName}.[{col}] IS NULL OR {qualifiedTableName}.[{col}] = '')");
+                        _sb.Append(")");
+                        return node;
+                    }
                 }
 
                 var val = Expression.Lambda(node).Compile().DynamicInvoke();
@@ -421,16 +512,27 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             {
                 handled = false;
 
-                if (node.Object is not MemberExpression mex ||
-                    mex.Expression is not ParameterExpression pex ||
-                    mex.Member is not PropertyInfo pi ||
-                    node.Arguments.Count != 1)
+                if (node.Object == null || node.Arguments.Count != 1)
                 {
                     return false;
                 }
 
                 var method = node.Method.Name;
                 if (method is not ("Contains" or "StartsWith" or "EndsWith"))
+                {
+                    return false;
+                }
+
+                // Unwrap Convert expressions to get to the actual MemberExpression
+                var objectExpr = node.Object;
+                while (objectExpr is UnaryExpression { NodeType: ExpressionType.Convert or ExpressionType.ConvertChecked } ue)
+                {
+                    objectExpr = ue.Operand;
+                }
+
+                if (objectExpr is not MemberExpression mex ||
+                    mex.Expression is not ParameterExpression pex ||
+                    mex.Member is not PropertyInfo pi)
                 {
                     return false;
                 }
