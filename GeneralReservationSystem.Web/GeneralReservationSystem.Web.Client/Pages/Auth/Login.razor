@@ -17,7 +17,7 @@
         <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="w-100" OnClick="HandleLogin">Login</MudButton>
         @if (!string.IsNullOrEmpty(_error))
         {
-            <MudAlert Severity="Severity.Error" Class="mt-3">@_error</MudAlert>
+            <MudAlert Severity="MudBlazor.Severity.Error" Class="mt-3">@_error</MudAlert>
         }
     </MudForm>
 </MudPaper>

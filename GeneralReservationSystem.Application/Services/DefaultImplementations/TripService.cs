@@ -14,6 +14,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             var trip = new Trip
             {
+                //TODO: Modificar esto para que el viaje tambien use DateTimeOffset en lugar de DateTime!
                 DepartureStationId = dto.DepartureStationId,
                 DepartureTime = dto.DepartureTime,
                 ArrivalStationId = dto.ArrivalStationId,
