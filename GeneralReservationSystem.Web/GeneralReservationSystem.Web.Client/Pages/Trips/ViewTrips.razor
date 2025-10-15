@@ -67,30 +67,12 @@
 
 @code {
 
-    List<Trip> trips = new List<Trip>(new[]
-    {
-        new Trip
-        {
-            TripId=10,
-            DepartureStationId=1,
-            ArrivalStationId=2,
-            DepartureTime=DateTime.UtcNow.AddHours(2),
-            ArrivalTime=DateTime.UtcNow.AddHours(4)
-        },
-        new Trip
-        {
-            TripId=10,
-            DepartureStationId=1,
-            ArrivalStationId=2,
-            DepartureTime=DateTime.UtcNow.AddDays(20).AddHours(2),
-            ArrivalTime=DateTime.UtcNow.AddDays(22).AddHours(4)
-        },
-    });
+    List<Trip> trips = new();
 
     protected override async Task OnInitializedAsync()
     {
         //TODO: Paginar
-        //trips = (await tripService.GetAllTripsAsync()).ToList();
+        trips = (await tripService.GetAllTripsAsync()).ToList();
     }
 
 }

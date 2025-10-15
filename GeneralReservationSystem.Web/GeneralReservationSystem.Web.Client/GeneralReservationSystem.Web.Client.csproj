@@ -8,6 +8,10 @@
     <StaticWebAssetProjectMode>Default</StaticWebAssetProjectMode>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DefineConstants>$(DefineConstants);USE_MOCK_SERVICES</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Remove="wwwroot\scripts\**" />
     <Content Remove="wwwroot\scripts\**" />
@@ -24,6 +28,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\GeneralReservationSystem.Application\GeneralReservationSystem.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+    <ProjectReference Include="..\..\GeneralReservationSystem.MockServices\GeneralReservationSystem.MockServices.csproj" />
   </ItemGroup>
 
   <ItemGroup>

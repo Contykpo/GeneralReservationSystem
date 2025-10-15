@@ -5,6 +5,10 @@ using GeneralReservationSystem.Web.Client.Services.Implementations.Authenticatio
 using GeneralReservationSystem.Web.Services.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
 
+#if DEBUG && USE_MOCK_SERVICES
+using GeneralReservationSystem.MockServices;
+#endif
+
 namespace GeneralReservationSystem.Web.Client
 {
     public static class DependencyInjection
@@ -20,12 +24,21 @@ namespace GeneralReservationSystem.Web.Client
             services.AddAuthorizationCore();
             services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 
-            services.AddScoped<IUserService, UserService>();
+#if DEBUG && USE_MOCK_SERVICES
+
+			services.AddScoped<IUserService, UserService>();
+			services.AddScoped<IStationService, StationService>();
+			services.AddScoped<ITripService>(_ => MockTripService.GetService());
+			services.AddScoped<IReservationService, ReservationService>();
+
+#else
+			services.AddScoped<IUserService, UserService>();
             services.AddScoped<IStationService, StationService>();
             services.AddScoped<ITripService, TripService>();
             services.AddScoped<IReservationService, ReservationService>();
+#endif
 
-            return services;
+			return services;
         }
     }
 }
