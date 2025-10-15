@@ -1,0 +1,163 @@
+﻿@page "/admin/stations"
+
+@using GeneralReservationSystem.Application.Services.Interfaces
+@using GeneralReservationSystem.Application.DTOs
+@using GeneralReservationSystem.Application.Entities
+
+@inject IStationService StationService
+
+
+<MudPaper Class="pa-6 mx-auto mt-4" Elevation="3" Style="max-width: 900px;">
+    <MudText Typo="Typo.h5" GutterBottom="true">Administración de Estaciones</MudText>
+
+    <MudTextField @bind-Value="searchTerm" Label="Buscar estación..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" 
+                  Class="mb-4" Immediate="true" OnKeyUp="OnSearchChanged" />
+
+    <MudTable Items="filteredStations" Hover="true" Dense="true" Bordered="true" Striped="true">
+        <HeaderContent>
+            <MudTh>ID</MudTh>
+            <MudTh>Nombre</MudTh>
+            <MudTh>Ciudad</MudTh>
+            <MudTh>Región</MudTh>
+            <MudTh>País</MudTh>
+            <MudTh>Acciones</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="ID">@context.StationId</MudTd>
+            <MudTd DataLabel="Nombre">@context.StationName</MudTd>
+            <MudTd DataLabel="Ciudad">@context.City</MudTd>
+            <MudTd DataLabel="Región">@context.Region</MudTd>
+            <MudTd DataLabel="País">@context.Country</MudTd>
+            <MudTd>
+                <MudButton Color="Color.Info" Size="Size.Small" OnClick="() => EditStation(context)">Editar</MudButton>
+                <MudButton Color="Color.Error" Size="Size.Small" OnClick="() => DeleteStation(context)">Eliminar</MudButton>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OpenCreateDialog" Class="mt-4">Agregar nueva estación</MudButton>
+</MudPaper>
+
+<MudDialog @ref="_dialogRef" MaxWidth="MaxWidth.Small">
+    <DialogContent>
+        <MudForm @ref="_form" Model="@stationModel" Validation="ValidateStation">
+            <MudText Typo="Typo.h6">@dialogTitle</MudText>
+            <MudTextField @bind-Value="stationModel.StationName" Label="Nombre de la estación" For="@(() => stationModel.StationName)" Required="true" />
+            <MudTextField @bind-Value="stationModel.City" Label="Ciudad" For="@(() => stationModel.City)" Required="true" />
+            <MudTextField @bind-Value="stationModel.Region" Label="Región" For="@(() => stationModel.Region)" Required="true" />
+            <MudTextField @bind-Value="stationModel.Country" Label="País" For="@(() => stationModel.Country)" Required="true" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="SaveStation" Color="Color.Primary">Guardar</MudButton>
+        <MudButton OnClick="CloseDialog" Color="Color.Secondary">Cancelar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+
+@code
+{
+    private IMudDialogInstance? _dialogRef;
+    private MudForm? _form;
+    private List<Station> stations = new();
+    private List<Station> filteredStations = new();
+    private string? searchTerm;
+    private string dialogTitle = "Nueva Estación";
+    private CreateStationDto stationModel = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadStations();
+    }
+
+    private async Task LoadStations()
+    {
+        stations = (await StationService.GetAllStationsAsync()).ToList();
+        filteredStations = stations;
+    }
+
+    private void OnSearchChanged(KeyboardEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+            filteredStations = stations;
+        else
+            filteredStations = stations.Where(s =>
+                s.StationName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                s.City.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                s.Region.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                s.Country.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
+    private void OpenCreateDialog()
+    {
+        stationModel = new();
+        dialogTitle = "Nueva Estación";
+        _dialogRef?.Show();
+    }
+
+    private void EditStation(Station station)
+    {
+        stationModel = new CreateStationDto
+        {
+            StationName = station.StationName,
+            City = station.City,
+            Region = station.Region,
+            Country = station.Country
+        };
+        dialogTitle = $"Editar Estación (ID {station.StationId})";
+        _dialogRef?.Show();
+    }
+
+    private async Task SaveStation()
+    {
+        await _form!.Validate();
+        if (!_form.IsValid)
+            return;
+
+        try
+        {
+            if (dialogTitle.StartsWith("Nueva"))
+                await StationService.CreateStationAsync(stationModel);
+            else
+                await StationService.UpdateStationAsync(new UpdateStationDto
+                {
+                    StationId = stations.First(s => s.StationName == stationModel.StationName).StationId,
+                    StationName = stationModel.StationName,
+                    City = stationModel.City,
+                    Region = stationModel.Region,
+                    Country = stationModel.Country
+                });
+
+            await LoadStations();
+            CloseDialog();
+            Snackbar.Add("Operación exitosa", MudBlazor.Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", MudBlazor.Severity.Error);
+        }
+    }
+
+    private async Task DeleteStation(Station station)
+    {
+        bool? result = await DialogService.ShowMessageBox(
+            "Confirmar eliminación",
+            $"¿Está seguro de eliminar la estación '{station.StationName}'?",
+            yesText: "Eliminar", cancelText: "Cancelar");
+
+        if (result == true)
+        {
+            await StationService.DeleteStationAsync(new StationKeyDto { StationId = station.StationId });
+            await LoadStations();
+            Snackbar.Add("Estación eliminada correctamente.", Severity.Info);
+        }
+    }
+
+    private void CloseDialog() => _dialogRef?.Close();
+
+    private Task<IEnumerable<string>> ValidateStation()
+    {
+        var validator = new CreateStationValidator();
+        ValidationResult results = validator.Validate(stationModel);
+        return Task.FromResult(results.Errors.Select(e => e.ErrorMessage));
+    }

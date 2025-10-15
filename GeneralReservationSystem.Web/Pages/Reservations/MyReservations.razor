@@ -46,11 +46,11 @@
         }
         catch (ServiceException ex)
         {
-            Snackbar.Add(ex.Message, Severity.Error);
+            Snackbar.Add(ex.Message, MudBlazor.Severity.Error);
         }
         catch
         {
-            Snackbar.Add("Error al cargar reservas.", Severity.Error);
+            Snackbar.Add("Error al cargar reservas.", MudBlazor.Severity.Error);
         }
         return new GridData<Reservation> { Items = Array.Empty<Reservation>(), TotalItems = 0 };
     }
@@ -59,26 +59,26 @@
     {
         try
         {
-            await ClientReservationService.DeleteReservationAsync(new ReservationKeyDto { TripId = item.TripId });
-            Snackbar.Add("Reserva eliminada.", Severity.Success);
+            await ClientReservationService.DeleteReservationAsync(new Reservation { TripId = item.TripId, UserId = item.UserId, Seat = item.Seat });
+            Snackbar.Add("Reserva eliminada.", MudBlazor.Severity.Success);
             await dataGrid.ReloadServerData();
         }
         catch (ServiceNotFoundException ex)
         {
-            Snackbar.Add(ex.Message, Severity.Warning);
+            Snackbar.Add(ex.Message, MudBlazor.Severity.Warning);
             await dataGrid.ReloadServerData();
         }
         catch (ServiceBusinessException ex)
         {
-            Snackbar.Add(ex.Message, Severity.Error);
+            Snackbar.Add(ex.Message, MudBlazor.Severity.Error);
         }
         catch (ServiceException ex)
         {
-            Snackbar.Add(ex.Message, Severity.Error);
+            Snackbar.Add(ex.Message, MudBlazor.Severity.Error);
         }
         catch
         {
-            Snackbar.Add("Error inesperado.", Severity.Error);
+            Snackbar.Add("Error inesperado.", MudBlazor.Severity.Error);
         }
     }
 }

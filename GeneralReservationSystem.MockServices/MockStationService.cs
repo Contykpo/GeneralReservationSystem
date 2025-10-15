@@ -31,7 +31,7 @@ namespace GeneralReservationSystem.MockServices
 			mock.Setup(service => service.GetAllStationsAsync(It.IsAny<CancellationToken>()))
 				.ReturnsAsync(Stations.Values);
 
-			mock.Setup(service => service.GetStationAsync(It.IsAny<StationKeyDto>(), It.IsAny<CancellationToken>()))
+			mock.Setup(service => service.GetStationAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
 				.ReturnsAsync((StationKeyDto stationKey, CancellationToken _) =>
 				{
 					if (!Stations.TryGetValue(stationKey.StationId, out var foundStation))
@@ -40,7 +40,7 @@ namespace GeneralReservationSystem.MockServices
 					return foundStation;
 				});
 
-			mock.Setup(service => service.CreateStationAsync(It.IsAny<CreateStationDto>(), It.IsAny<CancellationToken>()))
+			mock.Setup(service => service.CreateStationAsync(It.IsAny<Station>(), It.IsAny<CancellationToken>()))
 				.ReturnsAsync((CreateStationDto createDto, CancellationToken _) =>
 				{
 					var newStationId = Stations.Keys.Max() + 1;
@@ -58,7 +58,7 @@ namespace GeneralReservationSystem.MockServices
 					return newStation;
 				});
 
-			mock.Setup(service => service.UpdateStationAsync(It.IsAny<UpdateStationDto>(), It.IsAny<CancellationToken>()))
+			mock.Setup(service => service.UpdateStationAsync(It.IsAny<Station>(), It.IsAny<CancellationToken>()))
 				.ReturnsAsync((UpdateStationDto updateDto, CancellationToken _) =>
 				{
 					if (!Stations.TryGetValue(updateDto.StationId, out Station foundStation))
@@ -71,7 +71,7 @@ namespace GeneralReservationSystem.MockServices
 					return foundStation;
 				});
 
-			mock.Setup(service => service.DeleteStationAsync(It.IsAny<StationKeyDto>(), It.IsAny<CancellationToken>()))
+			mock.Setup(service => service.DeleteStationAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
 				.Returns((StationKeyDto stationKey, CancellationToken _) =>
 				{
 					if (!Stations.Remove(stationKey.StationId))

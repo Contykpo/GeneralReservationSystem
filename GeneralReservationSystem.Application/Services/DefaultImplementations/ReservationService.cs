@@ -10,17 +10,17 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
 {
     public class ReservationService(IReservationRepository reservationRepository) : IReservationService
     {
-        public async Task CreateReservationAsync(CreateReservationDto dto, int userId, CancellationToken cancellationToken = default)
+        public async Task CreateReservationAsync(Reservation reservation, CancellationToken cancellationToken = default)
         {
-            Reservation reservation = new()
+            Reservation newReservation = new()
             {
-                TripId = dto.TripId,
-                UserId = userId,
-                Seat = dto.Seat
+                TripId = reservation.TripId,
+                UserId = reservation.UserId,
+                Seat = reservation.Seat
             };
             try
             {
-                _ = await reservationRepository.CreateAsync(reservation, cancellationToken);
+                _ = await reservationRepository.CreateAsync(newReservation, cancellationToken);
             }
             catch (ForeignKeyViolationException ex)
             {
@@ -36,16 +36,16 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             }
         }
 
-        public async Task DeleteReservationAsync(ReservationKeyDto keyDto, CancellationToken cancellationToken = default)
+        public async Task DeleteReservationAsync(Reservation reservation, CancellationToken cancellationToken = default)
         {
-            Reservation reservation = new()
+            Reservation deleteReservation = new()
             {
-                TripId = keyDto.TripId,
-                UserId = keyDto.UserId
+                TripId = reservation.TripId,
+                UserId = reservation.UserId
             };
             try
             {
-                int affected = await reservationRepository.DeleteAsync(reservation, cancellationToken);
+                int affected = await reservationRepository.DeleteAsync(deleteReservation, cancellationToken);
                 if (affected == 0)
                 {
                     throw new ServiceNotFoundException("No se encontró la reserva para eliminar.");
@@ -57,14 +57,14 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             }
         }
 
-        public async Task<Reservation> GetReservationAsync(ReservationKeyDto keyDto, CancellationToken cancellationToken = default)
+        public async Task<Reservation> GetReservationAsync(Reservation reservation, CancellationToken cancellationToken = default)
         {
             try
             {
-                Reservation? reservation = await reservationRepository.Query()
-                    .Where(r => r.TripId == keyDto.TripId && r.UserId == keyDto.UserId)
+                Reservation? currentReservation = await reservationRepository.Query()
+                    .Where(r => r.TripId == reservation.TripId && r.UserId == reservation.UserId)
                     .FirstOrDefaultAsync(cancellationToken);
-                return reservation ?? throw new ServiceNotFoundException("No se encontró la reserva solicitada.");
+                return currentReservation ?? throw new ServiceNotFoundException("No se encontró la reserva solicitada.");
             }
             catch (RepositoryException ex)
             {

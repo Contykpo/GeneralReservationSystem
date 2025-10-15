@@ -1,0 +1,269 @@
+﻿@page "/reservations/create"
+
+@using GeneralReservationSystem.Application.Entities
+@using GeneralReservationSystem.Application.DTOs
+@using GeneralReservationSystem.Application.DTOs.Authentication
+@using GeneralReservationSystem.Application.Services.Interfaces
+@using GeneralReservationSystem.Application.Services.Interfaces.Authentication
+@using System.Security.Claims
+
+@inject IReservationService ReservationService
+@inject ITripService TripService
+@inject IUserService UserService
+@inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+
+<PageTitle>Reservar</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.False" Class="mt-6">
+    <MudGrid Justify="Justify.Center">
+        <MudItem xs="12" md="10" lg="8">
+            <MudCard>
+                <MudCardHeader>
+                    <MudText Typo="Typo.h5">Hacer una reserva</MudText>
+                </MudCardHeader>
+
+                <MudCardContent>
+
+                    <MudGrid>
+                        <MudItem xs="12" sm="6" md="4">
+                            <MudDatePicker @bind-Value="searchDate" Label="Selecciona la fecha de tu viaje" PickerVariant="PickerVariant.Inline" />
+                        </MudItem>
+
+                        <MudItem xs="12" sm="12" md="4" Class="d-flex align-center">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@FilterTrips">Buscar</MudButton>
+                            <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Class="ml-2" OnClick="@ResetFilters">Limpiar</MudButton>
+                        </MudItem>
+                    </MudGrid>
+
+                    <!-- Tabla de trips filtrados (selección simple) -->
+                    <MudText Typo="Typo.h6" Class="mb-2">Viajes disponibles (@filteredTrips?.Count() ?? 0)</MudText>
+
+                    <MudTable Dense="true" Hover="true" Bordered="true" T="Trip" Items="filteredTrips" @bind-SelectedItem="selectedTrip" MultiSelection="false" OnRowClick="@OnRowSelect">
+                        <HeaderContent>
+                            <MudTh>TripId</MudTh>
+                            <MudTh>Salida (Estación)</MudTh>
+                            <MudTh>Salida (Fecha / Hora)</MudTh>
+                            <MudTh>Llegada (Estación)</MudTh>
+                            <MudTh>Llegada (Fecha / Hora)</MudTh>
+                            <MudTh>Asientos disponibles</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="TripId">@context.TripId</MudTd>
+                            <MudTd DataLabel="Salida Est">@context.DepartureStationId</MudTd>
+                            <MudTd DataLabel="Salida Hora">@context.DepartureTime.ToString("g")</MudTd>
+                            <MudTd DataLabel="Llegada Est">@context.ArrivalStationId</MudTd>
+                            <MudTd DataLabel="Llegada Hora">@context.ArrivalTime.ToString("g")</MudTd>
+                            <MudTd DataLabel="Asientos">@context.AvailableSeats</MudTd>
+                        </RowTemplate>
+                    </MudTable>
+
+                    <MudText Class="mt-3">
+                        @if (selectedTrip is not null)
+                        {
+                            <span>Trip seleccionado: <b>@selectedTrip.TripId</b> — Salida: @selectedTrip.DepartureTime.ToString("g")</span>
+                        }
+                        else
+                        {
+                            <span>No hay ningún viaje seleccionado.</span>
+                        }
+                    </MudText>
+
+                    <MudDivider Class="my-4" />
+
+                    <!-- Formulario de creacion de reserva -->
+                    <MudForm @ref="form" Model="@reservation" Validation="new ReservationValidator(maxSeatNumber).ValidateValue">
+
+                        <MudGrid Class="mt-4">
+                            <MudItem xs="12" sm="6">
+                                <MudText Typo="Typo.caption" Class="mt-1">Numero de asiento:</MudText>
+                                <MudSelect T="int" Label="Asiento" @bind-Value="reservation.Seat" Required="true">
+                                    @for (int i = 1; i <= maxSeatNumber; i++)
+                                    {
+                                        <MudSelectItem T="int" Value="@i">@i</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudItem>
+
+                            <MudItem xs="12" sm="6" Class="d-flex justify-end align-end">
+                                <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="@CreateReservationAsync">Reservar</MudButton>
+                            </MudItem>
+                        </MudGrid>
+                    
+                    </MudForm>
+
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code
+{
+    private MudForm? form;
+    // Usamos UserId = 1 como placeholder hasta tener la logica de UserService para obtener la ID de usuario logueado desde su E-mail.
+    private Reservation reservation = new() { Seat = 1, UserId = 1 };
+    private DateTime? searchDate = DateTime.Today;
+
+    private List<Trip> allTrips = new();
+    private List<Trip> filteredTrips = new();
+    private Trip? selectedTrip;
+
+    private int maxSeatNumber = 0;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTripsAsync();
+
+        // Hacemos un prefiltrado para mostrar los viajes disponibles en el dia de la fecha.
+        ApplyFilter();
+    }
+
+    private async Task LoadTripsAsync()
+    {
+        try
+        {
+            var trips = await TripService.GetAllTripsAsync();
+            allTrips = trips.ToList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error cargando viajes: {ex.Message}", MudBlazor.Severity.Error);
+        }
+    }
+
+    private void ApplyFilter()
+    {
+        if (searchDate.HasValue)
+        {
+            var date = searchDate.Value.Date;
+            filteredTrips = allTrips
+                .Where(t => t.DepartureTime.Date == date)
+                .OrderBy(t => t.DepartureTime)
+                .ToList();
+        }
+        else
+        {
+            filteredTrips = allTrips.OrderBy(t => t.DepartureTime).ToList();
+        }
+
+		// Limpiamos la selección si el viaje seleccionado ya no está en la lista filtrada.
+        if (selectedTrip != null && !filteredTrips.Any(t => t.TripId == selectedTrip.TripId))
+            selectedTrip = null;
+    }
+
+    private void FilterTrips()
+    {
+        ApplyFilter();
+    }
+
+    private void ResetFilters()
+    {
+        searchDate = null;
+        filteredTrips = allTrips.ToList();
+        selectedTrip = null;
+    }
+
+    private async void OnRowSelect(TableRowClickEventArgs<Trip> args)
+    {
+		// Deseleccionamos la fila si se vuelve a clickear.
+        if (selectedTrip != null && selectedTrip.TripId == args?.Item?.TripId)
+            selectedTrip = null;
+        else
+        {
+            selectedTrip = args?.Item;
+
+			// Obtenemos el max seat number del viaje seleccionado:
+			var trip = allTrips.FirstOrDefault(t => t.TripId == selectedTrip?.TripId);
+			maxSeatNumber = trip?.AvailableSeats ?? 0;
+
+			// Actualizamos el formulario para ofrecer la cantidad de asientos disponibles para el viaje seleccionado.
+			form?.ResetAsync();
+        }
+    }
+
+    private async Task CreateReservationAsync()
+    {
+        await form!.Validate();
+
+        if (!form.IsValid)
+        {
+            Snackbar.Add("Por favor corrija los errores del formulario.", MudBlazor.Severity.Warning);
+            return;
+        }
+
+        if (selectedTrip == null)
+        {
+            Snackbar.Add("Debe seleccionar un viaje de la tabla antes de reservar.", MudBlazor.Severity.Warning);
+            return;
+        }
+
+		// TODO: En el futuro deberiamos validar que no se este seleccionando un asiento ya reservado para ese viaje, no solo uno cualquiera que no exceda el maximo.
+        if (reservation.Seat < 1 || reservation.Seat > maxSeatNumber)
+        {
+            Snackbar.Add("Número de asiento inválido.", MudBlazor.Severity.Warning);
+            return;
+        }
+
+		// Terminamos de cargar los datos sobre la reserva:
+		reservation.TripId = selectedTrip.TripId;
+        
+        var customAuthenticationStateProvider = (CustomAuthenticationStateProvider)AuthenticationStateProvider;
+        var authenticationState = await customAuthenticationStateProvider.GetAuthenticationStateAsync();
+
+        var userEmail = authenticationState.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)!.Value;
+		var loggedUser = await UserService.GetUserAsync(new UserKeyDto { UserId = -1, UserEmail = userEmail });
+
+		reservation.UserId = loggedUser.UserId;
+
+        try
+        {
+            await ReservationService.CreateReservationAsync(reservation);
+            Snackbar.Add("Reserva creada con éxito.", MudBlazor.Severity.Success);
+
+            // TODO: Podriamos recargar viajes en(por si AvailableSeats cambia) y limpiar selección
+            await LoadTripsAsync();
+            ApplyFilter();
+            selectedTrip = null;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, MudBlazor.Severity.Error);
+        }
+    }
+
+    // VALIDATORS:
+
+    public class ReservationValidator : AbstractValidator<Reservation>
+    {
+        public ReservationValidator(int maxSeats)
+        {
+            RuleFor(x => x.Seat)
+                .InclusiveBetween(1, maxSeats)
+                .WithMessage("El número de asiento debe estar entre 1 y 20.");
+            
+            RuleFor(x => x.TripId)
+                .GreaterThan(0)
+                .WithMessage("El ID del viaje debe ser válido.");
+
+            RuleFor(x => x.UserId)
+                .GreaterThan(0)
+                .WithMessage("El ID del usuario debe ser válido.");
+        }
+
+        public Func<object, string, Task<IEnumerable<string>>> ValidateValue => async (model, propertyName) =>
+        {
+            if (model is not Reservation newReservation)
+                return Array.Empty<string>();
+
+            var result = await ValidateAsync(ValidationContext<Reservation>.CreateWithOptions(newReservation, x => x.IncludeProperties(propertyName)));
+
+            if (result.IsValid)
+                return Array.Empty<string>();
+
+            return result.Errors.Select(e => e.ErrorMessage);
+        };
+    }
+}

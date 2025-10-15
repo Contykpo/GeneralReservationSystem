@@ -16,7 +16,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
             try
             {
                 User user = await userRepository.Query()
-                    .Where(u => u.UserId == keyDto.UserId)
+                    .Where(u => u.UserId == keyDto.UserId || u.Email == keyDto.UserEmail)
                     .FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el usuario solicitado.");
                 return user;
             }

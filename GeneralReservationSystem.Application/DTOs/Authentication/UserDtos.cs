@@ -2,6 +2,13 @@
 
 namespace GeneralReservationSystem.Application.DTOs.Authentication
 {
+    public class UserDataDto
+    {
+        public string UserName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public bool IsAdmin { get; set; }
+    }
+
     public class RegisterUserDto
     {
         [Required(ErrorMessage = "El nombre de usuario es obligatorio.")]
@@ -24,6 +31,9 @@ namespace GeneralReservationSystem.Application.DTOs.Authentication
     {
         [Required(ErrorMessage = "El nombre de usuario o correo electrónico es obligatorio.")]
         public string UserNameOrEmail { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "El nombre de usuario o correo electrónico es obligatorio.")]
+        public string EmailAddress { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "La contraseña es obligatoria.")]
         public string Password { get; set; } = string.Empty;
@@ -61,6 +71,10 @@ namespace GeneralReservationSystem.Application.DTOs.Authentication
         [Required(ErrorMessage = "El identificador de usuario es obligatorio.")]
         [Range(1, int.MaxValue, ErrorMessage = "El identificador de usuario debe ser un número positivo.")]
         public int UserId { get; set; }
+
+        [StringLength(50, MinimumLength = 6, ErrorMessage = "La direccion de E-mail debe tener entre 6 y 100 caracteres.")]
+        [RegularExpression("[^@ \\t\\r\\n]+@[^@ \\t\\r\\n]+\\.[^@ \\t\\r\\n]+", ErrorMessage = "La direccion de E-mail debe ser valida, por ejemplo: example@mail.com")]
+        public string UserEmail { get; set; } = string.Empty;
     }
 
     public class UserInfo

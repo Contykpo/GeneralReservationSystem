@@ -1,13 +1,15 @@
 using GeneralReservationSystem.Application.Services.Interfaces;
 using GeneralReservationSystem.Application.Services.Interfaces.Authentication;
-using GeneralReservationSystem.Web.Authentication;
-using GeneralReservationSystem.Web.Services.Implementations;
-using GeneralReservationSystem.Web.Services.Implementations.Authentication;
-using GeneralReservationSystem.Web.Services.Interfaces;
-using GeneralReservationSystem.Web.Services.Interfaces.Authentication;
+using GeneralReservationSystem.Web.Client.Services.Implementations;
+using GeneralReservationSystem.Web.Client.Services.Implementations.Authentication;
+using GeneralReservationSystem.Web.Services.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
 
-namespace GeneralReservationSystem.Web
+#if DEBUG && USE_MOCK_SERVICES
+using GeneralReservationSystem.MockServices;
+#endif
+
+namespace GeneralReservationSystem.Web.Client
 {
     public static class DependencyInjection
     {
@@ -15,21 +17,28 @@ namespace GeneralReservationSystem.Web
         {
             // HttpClient for API calls
             // Credentials (cookies) are configured per-request in ApiServiceBase
-            _ = services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(apiBaseUrl) });
+            services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(apiBaseUrl) });
 
             // Register authentication state provider for Blazor client
-            _ = services.AddOptions();
-            _ = services.AddScoped<CustomAuthenticationStateProvider>();
-            _ = services.AddScoped<AuthenticationStateProvider>(provider => provider.GetRequiredService<CustomAuthenticationStateProvider>());
-            _ = services.AddAuthorizationCore();
+            services.AddOptions();
+            services.AddAuthorizationCore();
+            services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 
-            _ = services.AddScoped<IClientAuthenticationService, ClientAuthenticationService>();
-            _ = services.AddScoped<IUserService, UserService>();
-            _ = services.AddScoped<IStationService, StationService>();
-            _ = services.AddScoped<ITripService, TripService>();
-            _ = services.AddScoped<IClientReservationService, ClientReservationService>();
+#if DEBUG && USE_MOCK_SERVICES
 
-            return services;
+			services.AddScoped<IUserService, UserService>();
+			services.AddScoped<IStationService>(_ => MockStationService.GetService());
+			services.AddScoped<ITripService>(_ => MockTripService.GetService());
+			services.AddScoped<IReservationService, ReservationService>();
+
+#else
+			services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IStationService, StationService>();
+            services.AddScoped<ITripService, TripService>();
+            services.AddScoped<IReservationService, ReservationService>();
+#endif
+
+			return services;
         }
     }
 }

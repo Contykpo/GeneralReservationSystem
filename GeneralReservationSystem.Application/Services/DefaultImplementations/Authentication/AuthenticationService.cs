@@ -5,6 +5,8 @@ using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Helpers;
 using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication;
 using GeneralReservationSystem.Application.Services.Interfaces.Authentication;
+using Microsoft.AspNetCore.Identity;
+using System.Text;
 
 namespace GeneralReservationSystem.Application.Services.DefaultImplementations.Authentication
 {
@@ -12,13 +14,17 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
     {
         public async Task<UserInfo> RegisterUserAsync(RegisterUserDto dto, CancellationToken cancellationToken = default)
         {
-            (byte[] hash, byte[] salt) = PasswordHelper.HashPassword(dto.Password);
-            User user = new()
+            User user = new();
+
+            var passwordHasher = new Helpers.PasswordHashingHelper<User>();
+
+            string hashedPassword = passwordHasher.HashPassword(user, dto.Password);
+
+            user = new()
             {
                 UserName = dto.UserName,
                 Email = dto.Email,
-                PasswordHash = hash,
-                PasswordSalt = salt,
+                PasswordHash = Encoding.UTF8.GetBytes(hashedPassword),
                 IsAdmin = false
             };
             try
@@ -50,7 +56,12 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
                 User? user = await userRepository.Query()
                     .Where(u => u.NormalizedUserName == normalizedInput || u.NormalizedEmail == normalizedInput)
                     .FirstOrDefaultAsync(cancellationToken);
-                return user == null || !PasswordHelper.VerifyPassword(dto.Password, user.PasswordHash, user.PasswordSalt)
+
+                var passwordHasher = new Helpers.PasswordHashingHelper<User>();
+
+                var verificationResult = passwordHasher.VerifyHashedPassword(user, Encoding.UTF8.GetString(user.PasswordHash), dto.Password);
+
+                return user == null || verificationResult != PasswordVerificationResult.Success
                     ? throw new ServiceBusinessException("Usuario o contraseña incorrectos.")
                     : new UserInfo
                     {
@@ -78,14 +89,18 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
                     .Where(u => u.UserId == dto.UserId)
                     .FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el usuario para cambiar la contraseña.");
 
-                if (!PasswordHelper.VerifyPassword(dto.CurrentPassword, user.PasswordHash, user.PasswordSalt))
+                var passwordHasher = new Helpers.PasswordHashingHelper<User>();
+
+                var verificationResult = passwordHasher.VerifyHashedPassword(user, System.Text.Encoding.UTF8.GetString(user.PasswordHash), dto.CurrentPassword);
+                if (verificationResult != PasswordVerificationResult.Success)
                 {
                     throw new ServiceBusinessException("La contraseña actual es incorrecta.");
                 }
 
-                (byte[] hash, byte[] salt) = PasswordHelper.HashPassword(dto.NewPassword);
-                user.PasswordHash = hash;
-                user.PasswordSalt = salt;
+                string newHashedPassword = passwordHasher.HashPassword(user, dto.NewPassword);
+
+                user.PasswordHash = Encoding.UTF8.GetBytes(newHashedPassword);
+
                 int affected = await userRepository.UpdateAsync(user, cancellationToken: cancellationToken);
                 if (affected == 0)
                 {

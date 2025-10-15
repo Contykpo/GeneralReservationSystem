@@ -10,19 +10,20 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
 {
     public class StationService(IStationRepository stationRepository) : IStationService
     {
-        public async Task<Station> CreateStationAsync(CreateStationDto dto, CancellationToken cancellationToken = default)
+        public async Task<Station> CreateStationAsync(Station station, CancellationToken cancellationToken = default)
         {
-            Station station = new()
+            Station newStation = new()
             {
-                StationName = dto.StationName,
-                City = dto.City,
-                Region = dto.Region,
-                Country = dto.Country
+                StationName = station.StationName,
+                Address = station.Address,
+                City = station.City,
+                Province = station.Province,
+                Country = station.Country
             };
             try
             {
-                _ = await stationRepository.CreateAsync(station, cancellationToken);
-                return station;
+                _ = await stationRepository.CreateAsync(newStation, cancellationToken);
+                return newStation;
             }
             catch (UniqueConstraintViolationException ex)
             {
@@ -34,33 +35,38 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             }
         }
 
-        public async Task<Station> UpdateStationAsync(UpdateStationDto dto, CancellationToken cancellationToken = default)
+        public async Task<Station> UpdateStationAsync(Station station, CancellationToken cancellationToken = default)
         {
-            Station station = new() { StationId = dto.StationId };
-            if (dto.StationName != null)
+            Station updatedStation = new() { StationId = station.StationId };
+            if (station.StationName != null)
             {
-                station.StationName = dto.StationName;
+                updatedStation.StationName = station.StationName;
             }
 
-            if (dto.City != null)
+            if (station.Address != null)
             {
-                station.City = dto.City;
+                updatedStation.Address = station.Address;
             }
 
-            if (dto.Region != null)
+            if (station.City != null)
             {
-                station.Region = dto.Region;
+                updatedStation.City = station.City;
             }
 
-            if (dto.Country != null)
+            if (station.Province != null)
             {
-                station.Country = dto.Country;
+                updatedStation.Province = station.Province;
+            }
+
+            if (station.Country != null)
+            {
+                updatedStation.Country = station.Country;
             }
 
             try
             {
-                int affected = await stationRepository.UpdateAsync(station, cancellationToken: cancellationToken);
-                return affected == 0 ? throw new ServiceNotFoundException("No se encontró la estación para actualizar.") : station;
+                int affected = await stationRepository.UpdateAsync(updatedStation, cancellationToken: cancellationToken);
+                return affected == 0 ? throw new ServiceNotFoundException("No se encontró la estación para actualizar.") : updatedStation;
             }
             catch (UniqueConstraintViolationException ex)
             {
@@ -72,9 +78,9 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             }
         }
 
-        public async Task DeleteStationAsync(StationKeyDto keyDto, CancellationToken cancellationToken = default)
+        public async Task DeleteStationAsync(int key, CancellationToken cancellationToken = default)
         {
-            Station station = new() { StationId = keyDto.StationId };
+            Station station = new() { StationId = key };
             try
             {
                 int affected = await stationRepository.DeleteAsync(station, cancellationToken);
@@ -89,12 +95,12 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             }
         }
 
-        public async Task<Station> GetStationAsync(StationKeyDto keyDto, CancellationToken cancellationToken = default)
+        public async Task<Station> GetStationAsync(int key, CancellationToken cancellationToken = default)
         {
             try
             {
                 Station station = await stationRepository.Query()
-                    .Where(s => s.StationId == keyDto.StationId)
+                    .Where(s => s.StationId == key)
                     .FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró la estación solicitada.");
                 return station;
             }

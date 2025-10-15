@@ -15,7 +15,6 @@ namespace GeneralReservationSystem.Application.Entities.Authentication
         [Computed]
         public string NormalizedEmail { get; set; } = null!;
         public byte[] PasswordHash { get; set; } = null!;
-        public byte[] PasswordSalt { get; set; } = null!;
         public bool IsAdmin { get; set; } = false;
     }
 }

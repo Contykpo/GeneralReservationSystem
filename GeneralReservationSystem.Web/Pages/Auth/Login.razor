@@ -16,31 +16,56 @@
         <RedirectToHome />
     </Authorized>
     <NotAuthorized>
-        @* TODO: Find a better way to center it. The calculation is BAD. *@
-        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Style="min-height: calc(100vh - 64px); padding: 1rem;">
-            <MudPaper Class="pa-4" MaxWidth="300px" Width="100%" Elevation="6">
-                <MudText Typo="Typo.h5" Class="mb-4">Iniciar sesión</MudText>
-                <MudForm @ref="_form" Spacing="3">
-                    <AntiforgeryToken />
-                    <MudTextField Label="Usuario o Correo electrónico" For="@(() => _loginDto.UserNameOrEmail)" @bind-Value="_loginDto.UserNameOrEmail" />
-                    <MudTextField Label="Contraseña" For="@(() => _loginDto.Password)" @bind-Value="_loginDto.Password" InputType="InputType.Password" />
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="w-100" OnClick="HandleLogin">Iniciar sesión</MudButton>
-                    @if (!string.IsNullOrEmpty(_error))
-                    {
-                        <MudAlert Severity="Severity.Error" Class="mt-3">@_error</MudAlert>
-                    }
-                </MudForm>
-            </MudPaper>
-        </MudStack>
+        <MudContainer Class="mt-16">
+            <MudGrid Class="mt-16" Justify="Justify.Center">
+                <MudItem xs="12" sm="12" md="4">
+                    <MudCard Elevation="25" Class="rounded-lg pb-4">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h5" Align="Align.Center">Loguearse</MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudForm Model="@_loginDto" @ref="@_form" Validation="@(loginValidator.ValidateValue)" ValidationDelay="0">
+                                <MudCardContent>
+                                    <MudTextField @bind-Value="_loginDto.EmailAddress"
+                                                  For="@(() => _loginDto.EmailAddress)"
+                                                  Required="true"
+                                                  Label="Email" />
+
+                                    <MudTextField @bind-Value="_loginDto.Password"
+                                                  For="@(() => _loginDto.Password)"
+                                                  InputType="InputType.Password"
+                                                  Required="true"
+                                                  Label="Contraseña" />
+                                </MudCardContent>
+                            </MudForm>
+                        </MudCardContent>
+                        <MudCardActions Class="d-flex justify-center">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" Style="width:50%;" OnClick="@(async () => await LoginAsync())">Loguearse</MudButton>
+                        </MudCardActions>
+                    </MudCard>
+                </MudItem>
+            </MudGrid>
+            <MudText Align="Align.Center" Class="mt-4">
+                ¿Todavia no tiene una cuenta?
+                <MudLink Href="/authentication/register" Align="Align.Center">Registrarse</MudLink>
+            </MudText>
+        </MudContainer>
     </NotAuthorized>
 </AuthorizeView>
 
-@code {
+@code
+{
     private LoginDto _loginDto = new();
+    
     private MudForm _form = null!;
+    
+    private LoginValidator loginValidator = new LoginValidator();
+
     private string _error = string.Empty;
 
-    private async Task HandleLogin()
+    private async Task LoginAsync()
     {
         _error = string.Empty;
         await _form.Validate();
@@ -59,5 +84,45 @@
         {
             _error = ex.Message;
         }
+    }
+
+    /// <summary>
+    /// A standard AbstractValidator which contains multiple rules and can be shared with the back end API.
+    /// </summary>
+    /// <typeparam name="OrderModel"></typeparam>
+    public class LoginValidator : AbstractValidator<LoginDto>
+    {
+        public LoginValidator()
+        {
+            RuleFor(l => l.EmailAddress)
+                .Cascade(CascadeMode.Stop)
+                .NotEmpty().WithMessage("El correo electrónico es obligatorio.")
+                .EmailAddress().WithMessage("El correo electrónico no es válido.")
+                .MustAsync(async (value, cancellationToken) => await IsUniqueAsync(value)).WithMessage("El correo electrónico ya está registrado.");
+            RuleFor(l => l.Password)
+                .NotEmpty().WithMessage("La contraseña no puede estar vacía.")
+                .MinimumLength(8).WithMessage("La contraseña debe tener al menos 8 caracteres.")
+                .Matches(@"[A-Z]+").WithMessage("La contraseña debe contener al menos una letra mayúscula.")
+                .Matches(@"[a-z]+").WithMessage("La contraseña debe contener al menos una letra minúscula.")
+                .Matches(@"[0-9]+").WithMessage("La contraseña debe contener al menos un número.")
+                .Matches(@"[\#\?\!\@\$\%\^\&\*\-\.]+").WithMessage("La contraseña debe contener al menos un carácter especial: #?!@$ %^&*-. ");
+        }
+
+        private async Task<bool> IsUniqueAsync(string email)
+        {
+            // Simulates a long running http call.
+            await Task.Delay(2000);
+
+            return email.ToLower() != "test@test.com";
+        }
+
+        public Func<object, string, Task<IEnumerable<string>>> ValidateValue => async (model, propertyName) =>
+        {
+            var result = await ValidateAsync(ValidationContext<LoginDto>.CreateWithOptions((LoginDto)model, x => x.IncludeProperties(propertyName)));
+
+            if (result.IsValid) return Array.Empty<string>();
+
+            return result.Errors.Select(e => e.ErrorMessage);
+        };
     }
 }

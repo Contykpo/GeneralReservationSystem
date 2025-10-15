@@ -1,4 +1,5 @@
 using GeneralReservationSystem.Application.DTOs;
+using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -54,8 +55,7 @@ namespace GeneralReservationSystem.API.Controllers
 
             try
             {
-                ReservationKeyDto keyDto = new() { TripId = tripId, UserId = int.Parse(userId) };
-                Application.Entities.Reservation reservation = await reservationService.GetReservationAsync(keyDto, cancellationToken);
+                Reservation reservation = await reservationService.GetReservationAsync(new Reservation() { TripId = tripId, UserId = int.Parse(userId) }, cancellationToken);
                 return Ok(reservation);
             }
             catch (ServiceNotFoundException ex)
@@ -70,8 +70,7 @@ namespace GeneralReservationSystem.API.Controllers
         {
             try
             {
-                ReservationKeyDto keyDto = new() { TripId = tripId, UserId = userId };
-                Application.Entities.Reservation reservation = await reservationService.GetReservationAsync(keyDto, cancellationToken);
+                Reservation reservation = await reservationService.GetReservationAsync(new Reservation() { TripId = tripId, UserId = userId }, cancellationToken);
                 return Ok(reservation);
             }
             catch (ServiceNotFoundException ex)
@@ -82,7 +81,7 @@ namespace GeneralReservationSystem.API.Controllers
 
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> CreateReservation([FromBody] CreateReservationDto dto, CancellationToken cancellationToken)
+        public async Task<IActionResult> CreateReservation([FromBody] Reservation reservation, CancellationToken cancellationToken)
         {
             string? userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
@@ -92,8 +91,8 @@ namespace GeneralReservationSystem.API.Controllers
 
             try
             {
-                await reservationService.CreateReservationAsync(dto, int.Parse(userId), cancellationToken);
-                return CreatedAtAction(nameof(GetMyReservationForTrip), new { tripId = dto.TripId }, new { message = "Reserva creada exitosamente" });
+                await reservationService.CreateReservationAsync(reservation, cancellationToken);
+                return CreatedAtAction(nameof(GetMyReservationForTrip), new { tripId = reservation.TripId }, new { message = "Reserva creada exitosamente" });
             }
             catch (ServiceBusinessException ex)
             {
@@ -113,8 +112,8 @@ namespace GeneralReservationSystem.API.Controllers
 
             try
             {
-                ReservationKeyDto keyDto = new() { TripId = tripId, UserId = int.Parse(userId) };
-                await reservationService.DeleteReservationAsync(keyDto, cancellationToken);
+                Reservation reservation = new() { TripId = tripId, UserId = int.Parse(userId) };
+                await reservationService.DeleteReservationAsync(reservation, cancellationToken);
                 return NoContent();
             }
             catch (ServiceNotFoundException ex)
@@ -129,8 +128,8 @@ namespace GeneralReservationSystem.API.Controllers
         {
             try
             {
-                ReservationKeyDto keyDto = new() { TripId = tripId, UserId = userId };
-                await reservationService.DeleteReservationAsync(keyDto, cancellationToken);
+                Reservation reservation = new() { TripId = tripId, UserId = userId };
+                await reservationService.DeleteReservationAsync(reservation, cancellationToken);
                 return NoContent();
             }
             catch (ServiceNotFoundException ex)
