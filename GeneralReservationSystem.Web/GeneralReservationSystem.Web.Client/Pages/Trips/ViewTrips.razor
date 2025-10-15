@@ -4,75 +4,101 @@
 @using Application.Entities
 
 @inject ITripService tripService
+@inject IStationService stationService
+@inject NavigationManager navManager
 
-<MudTable Items="@trips" Hover="true">
+<MudContainer 
+    Class="p-4">
 
-    <ToolBarContent>
-        <MudText Typo="Typo.h6">Viajes</MudText>
-        <MudSpacer/>
-    </ToolBarContent>
+    <MudTable 
+        Items="@trips" 
+        Hover="true">
 
-    <HeaderContent>
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Viajes</MudText>
+            <MudSpacer />
+        </ToolBarContent>
 
-        <MudTh>
-            <MudTableSortLabel
-                SortBy="new Func<Trip, object>(t => t.TripId)">
-                Id
-            </MudTableSortLabel>
-        </MudTh>
+        <HeaderContent>
 
-        <MudTh>
-            <MudTableSortLabel 
-                SortBy="new Func<Trip, object>(t => t.DepartureStationId)">
-                Origen
-            </MudTableSortLabel>
-        </MudTh>
+            <MudTh>
+                <MudTableSortLabel SortBy="new Func<Trip, object>(t => t.TripId)">
+                    Id
+                </MudTableSortLabel>
+            </MudTh>
 
-        <MudTh>
-            <MudTableSortLabel 
-                SortBy="new Func<Trip, object>(t => t.ArrivalStationId)">
-                Destino
-            </MudTableSortLabel>
-        </MudTh>
+            <MudTh>
+               Origen
+            </MudTh>
 
-        <MudTh>
-            <MudTableSortLabel 
-                SortBy="new Func<Trip, object>(t => t.DepartureTime)">
-                Fecha de Salida
-            </MudTableSortLabel>
-        </MudTh>
+            <MudTh>
+               Destino
+            </MudTh>
 
-        <MudTh>
-            <MudTableSortLabel 
-                SortBy="new Func<Trip, object>(t => t.ArrivalTime)">
-                Fecha de Llegada
-            </MudTableSortLabel>
-        </MudTh>
+            <MudTh>
+                <MudTableSortLabel SortBy="new Func<Trip, object>(t => t.DepartureTime)">
+                    Fecha de Salida
+                </MudTableSortLabel>
+            </MudTh>
 
-    </HeaderContent>
+            <MudTh>
+                <MudTableSortLabel SortBy="new Func<Trip, object>(t => t.ArrivalTime)">
+                    Fecha de Llegada
+                </MudTableSortLabel>
+            </MudTh>
 
-    <RowTemplate>
-        @*TODO: Modificar para que no muestre id de las estaciones, sino el nombre*@
-        <MudTd DataLabel="Id">@context.TripId</MudTd>
-        <MudTd DataLabel="Origen">@context.DepartureStationId</MudTd>
-        <MudTd DataLabel="Destino">@context.ArrivalStationId</MudTd>
-        <MudTd DataLabel="Fecha de Salida">@context.DepartureTime.ToString("g")</MudTd>
-        <MudTd DataLabel="Fecha de Llegada">@context.ArrivalTime.ToString("g")</MudTd>
-    </RowTemplate>
+            <MudTh Class="text-center">
+                Acciones
+            </MudTh>
 
-    <PagerContent>
-        <MudTablePager />
-    </PagerContent>
-</MudTable>
+        </HeaderContent>
+
+        <RowTemplate>
+            @*TODO: Modificar para que no muestre id de las estaciones, sino el nombre*@
+            <MudTd DataLabel="Id">@context.TripId</MudTd>
+            <MudTd DataLabel="Origen">@stations[context.DepartureStationId].StationName</MudTd>
+            <MudTd DataLabel="Destino">@stations[context.ArrivalStationId].StationName</MudTd>
+            <MudTd DataLabel="Fecha de Salida">@context.DepartureTime.ToString("g")</MudTd>
+            <MudTd DataLabel="Fecha de Llegada">@context.ArrivalTime.ToString("g")</MudTd>
+            <MudTd Class="text-center">
+                <MudTooltip 
+                    Text="Editar">
+
+                    <MudButton 
+                        Variant="Variant.Filled"
+                        StartIcon="@Icons.Material.Filled.Edit"
+                        OnClick="@(() => EditTrip(context.TripId))">
+                        Editar
+                    </MudButton>
+
+                </MudTooltip>
+                
+            </MudTd>
+        </RowTemplate>
+
+        <PagerContent>
+            <MudTablePager 
+                RowsPerPageString="Filas por pagina:"/>
+        </PagerContent>
+    </MudTable>
+
+</MudContainer>
 
 @code {
 
+    @*Posiblemente considerar crear algun objeto Trip que contenga tambien el modelo de la estacion para poder ordenar por nombre de estacion*@
     List<Trip> trips = new();
+    Dictionary<int, Station> stations = new();
 
     protected override async Task OnInitializedAsync()
     {
         //TODO: Paginar
-        trips = (await tripService.GetAllTripsAsync()).ToList();
+        trips       = (await tripService.GetAllTripsAsync()).ToList();
+        stations    = (await stationService.GetAllStationsAsync()).ToDictionary(s => s.StationId);
     }
 
+    private void EditTrip(int tripId)
+    {
+        //navManager.NavigateTo($"/trips/edit/{tripId}");
+    }
 }
