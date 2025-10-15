@@ -27,7 +27,7 @@ namespace GeneralReservationSystem.Web.Client
 #if DEBUG && USE_MOCK_SERVICES
 
 			services.AddScoped<IUserService, UserService>();
-			services.AddScoped<IStationService, StationService>();
+			services.AddScoped<IStationService>(_ => MockStationService.GetService());
 			services.AddScoped<ITripService>(_ => MockTripService.GetService());
 			services.AddScoped<IReservationService, ReservationService>();
 

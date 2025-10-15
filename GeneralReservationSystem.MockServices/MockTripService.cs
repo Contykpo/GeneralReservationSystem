@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using Moq;
+﻿using Moq;
 
 using GeneralReservationSystem.Application.Services.Interfaces;
 using GeneralReservationSystem.Application.Entities;
@@ -18,9 +12,16 @@ namespace GeneralReservationSystem.MockServices
 	{
 		public static readonly Dictionary<int, Trip> Trips = new()
 		{
-			{1,  new Trip { TripId = 1, DepartureStationId = 1, ArrivalStationId = 2, AvailableSeats = 20 } },
-			{2,  new Trip { TripId = 2, DepartureStationId = 2, ArrivalStationId = 3, AvailableSeats = 20 } },
-			{3,  new Trip { TripId = 3, DepartureStationId = 3, ArrivalStationId = 4, AvailableSeats = 20 } },
+			{ 1,  new Trip { TripId = 1,  DepartureStationId = 1, ArrivalStationId = 2, AvailableSeats = 25, DepartureTime = new DateTime(2025, 10, 16, 8, 30, 0),		ArrivalTime = new DateTime(2025, 10, 16, 12, 0, 0) } },
+			{ 2,  new Trip { TripId = 2,  DepartureStationId = 2, ArrivalStationId = 3, AvailableSeats = 40, DepartureTime = new DateTime(2025, 10, 16, 14, 0, 0),		ArrivalTime = new DateTime(2025, 10, 16, 18, 45, 0) } },
+			{ 3,  new Trip { TripId = 3,  DepartureStationId = 3, ArrivalStationId = 4, AvailableSeats = 15, DepartureTime = new DateTime(2025, 10, 17, 7, 15, 0),		ArrivalTime = new DateTime(2025, 10, 17, 13, 30, 0) } },
+			{ 4,  new Trip { TripId = 4,  DepartureStationId = 1, ArrivalStationId = 5, AvailableSeats = 50, DepartureTime = new DateTime(2025, 10, 18, 6, 0, 0),		ArrivalTime = new DateTime(2025, 10, 18, 13, 15, 0) } },
+			{ 5,  new Trip { TripId = 5,  DepartureStationId = 5, ArrivalStationId = 6, AvailableSeats = 30, DepartureTime = new DateTime(2025, 10, 18, 16, 45, 0),		ArrivalTime = new DateTime(2025, 10, 18, 21, 0, 0) } },
+			{ 6,  new Trip { TripId = 6,  DepartureStationId = 6, ArrivalStationId = 7, AvailableSeats = 12, DepartureTime = new DateTime(2025, 10, 19, 9, 0, 0),		ArrivalTime = new DateTime(2025, 10, 19, 19, 30, 0) } },
+			{ 7,  new Trip { TripId = 7,  DepartureStationId = 7, ArrivalStationId = 8, AvailableSeats = 18, DepartureTime = new DateTime(2025, 10, 20, 8, 0, 0),		ArrivalTime = new DateTime(2025, 10, 20, 14, 30, 0) } },
+			{ 8,  new Trip { TripId = 8,  DepartureStationId = 8, ArrivalStationId = 9, AvailableSeats = 20, DepartureTime = new DateTime(2025, 10, 21, 11, 0, 0),		ArrivalTime = new DateTime(2025, 10, 21, 18, 0, 0) } },
+			{ 9,  new Trip { TripId = 9,  DepartureStationId = 9, ArrivalStationId = 10, AvailableSeats = 22, DepartureTime = new DateTime(2025, 10, 22, 10, 30, 0),	ArrivalTime = new DateTime(2025, 10, 22, 20, 0, 0) } },
+			{ 10, new Trip { TripId = 10, DepartureStationId = 10, ArrivalStationId = 1, AvailableSeats = 35, DepartureTime = new DateTime(2025, 10, 23, 7, 45, 0),		ArrivalTime = new DateTime(2025, 10, 23, 17, 0, 0) } }
 		};
 
 		public static ITripService GetService()
@@ -64,9 +65,6 @@ namespace GeneralReservationSystem.MockServices
 				{
 					if (!Trips.TryGetValue(updateDto.TripId, out var foundTrip))
 						throw new ServiceNotFoundException($"Trip with ID {updateDto.TripId} not found.");
-
-					if (updateDto.DepartureStationId.HasValue)
-						foundTrip.DepartureStationId = updateDto.DepartureStationId.Value;
 
 					if (updateDto.DepartureTime.HasValue)
 						foundTrip.DepartureTime = updateDto.DepartureTime.Value;
