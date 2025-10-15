@@ -1,0 +1,47 @@
+﻿@using GeneralReservationSystem.Application.Services.Interfaces
+@using GeneralReservationSystem.Application.Entities
+
+@inject ITripService TripService
+
+<MudSelect 
+    Placeholder="Elegir viaje" 
+    @bind-Value="@SelectedTrip"
+    ToStringFunc="TripToString">
+
+    @foreach(var trip in Trips)
+    {
+        <MudSelectItem 
+            Value="trip"/>
+    }
+</MudSelect>
+
+@code{
+
+    [Parameter]
+    public IReadOnlyList<Trip> Trips { get; set; } = Array.Empty<Trip>();
+
+    [Parameter]
+    public Trip? SelectedTrip { get; set; } = null;
+
+    @*TODO: Implementar la llamada a este callback*@
+    [Parameter]
+    public EventCallback<Trip>? SelectedTripChanged { get; set; } = null;
+
+    [Parameter]
+    public Func<Trip, bool>? Filter { get; set; } = null;
+
+    [Parameter]
+    public bool AutoPopulate { get; set; } = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AutoPopulate)
+        {
+            var allTrips = await TripService.GetAllTripsAsync();
+            Trips = (Filter is null ? allTrips : allTrips.Where(Filter)).ToList().AsReadOnly();
+        }
+    }
+
+    @*TODO: Hacer que muestre tambien el nombre del destino*@
+    private Func<Trip, string> TripToString => trip => $"Id: {trip.TripId} | {trip.DepartureTime.ToString("g")} - {trip.ArrivalTime.ToString("g")}";
+}

@@ -15,8 +15,29 @@
         Hover="true">
 
         <ToolBarContent>
-            <MudText Typo="Typo.h6">Viajes</MudText>
-            <MudSpacer />
+            <div class="d-flex flex-row align-items-center w-100">
+                <MudText Typo="Typo.h3" Class="me-4">Viajes</MudText>
+
+                <MudSpacer />
+
+                <MudText 
+                    Typo="Typo.h5">
+                    *Insertar filtros aca*
+                </MudText>
+
+                @* <MudStack
+                    Row="true">
+                    <MudStack Spacing="2">
+                        <MudDatePicker HelperText="Fecha de partida" />
+                        <MudDatePicker HelperText="Fecha de llegada" />
+                    </MudStack>
+
+                    <MudStack Spacing="2">
+                        <TripSelector AutoPopulate="true" />
+                        <TripSelector AutoPopulate="true" />
+                    </MudStack>
+                </MudStack> *@
+            </div>
         </ToolBarContent>
 
         <HeaderContent>
