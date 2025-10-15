@@ -4,24 +4,14 @@ namespace GeneralReservationSystem.Application.DTOs
 {
     public class CreateTripDto
     {
-        [Required(ErrorMessage = "El Id de salida es obligatorio.")]
-        [Range(1, int.MaxValue, ErrorMessage = "El Id de salida debe ser un número positivo.")]
         public int DepartureStationId { get; set; }
 
-        [Required(ErrorMessage = "La fecha de salida es obligatoria.")]
-        [DataType(DataType.DateTime)]
-        public DateTime DepartureTime { get; set; }
+        public DateTime DepartureTime { get; set; } = DateTime.UtcNow;
 
-        [Required(ErrorMessage = "El Id de destino es obligatorio.")]
-        [Range(1, int.MaxValue, ErrorMessage = "El Id de destino debe ser un número positivo.")]
         public int ArrivalStationId { get; set; }
 
-        [Required(ErrorMessage = "La fecha de llegada es obligatoria.")]
-        [DataType(DataType.DateTime)]
-        public DateTime ArrivalTime { get; set; }
+        public DateTime ArrivalTime { get; set; } = DateTime.UtcNow;
 
-        [Required(ErrorMessage = "El número de asientos disponibles es obligatorio.")]
-        [Range(1, int.MaxValue, ErrorMessage = "El número de asientos disponibles debe ser un número positivo.")]
         public int AvailableSeats { get; set; }
     }
 
