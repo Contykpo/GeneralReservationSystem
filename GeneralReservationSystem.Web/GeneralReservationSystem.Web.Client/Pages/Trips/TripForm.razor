@@ -1,0 +1,279 @@
+﻿@using GeneralReservationSystem.Application.DTOs
+
+@using GeneralReservationSystem.Application.Entities
+@using GeneralReservationSystem.Application.Services.Interfaces
+
+@inject ISnackbar snackbar
+@inject NavigationManager navManager
+
+<MudContainer Class="my-5 p-4">
+
+    <MudGrid>
+
+        <MudItem xs="9">
+
+            <MudCard>
+
+                <MudCardContent>
+
+                    @*Form creacion de viaje*@
+                    <MudForm Model="@Trip" @ref="@form" Validation="@(tripValidator.ValidateValue)" ValidationDelay="0">
+
+                        <MudStack Class="my-5">
+
+                            @*Seleccion de estaciones*@
+                            @*TODO: Reemplazar por un picker de estaciones (Posiblemente dropdown con buscador)*@
+                            <MudTextField @bind-Value="Trip.DepartureStationId"
+                                          Label="Estacion de salida"
+                                          For="(() => Trip.DepartureStationId)" />
+
+                            <MudTextField @bind-Value="Trip.ArrivalStationId"
+                                          Label="Estacion de llegada"
+                                          For="(() => Trip.ArrivalStationId)" />
+
+                            <MudDivider Class="mb-4" />
+
+                            @*Picker de fechas*@
+                            <MudGrid>
+                                <MudItem xs="6">
+                                    <MudDatePicker Label="Fecha de partida"
+                                                   MinDate="DateTime.Today.ToLocalTime()"
+                                                   DateChanged="DepartureDateChangedHandler"
+                                                   @ref="@departureDatePicker" />
+
+                                    <MudTimePicker Label="Hora de Partida"
+                                                   TimeChanged="DepartureTimeChangedHandler"
+                                                   @ref="@departureTimePicker" />
+
+                                </MudItem>
+                                <MudItem xs="6">
+                                    <MudDatePicker Label="Fecha de llegada"
+                                                   MinDate="DateTime.Today.ToLocalTime()"
+                                                   DateChanged="ArrivalDateChangedHandler"
+                                                   @ref="@arrivalDatePicker" />
+
+                                    <MudTimePicker Label="Hora de llegada"
+                                                   TimeChanged="ArrivalTimeChangedHandler"
+                                                   @ref="@arrivalTimePicker" />
+                                </MudItem>
+                            </MudGrid>
+
+                            <MudDivider Class="mb-4" />
+
+                            @*Input total de sillas*@
+                            <MudNumericField T="int"
+                                             @bind-Value="Trip.AvailableSeats"
+                                             Label="Total de asientos"
+                                             For="(()=>Trip.AvailableSeats)" />
+
+                        </MudStack>
+                    </MudForm>
+
+                </MudCardContent>
+
+                <MudCardActions>
+
+                    @*Boton crear viaje*@
+                    <MudButton Class="my-5"
+                               Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="@(async () => await CreateNewTripAsync())">@SubmitButtonLabel</MudButton>
+
+                </MudCardActions>
+
+            </MudCard>
+
+        </MudItem>
+
+        @*Display errores de validacion*@
+        <MudItem xs="3">
+
+            @{
+                List<string> validationErrors = form.Errors.Concat((new[] { errorFechaSalidaEnElPasado, errorLlegadaAnteriorASalida }).Where(s => !string.IsNullOrEmpty(s))).ToList();
+            }
+
+            @if (validationErrors.Count > 0)
+            {
+                <MudCard>
+
+                    <MudCardContent>
+
+                        <MudStack>
+
+                            @foreach (var error in validationErrors)
+                            {
+                                <MudText Color="Color.Error" Typo="Typo.caption">
+                                    -@error
+                                </MudText>
+                            }
+
+                        </MudStack>
+
+                    </MudCardContent>
+
+                </MudCard>
+            }
+
+        </MudItem>
+
+    </MudGrid>
+
+
+
+</MudContainer>
+
+@code {
+
+    [Parameter]
+    public Trip Trip { get; set; }
+
+    [Parameter]
+    public EventCallback<Trip> OnValidSubmit { get; set; }
+
+    [Parameter]
+    public string SubmitButtonLabel { get; set; }
+
+#pragma warning disable CS8618
+    private MudForm form;
+
+    private MudDatePicker departureDatePicker, arrivalDatePicker;
+    private MudTimePicker departureTimePicker, arrivalTimePicker;
+#pragma warning restore CS8618
+
+    TripValidator tripValidator = new();
+
+    string errorFechaSalidaEnElPasado = string.Empty;
+    string errorLlegadaAnteriorASalida = string.Empty;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (!firstRender || Trip is null)
+            return;
+
+        departureDatePicker.Date = Trip.DepartureTime.ToLocalTime().Date;
+        departureTimePicker.Time = Trip.DepartureTime.ToLocalTime().TimeOfDay;
+
+        arrivalDatePicker.Date = Trip.ArrivalTime.ToLocalTime().Date;
+        arrivalTimePicker.Time = Trip.ArrivalTime.ToLocalTime().TimeOfDay;
+    }
+
+    //TODO: Mucho codigo repetido para elegir la fecha porque el control anda para el orto, ver de crear un selector custom.
+    private void DepartureTimeChangedHandler(TimeSpan? time)
+    {
+        if (!time.HasValue)
+            return;
+
+        Trip.DepartureTime = Trip.DepartureTime.Date + time.Value;
+
+        StateHasChanged();
+    }
+
+    private void DepartureDateChangedHandler(DateTime? date)
+    {
+        if (!date.HasValue)
+            return;
+
+        Trip.DepartureTime = date.Value + Trip.DepartureTime.TimeOfDay;
+
+        StateHasChanged();
+    }
+
+    private void ArrivalTimeChangedHandler(TimeSpan? time)
+    {
+        if (!time.HasValue)
+            return;
+
+        Trip.ArrivalTime = Trip.ArrivalTime.Date + time.Value;
+
+        StateHasChanged();
+    }
+
+    private void ArrivalDateChangedHandler(DateTime? date)
+    {
+        if (!date.HasValue)
+            return;
+
+        Trip.ArrivalTime = date.Value + Trip.ArrivalTime.TimeOfDay;
+
+        StateHasChanged();
+    }
+
+    private async Task CreateNewTripAsync()
+    {
+        await form.Validate();
+
+        errorFechaSalidaEnElPasado = string.Empty;
+        errorLlegadaAnteriorASalida = string.Empty;
+
+        if (Trip.DepartureTime > Trip.ArrivalTime)
+        {
+            errorFechaSalidaEnElPasado = "La fecha de llegada debe ser posterior a la de salida.";
+        }
+
+        if (Trip.DepartureTime < DateTime.UtcNow.ToLocalTime())
+        {
+            errorLlegadaAnteriorASalida = "La fecha y hora de salida no pueden estar en el pasado.";
+        }
+
+        if (form.IsValid && string.IsNullOrEmpty(errorFechaSalidaEnElPasado) && string.IsNullOrEmpty(errorLlegadaAnteriorASalida))
+        {
+            try
+            {
+                await OnValidSubmit.InvokeAsync(Trip);
+            }
+            catch (Exception ex)
+            {
+                //TODO: Cambiar esto! No queremos mostrar los detalles internos de la excepcion.
+                snackbar.Add(ex.Message, MudBlazor.Severity.Error);
+            }
+        }
+        else
+            StateHasChanged();
+    }
+
+    public class TripValidator : AbstractValidator<Trip>
+    {
+        public TripValidator()
+        {
+            ClassLevelCascadeMode = CascadeMode.Continue;
+            RuleLevelCascadeMode = CascadeMode.Continue;
+
+            RuleFor(t => t.DepartureStationId)
+                .GreaterThan(0)
+                .WithMessage("La estación de salida es obligatoria.");
+
+            RuleFor(t => t.ArrivalStationId)
+                .GreaterThan(0)
+                .WithMessage("La estación de llegada es obligatoria.");
+
+            RuleFor(t => t.AvailableSeats)
+                .GreaterThan(0)
+                .WithMessage("El número de asientos disponibles debe ser positivo.");
+
+            RuleFor(t => t.DepartureTime)
+                .GreaterThan(DateTime.Today.ToLocalTime()).WithMessage("La fecha y hora de salida no pueden estar en el pasado.")
+                .Must((model, _) => model.ArrivalTime > model.DepartureTime)
+                .WithMessage("La fecha de llegada debe ser posterior a la de salida.");
+
+            RuleFor(t => t.DepartureStationId)
+                .Must((model, _) => model.DepartureStationId != model.ArrivalStationId)
+                .WithMessage("Estaciones de salida y llegada deben ser distintas.");
+
+            //TODO: Validar que las estaciones existan. Posiblemente de eso se encargara el selector y nosotros confiemos en lo que nos diga
+        }
+
+        public Func<object, string, Task<IEnumerable<string>>> ValidateValue => async (model, propertyName) =>
+        {
+            if (model is not Trip trip)
+                return Array.Empty<string>();
+
+            var result = await ValidateAsync(ValidationContext<Trip>.CreateWithOptions(trip, x => x.IncludeProperties(propertyName)));
+
+            if (result.IsValid)
+                return Array.Empty<string>();
+
+            return result.Errors.Select(e => e.ErrorMessage);
+        };
+    }
+
+}

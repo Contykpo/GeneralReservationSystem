@@ -1,0 +1,46 @@
+﻿@page "/trips/edit/{tripId:int}"
+
+@using GeneralReservationSystem.Application.DTOs
+
+@using GeneralReservationSystem.Application.Entities
+@using GeneralReservationSystem.Application.Services.Interfaces
+
+@inject ITripService TripService
+@inject NavigationManager navManager
+
+<TripForm
+    SubmitButtonLabel="Confirmar"
+    Trip="@trip"
+    OnValidSubmit="HandleValidSubmit"></TripForm>
+
+@code{
+
+    Trip trip;
+
+    [Parameter]
+    public int tripId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var tripToEdit = await TripService.GetTripAsync(new TripKeyDto { TripId = tripId });
+        
+        trip = tripToEdit;
+    }
+
+    private async Task HandleValidSubmit(Trip trip)
+    {
+        var updateTripDto = new UpdateTripDto
+        {
+            TripId              = trip.TripId,
+            DepartureStationId  = trip.DepartureStationId,
+            ArrivalStationId    = trip.ArrivalStationId,
+            DepartureTime       = trip.DepartureTime,
+            ArrivalTime         = trip.ArrivalTime,
+            AvailableSeats      = trip.AvailableSeats
+        };
+
+        await TripService.UpdateTripAsync(updateTripDto);
+
+        navManager.NavigateTo("/trips/view");
+    }
+}
