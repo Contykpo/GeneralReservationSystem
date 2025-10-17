@@ -72,39 +72,29 @@ BEGIN
             CONSTRAINT CK_Trip_AvailableSeats CHECK (AvailableSeats > 0) -- Ensure available seats is positive
         );
     END
-    ELSE
-    BEGIN
-        -- Ensure the AvailableSeats column exists when upgrading an existing database
-        IF COL_LENGTH('Trip', 'AvailableSeats') IS NULL
-        BEGIN
-            ALTER TABLE Trip ADD AvailableSeats INT NOT NULL CONSTRAINT DF_Trip_AvailableSeats DEFAULT(1);
-            -- Backfill existing rows with a sensible default (1) if necessary
-            UPDATE Trip SET AvailableSeats = 1 WHERE AvailableSeats IS NULL;
-        END
-        -- Ensure the check constraint exists
-        IF NOT EXISTS (
-            SELECT 1 FROM sys.check_constraints WHERE name = N'CK_Trip_AvailableSeats' AND parent_object_id = OBJECT_ID(N'Trip')
-        )
-        BEGIN
-            ALTER TABLE Trip WITH CHECK ADD CONSTRAINT CK_Trip_AvailableSeats CHECK (AvailableSeats > 0);
-        END
-    END
 
     ---- Add trigger for manual cascading deletes on Trip when Station is deleted
     ---- NOTE: A trigger is used instead of ON DELETE CASCADE because SQL Server does not support cascading deletes
     ---- for multiple foreign key references to the same table (Trip.DepartureId and Trip.StationId both reference Station).
     IF OBJECT_ID(N'tr_DeleteTripsOnStationDelete', 'TR') IS NULL
     BEGIN
-        EXEC('CREATE TRIGGER tr_DeleteTripsOnStationDelete ON Station
-        AFTER DELETE
+        EXEC('CREATE TRIGGER tr_DeleteTripsOnStationDelete
+        ON Station
+        INSTEAD OF DELETE
         AS
         BEGIN
+            -- Delete trips referencing the deleted stations
             DELETE Trip
             FROM Trip
-            INNER JOIN (SELECT StationId FROM deleted) AS d
+            INNER JOIN deleted d
                 ON Trip.DepartureStationId = d.StationId
                 OR Trip.ArrivalStationId = d.StationId;
-        END');
+
+            -- Now delete the stations themselves
+            DELETE s
+            FROM Station s
+            INNER JOIN deleted d ON s.StationId = d.StationId;
+        END;');
     END
 
     -- Create Reservation table

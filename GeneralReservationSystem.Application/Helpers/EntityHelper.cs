@@ -37,27 +37,25 @@ namespace GeneralReservationSystem.Application.Helpers
             return ReflectionHelpers.GetPropertiesWithoutAttribute<TEntity, ComputedAttribute>();
         }
 
-        public static string GetColumnName<TEntity, TProperty>(Expression<Func<TEntity, TProperty>> propertyExpression)
+        public static string GetColumnName<TEntity, TMember>(Expression<Func<TEntity, TMember>> memberExpression)
         {
-            ThrowHelpers.ThrowIfNull(propertyExpression, nameof(propertyExpression));
+            ThrowHelpers.ThrowIfNull(memberExpression, nameof(memberExpression));
 
-            MemberExpression? me = propertyExpression.Body switch
+            MemberExpression? me = memberExpression.Body switch
             {
                 MemberExpression m => m,
                 UnaryExpression u when u.Operand is MemberExpression m => m,
                 MethodCallExpression mc when mc.Object is MemberExpression m => m,
                 _ => null
-            } ?? throw new ArgumentException("Expression must be a member expression e => e.m", nameof(propertyExpression));
+            } ?? throw new ArgumentException("Expression must be a member expression e => e.m", nameof(memberExpression));
 
-            return me.Member is not PropertyInfo pi
-                ? throw new ArgumentException($"{nameof(MemberExpression)} must refer to a property, not a method or a field", nameof(propertyExpression))
-                : GetColumnName(pi);
+            return GetColumnName(me.Member);
         }
 
-        public static string GetColumnName(PropertyInfo prop)
+        public static string GetColumnName(MemberInfo member)
         {
-            //TODO: Tal vez sea mas conveniente tirar una excepcion si no tiene el atributo
-            return prop.GetCustomAttribute<ColumnNameAttribute>()?.Name ?? prop.Name;
+            // Default to member name if no ColumnName attribute is found.
+            return member.GetCustomAttribute<ColumnNameAttribute>()?.Name ?? member.Name;
         }
     }
 }

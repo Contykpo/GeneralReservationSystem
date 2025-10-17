@@ -57,6 +57,25 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             }
         }
 
+        public static DbConnection CreateAndOpenConnection(
+            Func<DbConnection> connectionFactory)
+        {
+            try
+            {
+                DbConnection conn = connectionFactory();
+                if (conn.State != System.Data.ConnectionState.Open)
+                {
+                    conn.Open();
+                }
+
+                return conn;
+            }
+            catch (DbException ex)
+            {
+                throw SqlExceptionHelper.ToRepositoryException(ex);
+            }
+        }
+
         public static async Task<DbTransaction> CreateTransactionAsync(
             DbConnection dbConnection,
             CancellationToken cancellationToken = default)
@@ -64,6 +83,19 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             try
             {
                 return await dbConnection.BeginTransactionAsync(cancellationToken);
+            }
+            catch (DbException ex)
+            {
+                throw SqlExceptionHelper.ToRepositoryException(ex);
+            }
+        }
+
+        public static DbTransaction CreateTransaction(
+            DbConnection dbConnection)
+        {
+            try
+            {
+                return dbConnection.BeginTransaction();
             }
             catch (DbException ex)
             {
