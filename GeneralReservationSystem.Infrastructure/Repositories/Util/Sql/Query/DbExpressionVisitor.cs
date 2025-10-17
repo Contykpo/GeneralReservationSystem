@@ -37,9 +37,38 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
 
             ReadOnlyCollection<ColumnDeclaration> columns = VisitColumnDeclarations(select.Columns);
 
-            return from != select.From || where != select.Where || columns != select.Columns
-                ? new SelectExpression(select.Type, select.Alias, columns, from, where)
+            ReadOnlyCollection<OrderExpression>? orderBy = VisitOrderBy(select.OrderBy);
+
+            return from != select.From || where != select.Where || columns != select.Columns || orderBy != select.OrderBy
+                ? new SelectExpression(select.Type, select.Alias, columns, from, where, orderBy)
                 : select;
+        }
+
+        protected ReadOnlyCollection<OrderExpression>? VisitOrderBy(ReadOnlyCollection<OrderExpression>? expressions)
+        {
+            if (expressions != null)
+            {
+                List<OrderExpression>? alternate = null;
+
+                for (int i = 0, n = expressions.Count; i < n; i++)
+                {
+                    OrderExpression expression = expressions[i];
+                    Expression e = Visit(expression.Expression)!;
+
+                    if (alternate == null && e != expression.Expression)
+                    {
+                        alternate = [.. expressions.Take(i)];
+                    }
+
+                    alternate?.Add(new OrderExpression(expression.OrderType, e));
+                }
+
+                if (alternate != null)
+                {
+                    return alternate.AsReadOnly();
+                }
+            }
+            return expressions;
         }
 
         protected virtual Expression VisitSource(Expression source)

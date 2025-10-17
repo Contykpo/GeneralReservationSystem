@@ -133,7 +133,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
 
                 var city = "CABA";
 
-                var query = stationRepository.Query();
+                var query = stationRepository.Query().OrderBy(station => station.City).ThenBy(station => station.Region);
 
                 var count = 0;//query.Count();
 

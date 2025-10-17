@@ -78,6 +78,25 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
         internal Expression Expression { get; }
     }
 
+    internal enum OrderType
+    {
+        Ascending,
+        Descending
+    }
+
+    internal class OrderExpression
+    {
+        internal OrderExpression(OrderType orderType, Expression expression)
+        {
+            OrderType = orderType;
+            Expression = expression;
+        }
+
+        internal OrderType OrderType { get; }
+
+        internal Expression Expression { get; }
+    }
+
     internal class SelectExpression : Expression
     {
         private readonly Type type;
@@ -86,7 +105,8 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
 
         public override Type Type => type;
 
-        internal SelectExpression(Type type, string alias, IEnumerable<ColumnDeclaration> columns, Expression from, Expression? where)
+        internal SelectExpression(Type type, string alias, IEnumerable<ColumnDeclaration> columns, Expression from, Expression? where,
+            IEnumerable<OrderExpression>? orderBy)
         {
             Alias = alias;
             Columns = columns as ReadOnlyCollection<ColumnDeclaration> ?? new List<ColumnDeclaration>(columns).AsReadOnly();
@@ -94,7 +114,19 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
             From = from;
             Where = where;
 
+            if (orderBy != null)
+            {
+                OrderBy = orderBy as ReadOnlyCollection<OrderExpression> ?? new List<OrderExpression>(orderBy).AsReadOnly();
+            }
+
             this.type = type;
+        }
+
+        internal SelectExpression(
+            Type type, string alias, IEnumerable<ColumnDeclaration> columns,
+            Expression from, Expression? where)
+            : this(type, alias, columns, from, where, null)
+        {
         }
 
         internal string Alias { get; }
@@ -104,6 +136,8 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
         internal Expression From { get; }
 
         internal Expression? Where { get; }
+
+        internal ReadOnlyCollection<OrderExpression>? OrderBy { get; }
     }
 
     internal class ProjectionExpression : Expression
@@ -144,10 +178,10 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
 
         internal JoinExpression(Type type, JoinType joinType, Expression left, Expression right, Expression? condition)
         {
-            this.Join = joinType;
-            this.Left = left;
-            this.Right = right;
-            this.Condition = condition;
+            Join = joinType;
+            Left = left;
+            Right = right;
+            Condition = condition;
 
             this.type = type;
         }

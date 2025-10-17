@@ -170,6 +170,25 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
                 _ = Visit(select.Where);
             }
 
+            if (select.OrderBy != null && select.OrderBy.Count > 0)
+            {
+                AppendNewLine(Identation.Same);
+                _ = sb.Append("ORDER BY ");
+                for (int i = 0, n = select.OrderBy.Count; i < n; i++)
+                {
+                    OrderExpression exp = select.OrderBy[i];
+                    if (i > 0)
+                    {
+                        _ = sb.Append(", ");
+                    }
+                    _ = Visit(exp.Expression);
+                    if (exp.OrderType != OrderType.Ascending)
+                    {
+                        _ = sb.Append(" DESC");
+                    }
+                }
+            }
+
             return select;
         }
 

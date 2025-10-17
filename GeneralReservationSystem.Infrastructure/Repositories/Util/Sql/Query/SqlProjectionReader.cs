@@ -63,6 +63,8 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
                 return typeof(IQueryable<E>).IsAssignableFrom(query.Body.Type) ? list.AsQueryable() : list;
             }
 
+            // TODO: Add async version of ExecuteSubQuery.
+
             private static bool CanEvaluateLocally(Expression expression)
             {
                 return expression.NodeType != ExpressionType.Parameter &&

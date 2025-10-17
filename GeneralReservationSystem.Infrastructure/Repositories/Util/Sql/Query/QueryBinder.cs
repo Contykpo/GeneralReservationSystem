@@ -1,4 +1,5 @@
 ﻿using GeneralReservationSystem.Application.Helpers;
+using GeneralReservationSystem.Application.Repositories.Util.Interfaces;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -13,12 +14,15 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
     internal class QueryBinder : ExpressionVisitor
     {
         private readonly ColumnProjector columnProjector;
+        private List<OrderExpression>? thenBys;
         private Dictionary<ParameterExpression, Expression> map = [];
         private int aliasCount;
+        private readonly RepositoryQueryProvider queryProvider;
 
-        internal QueryBinder()
+        internal QueryBinder(RepositoryQueryProvider queryProvider)
         {
             columnProjector = new ColumnProjector(CanBeColumn);
+            this.queryProvider = queryProvider;
         }
 
         private static bool CanBeColumn(Expression expression)
@@ -26,7 +30,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
             return expression.NodeType == (ExpressionType)DbExpressionType.Column;
         }
 
-        internal Expression Bind(Expression expression)
+        internal Expression? Bind(Expression? expression)
         {
             map = [];
             return Visit(expression);
@@ -60,6 +64,10 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
                 {
                     "Where" => BindWhere(m.Type, m.Arguments[0], (LambdaExpression)StripQuotes(m.Arguments[1])),
                     "Select" => BindSelect(m.Type, m.Arguments[0], (LambdaExpression)StripQuotes(m.Arguments[1])),
+                    "OrderBy" => BindOrderBy(m.Type, m.Arguments[0], (LambdaExpression)StripQuotes(m.Arguments[1]), OrderType.Ascending),
+                    "OrderByDescending" => BindOrderBy(m.Type, m.Arguments[0], (LambdaExpression)StripQuotes(m.Arguments[1]), OrderType.Descending),
+                    "ThenBy" => BindThenBy(m.Arguments[0], (LambdaExpression)StripQuotes(m.Arguments[1]), OrderType.Ascending),
+                    "ThenByDescending" => BindThenBy(m.Arguments[0], (LambdaExpression)StripQuotes(m.Arguments[1]), OrderType.Descending),
                     "Join" => BindJoin(
                         m.Type, m.Arguments[0], m.Arguments[1],
                         (LambdaExpression)StripQuotes(m.Arguments[2]),
@@ -129,12 +137,12 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
             };
         }
 
-        private static bool IsTable(object? value)
+        private bool IsTable(object? value)
         {
-            return value is IQueryable q && q.Expression.NodeType == ExpressionType.Constant;
+            return value is IQueryable q && q.Provider == this.queryProvider && q.Expression.NodeType == ExpressionType.Constant;
         }
 
-        private static bool IsTable(Expression expression)
+        private bool IsTable(Expression expression)
         {
             return expression is ConstantExpression c && IsTable(c.Value);
         }
@@ -213,6 +221,42 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
                 ),
                 projector
             );
+        }
+
+        protected virtual Expression BindOrderBy(Type resultType, Expression source, LambdaExpression orderSelector, OrderType orderType)
+        {
+            List<OrderExpression>? myThenBys = thenBys;
+            thenBys = null;
+            ProjectionExpression projection = (ProjectionExpression)Visit(source)!;
+
+            map[orderSelector.Parameters[0]] = projection.Projector;
+            List<OrderExpression> orderings = [new OrderExpression(orderType, Visit(orderSelector.Body))];
+
+            if (myThenBys != null)
+            {
+                for (int i = myThenBys.Count - 1; i >= 0; i--)
+                {
+                    OrderExpression tb = myThenBys[i];
+                    LambdaExpression lambda = (LambdaExpression)tb.Expression;
+                    map[lambda.Parameters[0]] = projection.Projector;
+                    orderings.Add(new OrderExpression(tb.OrderType, Visit(lambda.Body)));
+                }
+            }
+
+            string alias = GetNextAlias();
+            ProjectedColumns pc = ProjectColumns(projection.Projector, alias, projection.Source.Alias);
+            return new ProjectionExpression(
+                new SelectExpression(resultType, alias, pc.Columns, projection.Source, null, orderings.AsReadOnly()),
+                pc.Projector
+            );
+        }
+
+        protected virtual Expression BindThenBy(Expression source, LambdaExpression orderSelector, OrderType orderType)
+        {
+            thenBys ??= [];
+
+            thenBys.Add(new OrderExpression(orderType, orderSelector));
+            return Visit(source);
         }
 
         protected virtual Expression BindJoin(Type resultType, Expression outerSource, Expression innerSource, LambdaExpression outerKey, LambdaExpression innerKey, LambdaExpression resultSelector)

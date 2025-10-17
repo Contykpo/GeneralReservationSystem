@@ -37,21 +37,26 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
             throw new NotImplementedException("Async execution not implemented yet.");
         }
 
-        private static TranslateResult Translate(Expression expression)
+        private TranslateResult Translate(Expression? expression)
         {
             if (expression is not ProjectionExpression projection)
             {
-                expression = Evaluator.PartialEval(expression)!;
-                projection = (ProjectionExpression)new QueryBinder().Bind(expression);
+                expression = Evaluator.PartialEval(expression, CanBeEvaluatedLocally);
+                expression = new QueryBinder(this).Bind(expression);
+                expression = new OrderByRewriter().Rewrite(expression);
+                projection = (ProjectionExpression)expression!;
             }
+
             string commandText = new QueryFormatter().Format(projection.Source);
             LambdaExpression projector = new ProjectionBuilder().Build(projection.Projector, projection.Source.Alias);
 
-            return new TranslateResult
-            {
-                CommandText = commandText,
-                Projector = projector
-            };
+            return new TranslateResult { CommandText = commandText, Projector = projector };
+        }
+
+        private static bool CanBeEvaluatedLocally(Expression expression)
+        {
+            return expression.NodeType != ExpressionType.Parameter &&
+                   expression.NodeType != ExpressionType.Lambda;
         }
 
         public override string GetQueryText(Expression expression)

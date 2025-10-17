@@ -25,7 +25,7 @@ namespace GeneralReservationSystem.Infrastructure
                     sp.GetRequiredService<IConfiguration>(),
                     "DefaultConnection"));
 
-            // Register default query provider
+            // Register default query queryProvider
             _ = services.AddScoped<RepositoryQueryProvider, SqlQueryProvider>();
 
             // Register all default repository implementations
