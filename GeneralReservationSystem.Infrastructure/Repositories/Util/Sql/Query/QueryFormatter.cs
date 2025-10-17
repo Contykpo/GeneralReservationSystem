@@ -173,6 +173,33 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
             return select;
         }
 
+        protected override Expression VisitJoin(JoinExpression join)
+        {
+            _ = VisitSource(join.Left);
+            AppendNewLine(Identation.Same);
+            switch (join.Join)
+            {
+                case JoinType.CrossJoin:
+                    _ = sb.Append("CROSS JOIN ");
+                    break;
+                case JoinType.InnerJoin:
+                    _ = sb.Append("INNER JOIN ");
+                    break;
+                case JoinType.CrossApply:
+                    _ = sb.Append("CROSS APPLY ");
+                    break;
+            }
+            _ = VisitSource(join.Right);
+            if (join.Condition != null)
+            {
+                AppendNewLine(Identation.Inner);
+                _ = sb.Append("ON ");
+                _ = Visit(join.Condition);
+                AppendNewLine(Identation.Outer);
+            }
+            return join;
+        }
+
         protected override Expression VisitSource(Expression? source)
         {
             if (source == null)
@@ -198,6 +225,10 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
                     _ = sb.Append(')');
                     _ = sb.Append(" AS ");
                     _ = sb.Append(select.Alias);
+                    break;
+
+                case DbExpressionType.Join:
+                    _ = VisitJoin((JoinExpression)source);
                     break;
 
                 default:

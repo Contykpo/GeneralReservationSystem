@@ -29,7 +29,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
         private List<ColumnDeclaration> columns = null!;
         private HashSet<string> columnNames = null!;
         private HashSet<Expression> candidates = null!;
-        private string existingAlias = null!;
+        private string[] existingAliases = null!;
         private string newAlias = null!;
         private int iColumn;
 
@@ -38,13 +38,13 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
             nominator = new Nominator(fnCanBeColumn);
         }
 
-        internal ProjectedColumns ProjectColumns(Expression expression, string newAlias, string existingAlias)
+        internal ProjectedColumns ProjectColumns(Expression expression, string newAlias, params string[] existingAliases)
         {
             map = [];
             columns = [];
             columnNames = [];
             this.newAlias = newAlias;
-            this.existingAlias = existingAlias;
+            this.existingAliases = existingAliases;
             candidates = nominator.Nominate(expression);
 
             return new ProjectedColumns(Visit(expression)!, columns.AsReadOnly());
@@ -64,7 +64,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
                         return mapped;
                     }
 
-                    if (existingAlias == column.Alias)
+                    if (existingAliases.Contains(column.Alias))
                     {
                         int ordinal = columns.Count;
                         string columnName = GetUniqueColumnName(column.Name);

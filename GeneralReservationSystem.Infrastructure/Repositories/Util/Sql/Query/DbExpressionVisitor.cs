@@ -15,6 +15,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
                     DbExpressionType.Column => VisitColumn((ColumnExpression)expression),
                     DbExpressionType.Select => VisitSelect((SelectExpression)expression),
                     DbExpressionType.Projection => VisitProjection((ProjectionExpression)expression),
+                    DbExpressionType.Join => VisitJoin((JoinExpression)expression),
                     _ => base.Visit(expression),
                 };
         }
@@ -72,6 +73,16 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
             }
 
             return alternate != null ? alternate.AsReadOnly() : columns;
+        }
+
+        protected virtual Expression VisitJoin(JoinExpression join)
+        {
+            Expression left = Visit(join.Left)!;
+            Expression right = Visit(join.Right)!;
+            Expression condition = Visit(join.Condition)!;
+            return left != join.Left || right != join.Right || condition != join.Condition
+                ? new JoinExpression(join.Type, join.Join, left, right, condition)
+                : join;
         }
 
         /*protected virtual ReadOnlyCollection<Expression>? VisitExpressionList(ReadOnlyCollection<Expression>? original)

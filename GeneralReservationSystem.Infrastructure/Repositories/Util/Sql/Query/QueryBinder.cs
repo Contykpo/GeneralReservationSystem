@@ -47,21 +47,36 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
             return "t" + aliasCount++;
         }
 
-        private ProjectedColumns ProjectColumns(Expression expression, string newAlias, string existingAlias)
+        private ProjectedColumns ProjectColumns(Expression expression, string newAlias, params string[] existingAliases)
         {
-            return columnProjector.ProjectColumns(expression, newAlias, existingAlias);
+            return columnProjector.ProjectColumns(expression, newAlias, existingAliases);
         }
 
         protected override Expression VisitMethodCall(MethodCallExpression m)
         {
             return m.Method.DeclaringType == typeof(Queryable) ||
-
                 m.Method.DeclaringType == typeof(Enumerable)
                 ? m.Method.Name switch
                 {
                     "Where" => BindWhere(m.Type, m.Arguments[0], (LambdaExpression)StripQuotes(m.Arguments[1])),
                     "Select" => BindSelect(m.Type, m.Arguments[0], (LambdaExpression)StripQuotes(m.Arguments[1])),
-                    _ => throw new NotSupportedException(string.Format("The method '{0}' is not supported", m.Method.Name)),
+                    "Join" => BindJoin(
+                        m.Type, m.Arguments[0], m.Arguments[1],
+                        (LambdaExpression)StripQuotes(m.Arguments[2]),
+                        (LambdaExpression)StripQuotes(m.Arguments[3]),
+                        (LambdaExpression)StripQuotes(m.Arguments[4])
+                        ),
+                    "SelectMany" when m.Arguments.Count == 2 => BindSelectMany(
+                        m.Type, m.Arguments[0],
+                        (LambdaExpression)StripQuotes(m.Arguments[1]),
+                        null
+                        ),
+                    "SelectMany" when m.Arguments.Count == 3 => BindSelectMany(
+                        m.Type, m.Arguments[0],
+                        (LambdaExpression)StripQuotes(m.Arguments[1]),
+                        (LambdaExpression)StripQuotes(m.Arguments[2])
+                        ),
+                    _ => throw new NotSupportedException($"The method '{m.Method.Name}' is not supported"),
                 }
                 : base.VisitMethodCall(m);
         }
@@ -117,6 +132,11 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
         private static bool IsTable(object? value)
         {
             return value is IQueryable q && q.Expression.NodeType == ExpressionType.Constant;
+        }
+
+        private static bool IsTable(Expression expression)
+        {
+            return expression is ConstantExpression c && IsTable(c.Value);
         }
 
         private static string GetTableName(object table)
@@ -193,6 +213,52 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
                 ),
                 projector
             );
+        }
+
+        protected virtual Expression BindJoin(Type resultType, Expression outerSource, Expression innerSource, LambdaExpression outerKey, LambdaExpression innerKey, LambdaExpression resultSelector)
+        {
+            ProjectionExpression outerProjection = (ProjectionExpression)Visit(outerSource);
+            ProjectionExpression innerProjection = (ProjectionExpression)Visit(innerSource);
+            map[outerKey.Parameters[0]] = outerProjection.Projector;
+            Expression outerKeyExpr = Visit(outerKey.Body);
+            map[innerKey.Parameters[0]] = innerProjection.Projector;
+            Expression innerKeyExpr = Visit(innerKey.Body);
+            map[resultSelector.Parameters[0]] = outerProjection.Projector;
+            map[resultSelector.Parameters[1]] = innerProjection.Projector;
+            Expression resultExpr = Visit(resultSelector.Body);
+            JoinExpression join = new(resultType, JoinType.InnerJoin, outerProjection.Source, innerProjection.Source, Expression.Equal(outerKeyExpr, innerKeyExpr));
+            string alias = GetNextAlias();
+            ProjectedColumns pc = ProjectColumns(resultExpr, alias, outerProjection.Source.Alias, innerProjection.Source.Alias);
+            return new ProjectionExpression(
+                new SelectExpression(resultType, alias, pc.Columns, join, null),
+                pc.Projector
+                );
+        }
+
+        protected virtual Expression BindSelectMany(Type resultType, Expression source, LambdaExpression collectionSelector, LambdaExpression? resultSelector)
+        {
+            ProjectionExpression projection = (ProjectionExpression)Visit(source);
+            map[collectionSelector.Parameters[0]] = projection.Projector;
+            ProjectionExpression collectionProjection = (ProjectionExpression)Visit(collectionSelector.Body);
+            JoinType joinType = IsTable(collectionSelector.Body) ? JoinType.CrossJoin : JoinType.CrossApply;
+            JoinExpression join = new(resultType, joinType, projection.Source, collectionProjection.Source, null);
+            string alias = GetNextAlias();
+            ProjectedColumns pc;
+            if (resultSelector == null)
+            {
+                pc = ProjectColumns(collectionProjection.Projector, alias, projection.Source.Alias, collectionProjection.Source.Alias);
+            }
+            else
+            {
+                map[resultSelector.Parameters[0]] = projection.Projector;
+                map[resultSelector.Parameters[1]] = collectionProjection.Projector;
+                Expression result = Visit(resultSelector.Body);
+                pc = ProjectColumns(result, alias, projection.Source.Alias, collectionProjection.Source.Alias);
+            }
+            return new ProjectionExpression(
+                new SelectExpression(resultType, alias, pc.Columns, join, null),
+                pc.Projector
+                );
         }
 
         protected override Expression VisitConstant(ConstantExpression c)

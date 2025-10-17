@@ -8,7 +8,8 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
         Table = 1000, // To not overlap with ExpressionType
         Column,
         Select,
-        Projection
+        Projection,
+        Join
     }
 
     internal static class DbExpressionExtensions
@@ -124,5 +125,35 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
         internal SelectExpression Source { get; }
 
         internal Expression Projector { get; }
+    }
+
+    internal enum JoinType
+    {
+        CrossJoin,
+        InnerJoin,
+        CrossApply,
+    }
+
+    internal class JoinExpression : Expression
+    {
+        private readonly Type type;
+
+        public override ExpressionType NodeType => (ExpressionType)DbExpressionType.Join;
+
+        public override Type Type => type;
+
+        internal JoinExpression(Type type, JoinType joinType, Expression left, Expression right, Expression? condition)
+        {
+            this.Join = joinType;
+            this.Left = left;
+            this.Right = right;
+            this.Condition = condition;
+
+            this.type = type;
+        }
+        internal JoinType Join { get; }
+        internal Expression Left { get; }
+        internal Expression Right { get; }
+        internal new Expression? Condition { get; }
     }
 }
