@@ -15,9 +15,12 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
         {
             try
             {
-                User user = await userRepository.Query()
+                /*User user = await userRepository.Query()
                     .Where(u => u.UserId == keyDto.UserId)
                     .FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el usuario solicitado.");
+                return user;*/
+
+                User user = userRepository.Query().Where(u => u.UserId == keyDto.UserId).FirstOrDefault() ?? throw new ServiceNotFoundException("No se encontró el usuario solicitado.");
                 return user;
             }
             catch (RepositoryException ex)
@@ -104,7 +107,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
         {
             try
             {
-                Repositories.Util.Interfaces.IQuery<UserInfo> query = userRepository.Query()
+                /*var paginatedResults = userRepository.Query()
                     .Select(u => new UserInfo
                     {
                         UserId = u.UserId,
@@ -114,8 +117,32 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
                     })
                     .ApplyFilters(searchDto.Filters)
                     .ApplySorting(searchDto.Orders)
-                    .Page(searchDto.Page, searchDto.PageSize);
-                return await query.ToPagedResultAsync(cancellationToken);
+                    .Page(searchDto.Page, searchDto.PageSize)
+                    .ToPagedResultAsync(cancellationToken);
+                return await paginatedResults; */
+
+                var query = userRepository.Query()
+                    .Select(u => new UserInfo
+                    {
+                        UserId = u.UserId,
+                        UserName = u.UserName,
+                        Email = u.Email,
+                        IsAdmin = u.IsAdmin
+                    });
+
+                var count = query.Count();
+
+                var items = query.Skip((searchDto.Page - 1) * searchDto.PageSize)
+                    .Take(searchDto.PageSize)
+                    .ToList();
+
+                return new PagedResult<UserInfo>
+                {
+                    Items = items,
+                    TotalCount = count,
+                    Page = searchDto.Page,
+                    PageSize = searchDto.PageSize
+                };
             }
             catch (RepositoryException ex)
             {

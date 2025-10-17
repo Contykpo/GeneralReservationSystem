@@ -5,12 +5,13 @@ using GeneralReservationSystem.Infrastructure.Helpers;
 using GeneralReservationSystem.Infrastructure.Repositories.Util.Sql;
 using System.Data;
 using System.Data.Common;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 
 namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
 {
-    public class Repository<T>(Func<DbConnection> connectionFactory, DbTransaction? transaction = null) : IRepository<T> where T : class, new()
+    public class Repository<T>(RepositoryQueryProvider queryProvider, Func<DbConnection> connectionFactory, DbTransaction? transaction = null) : IRepository<T> where T : class, new()
     {
         protected static readonly string _tableName = EntityHelper.GetTableName<T>();
         protected static readonly PropertyInfo[] _properties = typeof(T).GetProperties();
@@ -78,9 +79,12 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
 
         #endregion
 
-        public IQuery<T> Query()
+        // TODO/FIX: "using" cierra la conexión y reader, pero puede ocurrir que tales deban ser administrados externamente al
+        // repositorio. Decidir como arreglar esto (quizás no hace falta).
+
+        public RepositoryQuery<T> Query()
         {
-            return new Query<T>(connectionFactory, transaction);
+            return new RepositoryQuery<T>(queryProvider);
         }
 
         public async Task<IEnumerable<T>> GetAllAsync(CancellationToken cancellationToken = default)

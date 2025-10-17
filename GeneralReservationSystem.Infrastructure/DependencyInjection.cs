@@ -8,10 +8,10 @@ using GeneralReservationSystem.Application.Services.Interfaces.Authentication;
 using GeneralReservationSystem.Infrastructure.Repositories.Sql;
 using GeneralReservationSystem.Infrastructure.Repositories.Sql.Authentication;
 using GeneralReservationSystem.Infrastructure.Repositories.Util.Sql;
+using GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System.Data.Common;
 
 namespace GeneralReservationSystem.Infrastructure
 {
@@ -20,10 +20,13 @@ namespace GeneralReservationSystem.Infrastructure
         public static IServiceCollection AddInfrastructureRepositories(this IServiceCollection services)
         {
             // Register default DbConnection factory
-            _ = services.AddScoped<Func<DbConnection>>(sp =>
+            _ = services.AddScoped(sp =>
                 DbConnectionFactory.CreateFactory<SqlConnection>(
                     sp.GetRequiredService<IConfiguration>(),
                     "DefaultConnection"));
+
+            // Register default query provider
+            _ = services.AddScoped<RepositoryQueryProvider, SqlQueryProvider>();
 
             // Register all default repository implementations
             _ = services.AddScoped<IUserRepository, UserRepository>();

@@ -137,9 +137,14 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                Trip trip = await tripRepository.Query()
+                /*Trip trip = await tripRepository.Query()
                     .Where(t => t.TripId == keyDto.TripId)
                     .FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el viaje solicitado.");
+                return trip;*/
+
+                Trip trip = tripRepository.Query()
+                    .Where(t => t.TripId == keyDto.TripId)
+                    .FirstOrDefault() ?? throw new ServiceNotFoundException("No se encontró el viaje solicitado.");
                 return trip;
             }
             catch (RepositoryException ex)
@@ -164,7 +169,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                var query = tripRepository.Query()
+                /*var paginatedResults = tripRepository.Query()
                     .ApplyFilters(searchDto.Filters)
                     .ApplySorting(searchDto.Orders)
                     .Join<Reservation, TripWithDetailsDto>(
@@ -196,7 +201,9 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
                     )
                     .Page(searchDto.Page, searchDto.PageSize);
 
-                return await query.ToPagedResultAsync(cancellationToken);
+                return await query.ToPagedResultAsync(cancellationToken);*/
+
+                throw new NotImplementedException("Método no implementado aún.");
             }
             catch (RepositoryException ex)
             {

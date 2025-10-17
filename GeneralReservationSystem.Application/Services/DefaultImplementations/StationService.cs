@@ -93,9 +93,14 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                Station station = await stationRepository.Query()
+                /*Station station = await stationRepository.Query()
                     .Where(s => s.StationId == keyDto.StationId)
                     .FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró la estación solicitada.");
+                return station;*/
+
+                Station station = stationRepository.Query()
+                    .Where(s => s.StationId == keyDto.StationId)
+                    .FirstOrDefault() ?? throw new ServiceNotFoundException("No se encontró la estación solicitada.");
                 return station;
             }
             catch (RepositoryException ex)
@@ -120,11 +125,47 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                Repositories.Util.Interfaces.IQuery<Station> query = stationRepository.Query()
+                /*var query = stationRepository.Query()
                     .ApplyFilters(searchDto.Filters)
                     .ApplySorting(searchDto.Orders)
                     .Page(searchDto.Page, searchDto.PageSize);
-                return await query.ToPagedResultAsync(cancellationToken);
+                return await query.ToPagedResultAsync(cancellationToken);*/
+
+                var city = "CABA";
+
+                var query = stationRepository.Query();
+
+                var count = 0;//query.Count();
+
+                var items = query
+                    //.Skip((searchDto.Page - 1) * searchDto.PageSize)
+                    //.Take(searchDto.PageSize)
+                    .ToList();
+
+                count = items.Count();
+
+                var a = query
+                    .Select(s => new {
+                        Name = s.StationName,
+                        Location = new
+                        {
+                            s.City,
+                            s.Country
+                        }
+                    })
+                .Where(x => x.Location.City == city);
+
+                Console.WriteLine($"a: {a}");
+
+                Console.WriteLine($"Filas de a : {a.ToList().Count}");
+
+                return new PagedResult<Station>
+                {
+                    Items = items,
+                    TotalCount = count,
+                    Page = searchDto.Page,
+                    PageSize = searchDto.PageSize
+                };
             }
             catch (RepositoryException ex)
             {

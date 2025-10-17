@@ -61,10 +61,16 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                Reservation? reservation = await reservationRepository.Query()
+                /*Reservation? reservation = await reservationRepository.Query()
                     .Where(r => r.TripId == keyDto.TripId && r.UserId == keyDto.UserId)
                     .FirstOrDefaultAsync(cancellationToken);
-                return reservation ?? throw new ServiceNotFoundException("No se encontró la reserva solicitada.");
+                return reservation ?? throw new ServiceNotFoundException("No se encontró la reserva solicitada.");*/
+
+                Reservation reservation = reservationRepository.Query()
+                    .Where(r => r.TripId == keyDto.TripId && r.UserId == keyDto.UserId)
+                    .FirstOrDefault() ?? throw new ServiceNotFoundException("No se encontró la reserva solicitada.");
+
+                return reservation;
             }
             catch (RepositoryException ex)
             {
@@ -76,9 +82,13 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                return await reservationRepository.Query()
+                /*return await reservationRepository.Query()
                     .Where(r => r.UserId == userId)
-                    .ToListAsync(cancellationToken);
+                    .ToListAsync(cancellationToken);*/
+
+                return reservationRepository.Query()
+                    .Where(r => r.UserId == userId)
+                    .ToList();
             }
             catch (RepositoryException ex)
             {
@@ -90,11 +100,28 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                Repositories.Util.Interfaces.IQuery<Reservation> query = reservationRepository.Query()
+                /*var query = reservationRepository.Query()
                     .ApplyFilters(searchDto.Filters)
                     .ApplySorting(searchDto.Orders)
                     .Page(searchDto.Page, searchDto.PageSize);
-                return await query.ToPagedResultAsync(cancellationToken);
+                return await query.ToPagedResultAsync(cancellationToken);*/
+
+                var query = reservationRepository.Query();
+
+                var count = query.Count();
+
+                var items = query
+                    .Skip((searchDto.Page - 1) * searchDto.PageSize)
+                    .Take(searchDto.PageSize)
+                    .ToList();
+
+                return new PagedResult<Reservation>
+                {
+                    Items = items,
+                    TotalCount = count,
+                    Page = searchDto.Page,
+                    PageSize = searchDto.PageSize
+                };
             }
             catch (RepositoryException ex)
             {
