@@ -44,19 +44,19 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
                 expression = Evaluator.PartialEval(expression, CanBeEvaluatedLocally);
                 expression = new QueryBinder(this).Bind(expression);
                 expression = new OrderByRewriter().Rewrite(expression);
+                expression = new UnusedColumnRemover().Remove(expression);
+                expression = new RedundantSubqueryRemover().Remove(expression);
                 projection = (ProjectionExpression)expression!;
             }
-
             string commandText = new QueryFormatter().Format(projection.Source);
             LambdaExpression projector = new ProjectionBuilder().Build(projection.Projector, projection.Source.Alias);
-
             return new TranslateResult { CommandText = commandText, Projector = projector };
         }
 
         private static bool CanBeEvaluatedLocally(Expression expression)
         {
-            return expression.NodeType != ExpressionType.Parameter &&
-                   expression.NodeType != ExpressionType.Lambda;
+            return expression.NodeType is not ExpressionType.Parameter and
+                   not ExpressionType.Lambda;
         }
 
         public override string GetQueryText(Expression expression)
