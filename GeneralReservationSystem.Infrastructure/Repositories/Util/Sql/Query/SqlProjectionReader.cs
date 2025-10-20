@@ -1,25 +1,16 @@
-﻿using GeneralReservationSystem.Application.Repositories.Util.Interfaces;
-using System.Collections;
+﻿using System.Collections;
 using System.Data.Common;
-using System.Linq.Expressions;
 
 namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
 {
-    internal class ProjectionReader<T> : IEnumerable<T>
+    public class SqlProjectionReader<T>(DbDataReader reader, Func<DbDataReader, T> projector) : IEnumerable<T>, IEnumerable, IDisposable
     {
-        private Enumerator? enumerator;
-
-        internal ProjectionReader(DbDataReader reader, Func<ProjectionRow, T> projector, RepositoryQueryProvider queryProvider)
-        {
-            enumerator = new Enumerator(reader, projector, queryProvider);
-        }
+        private Enumerator? enumerator = new(reader, projector);
 
         public IEnumerator<T> GetEnumerator()
         {
             Enumerator? e = enumerator ?? throw new InvalidOperationException("Cannot enumerate more than once");
-
             enumerator = null;
-
             return e;
         }
 
@@ -28,56 +19,41 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
             return GetEnumerator();
         }
 
-        private class Enumerator : ProjectionRow, IEnumerator<T>, IDisposable
+        void IDisposable.Dispose()
+        {
+            if (enumerator != null)
+            {
+                enumerator.Dispose();
+                enumerator = null;
+            }
+            GC.SuppressFinalize(this);
+        }
+
+        private class Enumerator : IEnumerator<T>, IEnumerator, IDisposable
         {
             private readonly DbDataReader reader;
+            private readonly Func<DbDataReader, T> projector;
 
-            private readonly RepositoryQueryProvider queryProvider;
-
-            public T Current { get; private set; } = default!;
-
-            object IEnumerator.Current => Current!;
-
-            private readonly Func<ProjectionRow, T> projector;
-
-            internal Enumerator(DbDataReader reader, Func<ProjectionRow, T> projector, RepositoryQueryProvider queryProvider)
+            internal Enumerator(DbDataReader reader, Func<DbDataReader, T> projector)
             {
                 this.reader = reader;
                 this.projector = projector;
-                this.queryProvider = queryProvider;
+
+                Current = default!;
             }
 
-            public override object? GetValue(int index)
-            {
-                return index >= 0 ? reader.IsDBNull(index) ? null : reader.GetValue(index) : throw new IndexOutOfRangeException();
-            }
+            public T Current { get; private set; }
 
-            public override IEnumerable<E> ExecuteSubQuery<E>(LambdaExpression query)
-            {
-                ProjectionExpression projection = (ProjectionExpression)new Replacer().Replace(query.Body, query.Parameters[0], Expression.Constant(this));
-                projection = (ProjectionExpression)Evaluator.PartialEval(projection, CanEvaluateLocally)!;
-
-                IEnumerable<E> result = (IEnumerable<E>)queryProvider.ExecuteExpression(projection);
-                List<E> list = [.. result];
-
-                return typeof(IQueryable<E>).IsAssignableFrom(query.Body.Type) ? list.AsQueryable() : list;
-            }
-
-            // TODO: Add async version of ExecuteSubQuery.
-
-            private static bool CanEvaluateLocally(Expression expression)
-            {
-                return expression.NodeType != ExpressionType.Parameter &&
-!expression.NodeType.IsDbExpression();
-            }
+            object IEnumerator.Current => Current!;
 
             public bool MoveNext()
             {
                 if (reader.Read())
                 {
-                    Current = projector(this);
+                    Current = projector(reader);
                     return true;
                 }
+                Dispose();
                 return false;
             }
 

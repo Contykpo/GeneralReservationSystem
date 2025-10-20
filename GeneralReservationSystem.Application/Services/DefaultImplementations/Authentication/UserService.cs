@@ -1,26 +1,23 @@
 ﻿using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.DTOs.Authentication;
+using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Entities.Authentication;
 using GeneralReservationSystem.Application.Exceptions.Repositories;
 using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication;
+using GeneralReservationSystem.Application.Repositories.Util.Interfaces;
 using GeneralReservationSystem.Application.Services.Interfaces.Authentication;
 
 namespace GeneralReservationSystem.Application.Services.DefaultImplementations.Authentication
 {
-    public class UserService(IUserRepository userRepository) : IUserService
+    public class UserService(IUserRepository userRepository, IUnitOfWork unitOfWork) : IUserService
     {
         public async Task<User> GetUserAsync(UserKeyDto keyDto, CancellationToken cancellationToken = default)
         {
             try
             {
-                /*User user = await userRepository.Query()
-                    .Where(u => u.UserId == keyDto.UserId)
-                    .FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el usuario solicitado.");
-                return user;*/
-
-                User user = userRepository.Query().Where(u => u.UserId == keyDto.UserId).FirstOrDefault() ?? throw new ServiceNotFoundException("No se encontró el usuario solicitado.");
+                User user = await userRepository.Query().Where(u => u.UserId == keyDto.UserId).FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el usuario solicitado.");
                 return user;
             }
             catch (RepositoryException ex)
@@ -107,38 +104,39 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
         {
             try
             {
-                /*var paginatedResults = userRepository.Query()
-                    .Select(u => new UserInfo
+                var query = unitOfWork.UserRepository.Query()
+                    .Select(u => new
                     {
-                        UserId = u.UserId,
-                        UserName = u.UserName,
-                        Email = u.Email,
-                        IsAdmin = u.IsAdmin
+                        u.UserId,
+                        u.UserName,
+                        u.Email,
+                        u.IsAdmin
                     })
-                    .ApplyFilters(searchDto.Filters)
-                    .ApplySorting(searchDto.Orders)
-                    .Page(searchDto.Page, searchDto.PageSize)
-                    .ToPagedResultAsync(cancellationToken);
-                return await paginatedResults; */
+                    .ApplyFilters(searchDto.Filters);
 
-                var query = userRepository.Query()
-                    .Select(u => new UserInfo
-                    {
-                        UserId = u.UserId,
-                        UserName = u.UserName,
-                        Email = u.Email,
-                        IsAdmin = u.IsAdmin
-                    });
-
-                var count = query.Count();
-
-                var items = query.Skip((searchDto.Page - 1) * searchDto.PageSize)
+                var items = await query
+                    .ApplySorts(searchDto.Orders)
+                    .Skip((searchDto.Page - 1) * searchDto.PageSize)
                     .Take(searchDto.PageSize)
+                    .ToListAsync(cancellationToken);
+
+                var userInfoItems = items
+                    .Select(x => new UserInfo
+                    {
+                        UserId = x.UserId,
+                        UserName = x.UserName,
+                        Email = x.Email,
+                        IsAdmin = x.IsAdmin
+                    })
                     .ToList();
+
+                var count = await query.CountAsync(cancellationToken);
+
+                unitOfWork.Commit();
 
                 return new PagedResult<UserInfo>
                 {
-                    Items = items,
+                    Items = userInfoItems,
                     TotalCount = count,
                     Page = searchDto.Page,
                     PageSize = searchDto.PageSize

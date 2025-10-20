@@ -4,11 +4,12 @@ using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Exceptions.Repositories;
 using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Repositories.Interfaces;
+using GeneralReservationSystem.Application.Repositories.Util.Interfaces;
 using GeneralReservationSystem.Application.Services.Interfaces;
 
 namespace GeneralReservationSystem.Application.Services.DefaultImplementations
 {
-    public class TripService(ITripRepository tripRepository) : ITripService
+    public class TripService(ITripRepository tripRepository, IUnitOfWork unitOfWork) : ITripService
     {
         public async Task<Trip> CreateTripAsync(CreateTripDto dto, CancellationToken cancellationToken = default)
         {
@@ -137,14 +138,9 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                /*Trip trip = await tripRepository.Query()
+                Trip trip = await tripRepository.Query()
                     .Where(t => t.TripId == keyDto.TripId)
                     .FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el viaje solicitado.");
-                return trip;*/
-
-                Trip trip = tripRepository.Query()
-                    .Where(t => t.TripId == keyDto.TripId)
-                    .FirstOrDefault() ?? throw new ServiceNotFoundException("No se encontró el viaje solicitado.");
                 return trip;
             }
             catch (RepositoryException ex)
@@ -169,41 +165,49 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                /*var paginatedResults = tripRepository.Query()
-                    .ApplyFilters(searchDto.Filters)
-                    .ApplySorting(searchDto.Orders)
-                    .Join<Reservation, TripWithDetailsDto>(
-                        (trip, reservation) => trip.TripId == reservation.TripId,
-                        (trip, reservation) => new TripWithDetailsDto
-                        {
-                            TripId = trip.TripId,
-                            DepartureStationId = trip.DepartureStationId,
-                            DepartureTime = trip.DepartureTime,
-                            ArrivalStationId = trip.ArrivalStationId,
-                            ArrivalTime = trip.ArrivalTime,
-                            AvailableSeats = trip.AvailableSeats,
-                            ReservedSeats = reservation == null ? 0 : 1
-                        },
-                        Repositories.Util.Interfaces.JoinType.Left
-                    )
-                    .GroupBy(
-                        t => t.TripId,
-                        g => new TripWithDetailsDto
-                        {
-                            TripId = g.First().TripId,
-                            DepartureStationId = g.First().DepartureStationId,
-                            DepartureTime = g.First().DepartureTime,
-                            ArrivalStationId = g.First().ArrivalStationId,
-                            ArrivalTime = g.First().ArrivalTime,
-                            AvailableSeats = g.First().AvailableSeats,
-                            ReservedSeats = g.Count(),
-                        }
-                    )
-                    .Page(searchDto.Page, searchDto.PageSize);
+                var query = unitOfWork.TripRepository.Query()
+                    .Select(t => new
+                    {
+                        t.TripId,
+                        t.DepartureStationId,
+                        t.DepartureTime,
+                        t.ArrivalStationId,
+                        t.ArrivalTime,
+                        t.AvailableSeats,
+                        ReservedSeats = unitOfWork.ReservationRepository.Query().Count(r => r.TripId == t.TripId)
+                    })
+                    .ApplyFilters(searchDto.Filters);
 
-                return await query.ToPagedResultAsync(cancellationToken);*/
+                var items = await query
+                    .ApplySorts(searchDto.Orders)
+                    .Skip((searchDto.Page - 1) * searchDto.PageSize)
+                    .Take(searchDto.PageSize)
+                    .ToListAsync(cancellationToken);
 
-                throw new NotImplementedException("Método no implementado aún.");
+                List<TripWithDetailsDto> castedItems = items
+                    .Select(x => new TripWithDetailsDto
+                    {
+                        TripId = x.TripId,
+                        DepartureStationId = x.DepartureStationId,
+                        DepartureTime = x.DepartureTime,
+                        ArrivalStationId = x.ArrivalStationId,
+                        ArrivalTime = x.ArrivalTime,
+                        AvailableSeats = x.AvailableSeats,
+                        ReservedSeats = x.ReservedSeats
+                    })
+                    .ToList();
+
+                int count = await query.CountAsync(cancellationToken);
+
+                unitOfWork.Commit();
+
+                return new PagedResult<TripWithDetailsDto>
+                {
+                    Items = castedItems,
+                    TotalCount = count,
+                    Page = searchDto.Page,
+                    PageSize = searchDto.PageSize
+                };
             }
             catch (RepositoryException ex)
             {

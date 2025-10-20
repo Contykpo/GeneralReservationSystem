@@ -4,6 +4,7 @@ using GeneralReservationSystem.Application.Exceptions.Repositories;
 using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Helpers;
 using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication;
+using GeneralReservationSystem.Application.Repositories.Util.Interfaces;
 using GeneralReservationSystem.Application.Services.Interfaces.Authentication;
 
 namespace GeneralReservationSystem.Application.Services.DefaultImplementations.Authentication
@@ -46,24 +47,10 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
         {
             try
             {
-                /*string normalizedInput = dto.UserNameOrEmail.Trim().ToUpperInvariant();
-                User? user = await userRepository.Query()
-                    .Where(u => u.NormalizedUserName == normalizedInput || u.NormalizedEmail == normalizedInput)
-                    .FirstOrDefaultAsync(cancellationToken);
-                return user == null || !PasswordHelper.VerifyPassword(dto.Password, user.PasswordHash, user.PasswordSalt)
-                    ? throw new ServiceBusinessException("Usuario o contraseña incorrectos.")
-                    : new UserInfo
-                    {
-                        UserId = user.UserId,
-                        UserName = user.UserName,
-                        Email = user.Email,
-                        IsAdmin = user.IsAdmin
-                    };*/
-
                 string normalizedInput = dto.UserNameOrEmail.Trim().ToUpperInvariant();
-                User user = userRepository.Query()
+                User user = await userRepository.Query()
                     .Where(u => u.NormalizedUserName == normalizedInput || u.NormalizedEmail == normalizedInput)
-                    .FirstOrDefault() ?? throw new ServiceNotFoundException("No se encontró el usuario para autenticar.");
+                    .FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el usuario para autenticar.");
                 return !PasswordHelper.VerifyPassword(dto.Password, user.PasswordHash, user.PasswordSalt)
                     ? throw new ServiceBusinessException("Usuario o contraseña incorrectos.")
                     : new UserInfo

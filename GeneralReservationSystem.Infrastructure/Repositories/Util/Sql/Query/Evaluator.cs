@@ -6,7 +6,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
     {
         public static Expression? PartialEval(Expression? expression, Func<Expression, bool> fnCanBeEvaluated)
         {
-            return new SubtreeEvaluator(new Nominator(fnCanBeEvaluated).Nominate(expression)).Eval(expression);
+            return SubtreeEvaluator.Eval(Nominator.Nominate(fnCanBeEvaluated, expression), expression);
         }
 
         public static Expression? PartialEval(Expression? expression)
@@ -19,23 +19,23 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
             return expression.NodeType != ExpressionType.Parameter;
         }
 
-        private class SubtreeEvaluator : ExpressionVisitor
+        private class SubtreeEvaluator : DbExpressionVisitor
         {
-            private readonly HashSet<Expression?> candidates;
+            private readonly HashSet<Expression> candidates;
 
-            internal SubtreeEvaluator(HashSet<Expression?> candidates)
+            private SubtreeEvaluator(HashSet<Expression> candidates)
             {
                 this.candidates = candidates;
             }
 
-            internal Expression? Eval(Expression? expression)
+            internal static Expression? Eval(HashSet<Expression> candidates, Expression? exp)
             {
-                return Visit(expression);
+                return new SubtreeEvaluator(candidates).Visit(exp);
             }
 
-            public override Expression? Visit(Expression? expression)
+            public override Expression? Visit(Expression? exp)
             {
-                return expression == null ? null : candidates.Contains(expression) ? Evaluate(expression) : base.Visit(expression);
+                return exp == null ? null : candidates.Contains(exp) ? Evaluate(exp) : base.Visit(exp);
             }
 
             private static Expression Evaluate(Expression e)
@@ -44,31 +44,34 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
                 {
                     return e;
                 }
-
-                LambdaExpression lambda = Expression.Lambda(e);
-                Delegate fn = lambda.Compile();
-
-                return Expression.Constant(fn.DynamicInvoke(null), e.Type);
+                Type type = e.Type;
+                if (type.IsValueType)
+                {
+                    e = Expression.Convert(e, typeof(object));
+                }
+                Expression<Func<object>> lambda = Expression.Lambda<Func<object>>(e);
+                Func<object> fn = lambda.Compile();
+                return Expression.Constant(fn(), type);
             }
         }
 
-        private class Nominator : ExpressionVisitor
+        private class Nominator : DbExpressionVisitor
         {
             private readonly Func<Expression, bool> fnCanBeEvaluated;
-            private HashSet<Expression?> candidates;
+            private readonly HashSet<Expression> candidates;
             private bool cannotBeEvaluated;
 
-            internal Nominator(Func<Expression, bool> fnCanBeEvaluated)
+            private Nominator(Func<Expression, bool> fnCanBeEvaluated)
             {
-                this.fnCanBeEvaluated = fnCanBeEvaluated;
                 candidates = [];
+                this.fnCanBeEvaluated = fnCanBeEvaluated;
             }
 
-            internal HashSet<Expression?> Nominate(Expression? expression)
+            internal static HashSet<Expression> Nominate(Func<Expression, bool> fnCanBeEvaluated, Expression? expression)
             {
-                candidates = [];
-                _ = Visit(expression);
-                return candidates;
+                Nominator nominator = new(fnCanBeEvaluated);
+                _ = nominator.Visit(expression);
+                return nominator.candidates;
             }
 
             public override Expression? Visit(Expression? expression)
@@ -78,7 +81,6 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
                     bool saveCannotBeEvaluated = cannotBeEvaluated;
                     cannotBeEvaluated = false;
                     _ = base.Visit(expression);
-
                     if (!cannotBeEvaluated)
                     {
                         if (fnCanBeEvaluated(expression))
@@ -90,10 +92,8 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
                             cannotBeEvaluated = true;
                         }
                     }
-
                     cannotBeEvaluated |= saveCannotBeEvaluated;
                 }
-
                 return expression;
             }
         }

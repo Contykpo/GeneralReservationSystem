@@ -3,12 +3,6 @@ using System.Linq.Expressions;
 
 namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
 {
-    public abstract class ProjectionRow
-    {
-        public abstract object? GetValue(int index);
-        public abstract IEnumerable<E> ExecuteSubQuery<E>(LambdaExpression query);
-    }
-
     internal sealed class ProjectedColumns
     {
         internal ProjectedColumns(Expression projector, ReadOnlyCollection<ColumnDeclaration> columns)
@@ -16,77 +10,66 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
             Projector = projector;
             Columns = columns;
         }
-
         internal Expression Projector { get; }
-
         internal ReadOnlyCollection<ColumnDeclaration> Columns { get; }
     }
 
     internal class ColumnProjector : DbExpressionVisitor
     {
-        private readonly Nominator nominator;
-        private Dictionary<ColumnExpression, ColumnExpression> map = null!;
-        private List<ColumnDeclaration> columns = null!;
-        private HashSet<string> columnNames = null!;
-        private HashSet<Expression> candidates = null!;
-        private string[] existingAliases = null!;
-        private string newAlias = null!;
+        private readonly Dictionary<ColumnExpression, ColumnExpression> map;
+        private readonly List<ColumnDeclaration> columns;
+        private readonly HashSet<string> columnNames;
+        private readonly HashSet<Expression> candidates;
+        private readonly string[] existingAliases;
+        private readonly string newAlias;
         private int iColumn;
 
-        internal ColumnProjector(Func<Expression, bool> fnCanBeColumn)
+        private ColumnProjector(Func<Expression, bool> fnCanBeColumn, Expression expression, string newAlias, params string[] existingAliases)
         {
-            nominator = new Nominator(fnCanBeColumn);
-        }
-
-        internal ProjectedColumns ProjectColumns(Expression expression, string newAlias, params string[] existingAliases)
-        {
+            this.newAlias = newAlias;
+            this.existingAliases = existingAliases;
             map = [];
             columns = [];
             columnNames = [];
-            this.newAlias = newAlias;
-            this.existingAliases = existingAliases;
-            candidates = nominator.Nominate(expression);
+            candidates = Nominator.Nominate(fnCanBeColumn, expression);
+        }
 
-            return new ProjectedColumns(Visit(expression)!, columns.AsReadOnly());
+        internal static ProjectedColumns ProjectColumns(Func<Expression, bool> fnCanBeColumn, Expression expression, string newAlias, params string[] existingAliases)
+        {
+            ColumnProjector projector = new(fnCanBeColumn, expression, newAlias, existingAliases);
+            Expression expr = projector.Visit(expression)!;
+            return new ProjectedColumns(expr, projector.columns.AsReadOnly());
         }
 
         public override Expression? Visit(Expression? expression)
         {
             if (expression != null && candidates.Contains(expression))
             {
-
                 if (expression.NodeType == (ExpressionType)DbExpressionType.Column)
                 {
                     ColumnExpression column = (ColumnExpression)expression;
-
                     if (map.TryGetValue(column, out ColumnExpression? mapped))
                     {
                         return mapped;
                     }
-
                     if (existingAliases.Contains(column.Alias))
                     {
-                        int ordinal = columns.Count;
+                        _ = columns.Count;
                         string columnName = GetUniqueColumnName(column.Name);
                         columns.Add(new ColumnDeclaration(columnName, column));
-                        mapped = new ColumnExpression(column.Type, newAlias, columnName, ordinal);
+                        mapped = new ColumnExpression(column.Type, newAlias, columnName);
                         map[column] = mapped;
                         _ = columnNames.Add(columnName);
-
                         return mapped;
                     }
-
                     // must be referring to outer scope
                     return column;
                 }
                 else
                 {
                     string columnName = GetNextColumnName();
-                    int ordinal = columns.Count;
-
                     columns.Add(new ColumnDeclaration(columnName, expression));
-
-                    return new ColumnExpression(expression.Type, newAlias, columnName, ordinal);
+                    return new ColumnExpression(expression.Type, newAlias, columnName);
                 }
             }
             else
@@ -104,12 +87,10 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
         {
             string baseName = name;
             int suffix = 1;
-
             while (IsColumnNameInUse(name))
             {
                 name = baseName + suffix++;
             }
-
             return name;
         }
 
@@ -118,24 +99,28 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
             return GetUniqueColumnName("c" + iColumn++);
         }
 
+        /// <summary>
+        /// Nominator is a class that walks an expression tree bottom up, determining the set of 
+        /// candidate expressions that are possible columns of a select expression
+        /// </summary>
         private class Nominator : DbExpressionVisitor
         {
             private readonly Func<Expression, bool> fnCanBeColumn;
             private bool isBlocked;
-            private HashSet<Expression> candidates = null!;
+            private readonly HashSet<Expression> candidates;
 
-            internal Nominator(Func<Expression, bool> fnCanBeColumn)
+            private Nominator(Func<Expression, bool> fnCanBeColumn)
             {
                 this.fnCanBeColumn = fnCanBeColumn;
-            }
-
-            internal HashSet<Expression> Nominate(Expression expression)
-            {
                 candidates = [];
                 isBlocked = false;
-                _ = Visit(expression);
+            }
 
-                return candidates;
+            internal static HashSet<Expression> Nominate(Func<Expression, bool> fnCanBeColumn, Expression expression)
+            {
+                Nominator nominator = new(fnCanBeColumn);
+                _ = nominator.Visit(expression);
+                return nominator.candidates;
             }
 
             public override Expression? Visit(Expression? expression)
@@ -144,8 +129,10 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
                 {
                     bool saveIsBlocked = isBlocked;
                     isBlocked = false;
-                    _ = base.Visit(expression);
-
+                    if (expression.NodeType != (ExpressionType)DbExpressionType.Scalar)
+                    {
+                        _ = base.Visit(expression);
+                    }
                     if (!isBlocked)
                     {
                         if (fnCanBeColumn(expression))
@@ -157,10 +144,8 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
                             isBlocked = true;
                         }
                     }
-
                     isBlocked |= saveIsBlocked;
                 }
-
                 return expression;
             }
         }

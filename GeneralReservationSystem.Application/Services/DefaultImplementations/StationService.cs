@@ -4,11 +4,12 @@ using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Exceptions.Repositories;
 using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Repositories.Interfaces;
+using GeneralReservationSystem.Application.Repositories.Util.Interfaces;
 using GeneralReservationSystem.Application.Services.Interfaces;
 
 namespace GeneralReservationSystem.Application.Services.DefaultImplementations
 {
-    public class StationService(IStationRepository stationRepository) : IStationService
+    public class StationService(IStationRepository stationRepository, IUnitOfWork unitOfWork) : IStationService
     {
         public async Task<Station> CreateStationAsync(CreateStationDto dto, CancellationToken cancellationToken = default)
         {
@@ -93,14 +94,9 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                /*Station station = await stationRepository.Query()
+                Station station = await stationRepository.Query()
                     .Where(s => s.StationId == keyDto.StationId)
                     .FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró la estación solicitada.");
-                return station;*/
-
-                Station station = stationRepository.Query()
-                    .Where(s => s.StationId == keyDto.StationId)
-                    .FirstOrDefault() ?? throw new ServiceNotFoundException("No se encontró la estación solicitada.");
                 return station;
             }
             catch (RepositoryException ex)
@@ -125,39 +121,18 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                /*var query = stationRepository.Query()
-                    .ApplyFilters(searchDto.Filters)
-                    .ApplySorting(searchDto.Orders)
-                    .Page(searchDto.Page, searchDto.PageSize);
-                return await query.ToPagedResultAsync(cancellationToken);*/
+                var query = unitOfWork.StationRepository.Query()
+                    .ApplyFilters(searchDto.Filters);
 
-                var city = "CABA";
+                var items = await query
+                    .ApplySorts(searchDto.Orders)
+                    .Skip((searchDto.Page - 1) * searchDto.PageSize)
+                    .Take(searchDto.PageSize)
+                    .ToListAsync(cancellationToken);
 
-                var query = stationRepository.Query().OrderBy(station => station.City).ThenBy(station => station.Region);
+                var count = await query.CountAsync(cancellationToken);
 
-                var count = 0;//query.Count();
-
-                var items = query
-                    //.Skip((searchDto.Page - 1) * searchDto.PageSize)
-                    //.Take(searchDto.PageSize)
-                    .ToList();
-
-                count = items.Count();
-
-                var a = query
-                    .Select(s => new {
-                        Name = s.StationName,
-                        Location = new
-                        {
-                            s.City,
-                            s.Country
-                        }
-                    })
-                .Where(x => x.Location.City == city);
-
-                Console.WriteLine($"a: {a}");
-
-                Console.WriteLine($"Filas de a : {a.ToList().Count}");
+                unitOfWork.Commit();
 
                 return new PagedResult<Station>
                 {

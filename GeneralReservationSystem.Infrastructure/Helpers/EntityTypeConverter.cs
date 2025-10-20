@@ -18,7 +18,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             {
                 DateTime sqlMin = SqlDateTime.MinValue.Value;
                 DateTime sqlMax = SqlDateTime.MaxValue.Value;
-                return (dt < sqlMin || dt > sqlMax) ? DBNull.Value : (object)dt;
+                return (dt < sqlMin || dt > sqlMax) ? DBNull.Value : dt;
             }
 
             if (underlying == typeof(DateTimeOffset) && clrValue is DateTimeOffset dto)
@@ -26,7 +26,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
                 DateTime sqlMin = SqlDateTime.MinValue.Value;
                 DateTime sqlMax = SqlDateTime.MaxValue.Value;
                 DateTime utc = dto.UtcDateTime;
-                return (utc < sqlMin || utc > sqlMax) ? DBNull.Value : (object)dto;
+                return (utc < sqlMin || utc > sqlMax) ? DBNull.Value : dto;
             }
 
             if (underlying == typeof(byte[]))
