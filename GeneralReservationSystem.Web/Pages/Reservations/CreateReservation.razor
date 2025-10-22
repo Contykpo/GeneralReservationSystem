@@ -209,14 +209,6 @@
 
 		// Terminamos de cargar los datos sobre la reserva:
 		reservation.TripId = selectedTrip.TripId;
-        
-        var customAuthenticationStateProvider = (CustomAuthenticationStateProvider)AuthenticationStateProvider;
-        var authenticationState = await customAuthenticationStateProvider.GetAuthenticationStateAsync();
-
-        var userEmail = authenticationState.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)!.Value;
-		var loggedUser = await UserService.GetUserAsync(new UserKeyDto { UserId = -1, UserEmail = userEmail });
-
-		reservation.UserId = loggedUser.UserId;
 
         try
         {

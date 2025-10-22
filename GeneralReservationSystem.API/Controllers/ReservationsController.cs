@@ -84,6 +84,7 @@ namespace GeneralReservationSystem.API.Controllers
         public async Task<IActionResult> CreateReservation([FromBody] Reservation reservation, CancellationToken cancellationToken)
         {
             string? userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized();
@@ -91,7 +92,10 @@ namespace GeneralReservationSystem.API.Controllers
 
             try
             {
+                reservation.UserId = int.Parse(userId);
+                
                 await reservationService.CreateReservationAsync(reservation, cancellationToken);
+                
                 return CreatedAtAction(nameof(GetMyReservationForTrip), new { tripId = reservation.TripId }, new { message = "Reserva creada exitosamente" });
             }
             catch (ServiceBusinessException ex)
