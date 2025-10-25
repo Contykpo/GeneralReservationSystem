@@ -6,17 +6,44 @@ services:
       - "1433:1433"
     environment:
       - ACCEPT_EULA=${ACCEPT_EULA}
+      - MSSQL_SA_USER=${SA_USER:-sa}
       - MSSQL_SA_PASSWORD=${SA_PASSWORD}
     volumes:
       - sql_data:/var/opt/mssql
-      - ./apply-migrations.sh:/apply-migrations.sh
-      - ./Migrations:/Migrations
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -U ${MSSQL_SA_USER} -P ${MSSQL_SA_PASSWORD} -Q 'SELECT 1' -N -C || exit 1"]
+      interval: 10s
+      retries: 10
+      start_period: 10s
+      timeout: 3s
+        
+  sqlserver.configurator:
+    image: mcr.microsoft.com/mssql-tools:latest
+    volumes:
+      - ./db_init.sql:/db_init.sql
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      - SA_USER=${SA_USER:-sa}
+      - SA_PASSWORD=${SA_PASSWORD}
+      - SQL_HOST=${SQL_HOST}
+      - SQL_PORT=${SQL_PORT}
     command: >
-        /bin/bash -c "/opt/mssql/bin/sqlservr &
-        ./apply-migrations.sh &&
-        wait"
+      /bin/bash -c "/opt/mssql-tools/bin/sqlcmd -S ${SQL_HOST},${SQL_PORT} -U ${SA_USER:-sa} -P ${SA_PASSWORD} -C -i db_init.sql"
 
-  generalreservationsystem.api:  
+  generalreservationsystem.migrator:
+    build:
+      context: .
+      dockerfile: GeneralReservationSystem.Migration/Dockerfile
+    depends_on:
+      sqlserver.configurator:
+        condition: service_completed_successfully
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=${SQL_HOST},${SQL_PORT};Database=GRSDb;User Id=${DB_OWNER:-grs_admin_user};Password=${DB_OWNER_PASSWORD};TrustServerCertificate=True
+
+  generalreservationsystem.api:
     build:
       context: .
       dockerfile: GeneralReservationSystem.API/Dockerfile
@@ -24,14 +51,10 @@ services:
       - "${HOST_API_HTTP_PORTS:-5002}:${API_HTTP_PORTS:-8080}"
       - "${HOST_API_HTTPS_PORTS:-5003}:${API_HTTPS_PORTS:-8081}"
     depends_on:
-      - sqlserver
+      generalreservationsystem.migrator:
+        condition: service_completed_successfully
     environment:
-      - ConnectionStrings__DefaultConnection=Server=${SQL_HOST},${SQL_PORT};Database=${SQL_DB};User Id=${SQL_USER};Password=${SQL_PASSWORD};TrustServerCertificate=True
-      - SQL_HOST=${SQL_HOST}
-      - SQL_PORT=${SQL_PORT}
-      - SQL_DB=${SQL_DB}
-      - SQL_USER=${SQL_USER}
-      - SQL_PASSWORD=${SQL_PASSWORD}
+      - ConnectionStrings__DefaultConnection=Server=${SQL_HOST},${SQL_PORT};Database=GRSDb;User Id=${DB_USER:-grs_app_user};Password=${DB_PASSWORD};TrustServerCertificate=True
       - ASPNETCORE_HTTP_PORTS=${API_HTTP_PORTS:-8080}
       - ASPNETCORE_HTTPS_PORTS=${API_HTTPS_PORTS:-8081}
       - Jwt__SecretKey=${JWT_SECRET_KEY}

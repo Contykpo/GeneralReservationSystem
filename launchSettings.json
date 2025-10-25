@@ -3,9 +3,13 @@
     "Docker Compose": {
       "commandName": "DockerCompose",
       "commandVersion": "1.0",
+      "composeLaunchAction": "None",
+      "composeLaunchServiceName": "generalreservationsystem.api",
       "serviceActions": {
         "generalreservationsystem.api": "StartDebugging",
-        "sqlserver": "StartWithoutDebugging"
+        "generalreservationsystem.migrator": "StartWithoutDebugging",
+        "sqlserver": "StartWithoutDebugging",
+        "sqlserver.configurator": "StartWithoutDebugging"
       }
     }
   }

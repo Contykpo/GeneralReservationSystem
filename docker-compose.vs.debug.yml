@@ -1,3 +1,5 @@
+#See https://aka.ms/overrideVSDockerComposeConfiguration to understand how Visual Studio uses this override file.
+
 services:
   generalreservationsystem.api:
     environment:

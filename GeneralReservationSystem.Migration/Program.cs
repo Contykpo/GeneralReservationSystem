@@ -1,0 +1,5 @@
+﻿using GeneralReservationSystem.Infrastructure.Database;
+
+ArgumentNullException.ThrowIfNull(Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection"));
+
+MigrationsRunner.RunMigrations(Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")!);

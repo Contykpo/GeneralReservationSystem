@@ -7,8 +7,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Source", "Source", "{02EA68
 	ProjectSection(SolutionItems) = preProject
 		.env = .env
 		.env.example = .env.example
-		apply-migrations.sh = apply-migrations.sh
-		idempotent_migration_example.sql = idempotent_migration_example.sql
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeneralReservationSystem.Infrastructure", "GeneralReservationSystem.Infrastructure\GeneralReservationSystem.Infrastructure.csproj", "{D795CC22-FB8F-4EF7-B234-263995402503}"
@@ -22,6 +20,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeneralReservationSystem.API", "GeneralReservationSystem.API\GeneralReservationSystem.API.csproj", "{04D9C2E5-FF3B-41B3-99DB-A3D2EA5104C6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeneralReservationSystem.Web", "GeneralReservationSystem.Web\GeneralReservationSystem.Web.csproj", "{D13CB2AF-FD96-4026-B618-94958BB5C88A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeneralReservationSystem.Migration", "GeneralReservationSystem.Migration\GeneralReservationSystem.Migration.csproj", "{2C2FA244-3D1D-42B0-B43F-77BC06FCDE6D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -53,6 +53,10 @@ Global
 		{D13CB2AF-FD96-4026-B618-94958BB5C88A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D13CB2AF-FD96-4026-B618-94958BB5C88A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D13CB2AF-FD96-4026-B618-94958BB5C88A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2C2FA244-3D1D-42B0-B43F-77BC06FCDE6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2C2FA244-3D1D-42B0-B43F-77BC06FCDE6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2C2FA244-3D1D-42B0-B43F-77BC06FCDE6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2C2FA244-3D1D-42B0-B43F-77BC06FCDE6D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -63,6 +67,7 @@ Global
 		{9B54F143-36E3-48F5-B183-4191579FC092} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{04D9C2E5-FF3B-41B3-99DB-A3D2EA5104C6} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{D13CB2AF-FD96-4026-B618-94958BB5C88A} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{2C2FA244-3D1D-42B0-B43F-77BC06FCDE6D} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {55D942AB-6EC8-4F5D-B4D0-983864A504DC}

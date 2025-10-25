@@ -1,9 +1,7 @@
-Use AppDb;
-
 BEGIN TRANSACTION;
 
 -- Migration identifier (unique per script)
-DECLARE @MigrationNameIdentifier NVARCHAR(256) = '1_reservation_schemas';
+DECLARE @MigrationNameIdentifier NVARCHAR(256) = '0_initial_schemas';
 
 -- Check if this migration was already applied
 IF NOT EXISTS (SELECT 1 FROM __migrations WHERE MigrationName = @MigrationNameIdentifier)
@@ -116,19 +114,3 @@ BEGIN
 END
 
 COMMIT TRANSACTION;
-
--- Ensure AvailableSeats column and its constraint exist even if the migration was already applied previously
-IF OBJECT_ID(N'Trip', 'U') IS NOT NULL
-BEGIN
-    IF COL_LENGTH('Trip', 'AvailableSeats') IS NULL
-    BEGIN
-        ALTER TABLE Trip ADD AvailableSeats INT NOT NULL CONSTRAINT DF_Trip_AvailableSeats DEFAULT(1);
-        UPDATE Trip SET AvailableSeats = 1 WHERE AvailableSeats IS NULL;
-    END
-    IF NOT EXISTS (
-        SELECT 1 FROM sys.check_constraints WHERE name = N'CK_Trip_AvailableSeats' AND parent_object_id = OBJECT_ID(N'Trip')
-    )
-    BEGIN
-        ALTER TABLE Trip WITH CHECK ADD CONSTRAINT CK_Trip_AvailableSeats CHECK (AvailableSeats > 0);
-    END
-END
