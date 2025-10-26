@@ -17,6 +17,7 @@
 @inject ITripService TripService
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
+@inject IStationService StationService
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
     <PageTitle>Viajes</PageTitle>
@@ -28,11 +29,18 @@
                     <MudCard Class="pd-2">
                         <MudCardContent>
                             <MudForm @ref="_createForm" Model="@_createTripDto" Validation="@(_createTripDtoValidator.ValidateValue)" ValidationDelay="0" Spacing="3">
-                                <MudNumericField Label="Estación de salida" 
-                                                 For="@(() => _createTripDto.DepartureStationId)" 
-                                                 @bind-Value="_createTripDto.DepartureStationId" 
-                                                 Variant="Variant.Outlined" 
-                                                 Immediate="true" />
+                                <MudSelect T="int" Label="Estación de salida"
+                                          @bind-Value="_createTripDto.DepartureStationId"
+                                          Variant="Variant.Outlined"
+                                          Immediate="true">
+                                    <MudSelectItem T="int" Value="0" Disabled="true">Seleccione una estación</MudSelectItem>
+                                    @foreach (var station in _stations)
+                                    {
+                                        <MudSelectItem T="int" Value="@station.StationId">
+                                            @station.StationName, @station.City, @station.Region, @station.Country
+                                        </MudSelectItem>
+                                    }
+                                </MudSelect>
                                 <MudDatePicker Label="Fecha de salida" 
                                                Date="_createTripDto.DepartureTime" 
                                                DateChanged="OnCreateDepartureDateChanged" 
@@ -43,11 +51,18 @@
                                                TimeChanged="OnCreateDepartureTimeChanged" 
                                                TimeFormat="HH:mm" 
                                                Variant="Variant.Outlined" />
-                                <MudNumericField Label="Estación de llegada" 
-                                                 For="@(() => _createTripDto.ArrivalStationId)" 
-                                                 @bind-Value="_createTripDto.ArrivalStationId" 
-                                                 Variant="Variant.Outlined" 
-                                                 Immediate="true" />
+                                <MudSelect T="int" Label="Estación de llegada"
+                                          @bind-Value="_createTripDto.ArrivalStationId"
+                                          Variant="Variant.Outlined"
+                                           Immediate="true">
+                                    <MudSelectItem T="int" Value="0" Disabled="true">Seleccione una estación</MudSelectItem>
+                                    @foreach (var station in _stations)
+                                    {
+                                        <MudSelectItem T="int" Value="@station.StationId">
+                                            @station.StationName, @station.City, @station.Region, @station.Country
+                                        </MudSelectItem>
+                                    }
+                                </MudSelect>
                                 <MudDatePicker Label="Fecha de llegada" 
                                                Date="_createTripDto.ArrivalTime" 
                                                DateChanged="OnCreateArrivalDateChanged" 
@@ -89,22 +104,34 @@
                 <MudExpansionPanel Text="Filtros avanzados" Icon="@Icons.Material.Filled.FilterList">
                     <MudGrid>
                         <MudItem xs="12" sm="6" md="3">
-                            <MudNumericField @bind-Value="_filterDepartureStationId" 
-                                             Label="Estación de salida" 
-                                             Variant="Variant.Outlined"
-                                             Clearable="true"
-                                             Immediate="true"
-                                             DebounceInterval="300"
-                                             OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
+                            <MudSelect T="int?" Label="Estación de salida"
+                                      @bind-Value="_filterDepartureStationId"
+                                      Variant="Variant.Outlined"
+                                      Clearable="true"
+                                      Immediate="true">
+                                <MudSelectItem T="int?" Value="null">Todas</MudSelectItem>
+                                @foreach (var station in _stations)
+                                {
+                                    <MudSelectItem T="int?" Value="@station.StationId">
+                                        @station.StationName, @station.City, @station.Region, @station.Country
+                                    </MudSelectItem>
+                                }
+                            </MudSelect>
                         </MudItem>
                         <MudItem xs="12" sm="6" md="3">
-                            <MudNumericField @bind-Value="_filterArrivalStationId" 
-                                             Label="Estación de llegada" 
-                                             Variant="Variant.Outlined"
-                                             Clearable="true"
-                                             Immediate="true"
-                                             DebounceInterval="300"
-                                             OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
+                            <MudSelect T="int?" Label="Estación de llegada"
+                                      @bind-Value="_filterArrivalStationId"
+                                      Variant="Variant.Outlined"
+                                      Clearable="true"
+                                      Immediate="true">
+                                <MudSelectItem T="int?" Value="null">Todas</MudSelectItem>
+                                @foreach (var station in _stations)
+                                {
+                                    <MudSelectItem T="int?" Value="@station.StationId">
+                                        @station.StationName, @station.City, @station.Region, @station.Country
+                                    </MudSelectItem>
+                                }
+                            </MudSelect>
                         </MudItem>
                         <MudItem xs="12" sm="6" md="3">
                             <MudDatePicker @bind-Date="_filterDepartureDate" 
@@ -202,12 +229,19 @@
     </TitleContent>
     <DialogContent>
         <MudForm Model="@_editTripDto" @ref="_updateForm" Validation="@(_updateTripDtoValidator.ValidateValue)" ValidationDelay="0">
-            <MudNumericField Label="Estación de salida"
-                             @bind-Value="_editTripDto.DepartureStationId" 
-                             For="@(() => _editTripDto.DepartureStationId)"
-                             Variant="Variant.Outlined" 
-                             Margin="Margin.Dense"
-                             Immediate="true" />
+            <MudSelect T="int?" Label="Estación de salida"
+                      @bind-Value="_editTripDto.DepartureStationId"
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                       Immediate="true">
+                <MudSelectItem T="int" Value="0" Disabled="true">Seleccione una estación</MudSelectItem>
+                @foreach (var station in _stations)
+                {
+                    <MudSelectItem T="int?" Value="@station.StationId">
+                        @station.StationName, @station.City, @station.Region, @station.Country
+                    </MudSelectItem>
+                }
+            </MudSelect>
             <MudDatePicker Label="Fecha de salida"
                            Date="_editTripDto.DepartureTime"
                            DateChanged="OnEditDepartureDateChanged"
@@ -220,12 +254,19 @@
                            TimeFormat="HH:mm"
                            Variant="Variant.Outlined"
                            Margin="Margin.Dense" />
-            <MudNumericField Label="Estación de llegada"
-                             @bind-Value="_editTripDto.ArrivalStationId"
-                             For="@(() => _editTripDto.ArrivalStationId)"
-                             Variant="Variant.Outlined" 
-                             Margin="Margin.Dense" 
-                             Immediate="true" />
+            <MudSelect T="int?" Label="Estación de llegada"
+                      @bind-Value="_editTripDto.ArrivalStationId"
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                       Immediate="true">
+                <MudSelectItem T="int" Value="0" Disabled="true">Seleccione una estación</MudSelectItem>
+                @foreach (var station in _stations)
+                {
+                    <MudSelectItem T="int?" Value="@station.StationId">
+                        @station.StationName, @station.City, @station.Region, @station.Country
+                    </MudSelectItem>
+                }
+            </MudSelect>
             <MudDatePicker Label="Fecha de llegada"
                            Date="_editTripDto.ArrivalTime"
                            DateChanged="OnEditArrivalDateChanged"
@@ -290,6 +331,20 @@
         Position = DialogPosition.Center,
         CloseOnEscapeKey = true
     };
+
+    private List<Station> _stations = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _stations = (await StationService.GetAllStationsAsync()).ToList();
+        }
+        catch
+        {
+            Snackbar.Add("Error al cargar las estaciones.", Severity.Error);
+        }
+    }
 
     private async Task<TableData<TripWithDetailsDto>> ServerReload(TableState state, CancellationToken cancellationToken)
     {
