@@ -2,6 +2,7 @@ using GeneralReservationSystem.API.Middleware;
 using GeneralReservationSystem.Infrastructure;
 using GeneralReservationSystem.Infrastructure.Helpers;
 using GeneralReservationSystem.Infrastructure.Middleware;
+using GeneralReservationSystem.Application;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
@@ -10,6 +11,7 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddInfrastructureRepositories();
+builder.Services.AddFluentValidators();
 builder.Services.AddHttpContextAccessor();
 
 // Configure JWT settings

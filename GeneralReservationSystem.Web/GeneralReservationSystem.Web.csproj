@@ -8,9 +8,17 @@
 
   <ItemGroup>
     <Compile Remove="Components\**" />
+    <Compile Remove="Services\Implementations\Administration\**" />
+    <Compile Remove="Services\Interfaces\Administration\**" />
     <Content Remove="Components\**" />
+    <Content Remove="Services\Implementations\Administration\**" />
+    <Content Remove="Services\Interfaces\Administration\**" />
     <EmbeddedResource Remove="Components\**" />
+    <EmbeddedResource Remove="Services\Implementations\Administration\**" />
+    <EmbeddedResource Remove="Services\Interfaces\Administration\**" />
     <None Remove="Components\**" />
+    <None Remove="Services\Implementations\Administration\**" />
+    <None Remove="Services\Interfaces\Administration\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -22,11 +30,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\GeneralReservationSystem.Application\GeneralReservationSystem.Application.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Services\Implementations\Administration\" />
-    <Folder Include="Services\Interfaces\Administration\" />
   </ItemGroup>
 
 </Project>

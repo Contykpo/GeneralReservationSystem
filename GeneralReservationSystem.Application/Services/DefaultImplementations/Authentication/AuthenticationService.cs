@@ -96,14 +96,6 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
                     throw new ServiceNotFoundException("No se pudo cambiar la contraseña.");
                 }
             }
-            catch (ServiceNotFoundException)
-            {
-                throw;
-            }
-            catch (ServiceBusinessException)
-            {
-                throw;
-            }
             catch (RepositoryException ex)
             {
                 throw new ServiceException("Error al cambiar la contraseña.", ex);

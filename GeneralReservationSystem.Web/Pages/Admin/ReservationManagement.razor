@@ -11,72 +11,143 @@
 @using GeneralReservationSystem.Application.Exceptions.Services
 @using GeneralReservationSystem.Application.Services.Interfaces
 
+@using AppFilterOperator = GeneralReservationSystem.Application.Common.FilterOperator
+@using Severity = MudBlazor.Severity
+
 @inject IClientReservationService ClientReservationService
 @inject ISnackbar Snackbar
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
     <PageTitle>Gestión de Reservas</PageTitle>
 
-    <MudDataGrid @ref="dataGrid"
-                 T="Reservation"
-                 ServerData="ServerReload"
-                 RowsPerPage="10">
-        <Columns>
-            <PropertyColumn Property="x => x.TripId" Title="Viaje" />
-            <PropertyColumn Property="x => x.UserId" Title="Usuario" />
-            <PropertyColumn Property="x => x.Seat" Title="Asiento" />
-            <TemplateColumn>
-                <CellTemplate>
-                    <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => HandleDelete(context.Item))" />
-                </CellTemplate>
-            </TemplateColumn>
-        </Columns>
-        <PagerContent>
-            <MudDataGridPager T="Reservation" />
-        </PagerContent>
-    </MudDataGrid>
+    <MudCard>
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">Reservas</MudText>
+            </CardHeaderContent>
+            <CardHeaderActions>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => _table!.ReloadServerData())" StartIcon="@Icons.Material.Filled.Refresh">Actualizar</MudButton>
+            </CardHeaderActions>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudExpansionPanels Class="mb-3">
+                <MudExpansionPanel Text="Filtros avanzados" Icon="@Icons.Material.Filled.FilterList">
+                    <MudGrid>
+                        <MudItem xs="12" sm="6" md="4">
+                            <MudNumericField @bind-Value="_filterTripId" 
+                                             Label="ID de Viaje" 
+                                             Variant="Variant.Outlined"
+                                             Clearable="true"
+                                             Immediate="true"
+                                             DebounceInterval="300"
+                                             OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="4">
+                            <MudNumericField @bind-Value="_filterUserId" 
+                                             Label="ID de Usuario" 
+                                             Variant="Variant.Outlined"
+                                             Clearable="true"
+                                             Immediate="true"
+                                             DebounceInterval="300"
+                                             OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="4">
+                            <MudNumericField @bind-Value="_filterSeat" 
+                                             Label="Asiento" 
+                                             Variant="Variant.Outlined"
+                                             Clearable="true"
+                                             Immediate="true"
+                                             DebounceInterval="300"
+                                             OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ClearFilters" StartIcon="@Icons.Material.Filled.Clear">Limpiar Filtros</MudButton>
+                        </MudItem>
+                    </MudGrid>
+                </MudExpansionPanel>
+            </MudExpansionPanels>
+
+            <MudTable @ref="_table" 
+                      T="Reservation" 
+                      ServerData="ServerReload"
+                      Loading="@_loading" 
+                      LoadingProgressColor="Color.Primary"
+                      Hover="true" 
+                      Breakpoint="Breakpoint.Sm"
+                      Dense="true"
+                      RowsPerPage="10"
+                      SortLabel="TripId"
+                      Elevation="0">
+                <ToolBarContent>
+                    <MudTextField @bind-Value="_searchString" 
+                                  Placeholder="Buscar en todos los campos" 
+                                  Adornment="Adornment.Start" 
+                                  AdornmentIcon="@Icons.Material.Filled.Search" 
+                                  IconSize="Size.Medium" 
+                                  Class="mt-0"
+                                  Clearable="true"
+                                  OnClearButtonClick="@(() => { _searchString = string.Empty; _table!.ReloadServerData(); })"
+                                  Immediate="true"
+                                  DebounceInterval="300"
+                                  OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())"></MudTextField>
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh><MudTableSortLabel SortLabel="TripId" T="Reservation">ID Viaje</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="UserId" T="Reservation">ID Usuario</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="Seat" T="Reservation">Asiento</MudTableSortLabel></MudTh>
+                    <MudTh Style="text-align: right">Acciones</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="ID Viaje">@context.TripId</MudTd>
+                    <MudTd DataLabel="ID Usuario">@context.UserId</MudTd>
+                    <MudTd DataLabel="Asiento">@context.Seat</MudTd>
+                    <MudTd DataLabel="Acciones" Style="text-align: right">
+                        <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => HandleDelete(context))" />
+                    </MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText>No se encontraron reservas.</MudText>
+                </NoRecordsContent>
+                <LoadingContent>
+                    <MudText>Cargando...</MudText>
+                </LoadingContent>
+                <PagerContent>
+                    <MudTablePager PageSizeOptions="new int[] { 10, 25, 50, 100 }" />
+                </PagerContent>
+            </MudTable>
+        </MudCardContent>
+    </MudCard>
 </MudContainer>
 
 @code {
-    private MudDataGrid<Reservation> dataGrid = null!;
+    private MudTable<Reservation> _table = null!;
+    private bool _loading = false;
+    private string _searchString = string.Empty;
+    
+    // Advanced filters
+    private int? _filterTripId = null;
+    private int? _filterUserId = null;
+    private int? _filterSeat = null;
 
-    private async Task<GridData<Reservation>> ServerReload(GridState<Reservation> state)
+    private async Task<TableData<Reservation>> ServerReload(TableState state, CancellationToken cancellationToken)
     {
+        _loading = true;
         try
         {
-            var search = new PagedSearchRequestDto
+            var searchRequest = new PagedSearchRequestDto
             {
                 Page = state.Page + 1,
                 PageSize = state.PageSize,
-                Filters = GridHelpers.BuildFilters(state),
-                Orders = GridHelpers.BuildOrders(state)
+                Filters = BuildFilters(state),
+                Orders = TableHelpers.BuildOrders(state)
             };
-            var result = await ClientReservationService.SearchReservationsAsync(search);
-            return new GridData<Reservation> { Items = result.Items, TotalItems = result.TotalCount };
-        }
-        catch (ServiceException ex)
-        {
-            Snackbar.Add(ex.Message, Severity.Error);
-        }
-        catch
-        {
-            Snackbar.Add("Error al cargar reservas.", Severity.Error);
-        }
-        return new GridData<Reservation> { Items = Array.Empty<Reservation>(), TotalItems = 0 };
-    }
 
-    private async Task HandleDelete(Reservation item)
-    {
-        try
-        {
-            await ClientReservationService.DeleteReservationAsync(new ReservationKeyDto { TripId = item.TripId, UserId = item.UserId });
-            Snackbar.Add("Reserva eliminada.", Severity.Success);
-            await dataGrid.ReloadServerData();
-        }
-        catch (ServiceNotFoundException ex)
-        {
-            Snackbar.Add(ex.Message, Severity.Warning);
-            await dataGrid.ReloadServerData();
+            var result = await ClientReservationService.SearchReservationsAsync(searchRequest, cancellationToken);
+            return new TableData<Reservation>
+            {
+                Items = result.Items,
+                TotalItems = result.TotalCount
+            };
         }
         catch (ServiceBusinessException ex)
         {
@@ -86,9 +157,88 @@
         {
             Snackbar.Add(ex.Message, Severity.Error);
         }
-        catch
+        catch (Exception)
         {
-            Snackbar.Add("Error inesperado.", Severity.Error);
+            Snackbar.Add("Error al cargar reservas.", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+
+        return new TableData<Reservation> { Items = [], TotalItems = 0 };
+    }
+
+    private IList<Filter> BuildFilters(TableState state)
+    {
+        List<Filter> filters = [];
+
+        // Global search filter
+        if (!string.IsNullOrWhiteSpace(_searchString))
+        {
+            // Try to parse as integer for numeric fields
+            if (int.TryParse(_searchString, out var numericValue))
+            {
+                filters.Add(new Filter("TripId", AppFilterOperator.Equals, numericValue));
+                filters.Add(new Filter("UserId", AppFilterOperator.Equals, numericValue));
+                filters.Add(new Filter("Seat", AppFilterOperator.Equals, numericValue));
+            }
+        }
+        // Advanced filters
+        else
+        {
+            if (_filterTripId.HasValue)
+            {
+                filters.Add(new Filter("TripId", AppFilterOperator.Equals, _filterTripId.Value));
+            }
+            
+            if (_filterUserId.HasValue)
+            {
+                filters.Add(new Filter("UserId", AppFilterOperator.Equals, _filterUserId.Value));
+            }
+            
+            if (_filterSeat.HasValue)
+            {
+                filters.Add(new Filter("Seat", AppFilterOperator.Equals, _filterSeat.Value));
+            }
+        }
+
+        return filters;
+    }
+
+    private void ClearFilters()
+    {
+        _filterTripId = null;
+        _filterUserId = null;
+        _filterSeat = null;
+        _searchString = string.Empty;
+        _table!.ReloadServerData();
+    }
+
+    private async Task HandleDelete(Reservation item)
+    {
+        try
+        {
+            await ClientReservationService.DeleteReservationAsync(new ReservationKeyDto { TripId = item.TripId, UserId = item.UserId });
+            Snackbar.Add("Reserva eliminada correctamente.", Severity.Success);
+            await _table.ReloadServerData();
+        }
+        catch (ServiceNotFoundException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Warning);
+            await _table.ReloadServerData();
+        }
+        catch (ServiceBusinessException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (ServiceException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Error inesperado al eliminar la reserva.", Severity.Error);
         }
     }
 }

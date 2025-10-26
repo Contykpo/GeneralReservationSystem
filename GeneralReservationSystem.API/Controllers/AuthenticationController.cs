@@ -1,4 +1,6 @@
-﻿using GeneralReservationSystem.Application.DTOs.Authentication;
+﻿using FluentValidation;
+using GeneralReservationSystem.API.Helpers;
+using GeneralReservationSystem.Application.DTOs.Authentication;
 using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Helpers;
 using GeneralReservationSystem.Application.Services.Interfaces.Authentication;
@@ -11,13 +13,20 @@ namespace GeneralReservationSystem.API.Controllers
 {
     [Route("api/auth")]
     [ApiController]
-    public class AuthenticationController(IAuthenticationService authenticationService, JwtSettings jwtSettings) : ControllerBase
+    public class AuthenticationController(IAuthenticationService authenticationService, JwtSettings jwtSettings, IValidator<RegisterUserDto> registerValidator, IValidator<LoginDto> loginValidator, IValidator<ChangePasswordDto> changePasswordValidator) : ControllerBase
     {
         private readonly JwtSettings _jwtSettings = jwtSettings;
+        private readonly IValidator<RegisterUserDto> _registerValidator = registerValidator;
+        private readonly IValidator<LoginDto> _loginValidator = loginValidator;
+        private readonly IValidator<ChangePasswordDto> _changePasswordValidator = changePasswordValidator;
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterUserDto dto, CancellationToken cancellationToken)
         {
+            var validationResult = await ValidationHelper.ValidateAsync(_registerValidator, dto, cancellationToken);
+            if (validationResult != null)
+                return validationResult;
+
             try
             {
                 UserInfo userInfo = await authenticationService.RegisterUserAsync(dto, cancellationToken);
@@ -39,6 +48,10 @@ namespace GeneralReservationSystem.API.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto dto, CancellationToken cancellationToken)
         {
+            var validationResult = await ValidationHelper.ValidateAsync(_loginValidator, dto, cancellationToken);
+            if (validationResult != null)
+                return validationResult;
+
             try
             {
                 UserInfo userInfo = await authenticationService.AuthenticateAsync(dto, cancellationToken);
@@ -85,6 +98,10 @@ namespace GeneralReservationSystem.API.Controllers
         [Authorize]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto, CancellationToken cancellationToken)
         {
+            var validationResult = await ValidationHelper.ValidateAsync(_changePasswordValidator, dto, cancellationToken);
+            if (validationResult != null)
+                return validationResult;
+
             try
             {
                 string? userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

@@ -1,29 +1,84 @@
 @page "/profile"
+
 @attribute [Authorize]
+
+@using FluentValidation
 @using Microsoft.AspNetCore.Authorization
 @using GeneralReservationSystem.Application.DTOs.Authentication
 @using GeneralReservationSystem.Application.DTOs
 @using GeneralReservationSystem.Application.Exceptions.Services
 @using GeneralReservationSystem.Application.Services.Interfaces
 @using GeneralReservationSystem.Application.Services.Interfaces.Authentication
+@using GeneralReservationSystem.Application.Validators.Authentication
 @using GeneralReservationSystem.Web.Services.Interfaces.Authentication
+@using GeneralReservationSystem.Web.Exceptions
+
+@using Severity = MudBlazor.Severity
+
 @inject IClientAuthenticationService Auth
 @inject IUserService UserService
 @inject ISnackbar Snackbar
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="mt-4">
     <PageTitle>Perfil</PageTitle>
+    
     <MudPaper Class="pa-4">
-        <MudForm @ref="_form" Spacing="3">
-            <MudTextField Label="Usuario" For="@(() => model.UserName)" @bind-Value="model.UserName" />
-            <MudTextField Label="Correo" For="@(() => model.Email)" @bind-Value="model.Email" />
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save">Guardar</MudButton>
+        <MudText Typo="Typo.h5" Class="mb-4">
+            <MudIcon Icon="@Icons.Material.Filled.Person" Class="mr-2" /> Mi Perfil
+        </MudText>
+        
+        <MudForm @ref="_form" 
+                 Model="@_updateUserDto" 
+                 Validation="@(_updateUserDtoValidator.ValidateValue)" 
+                 ValidationDelay="0" 
+                 Spacing="3">
+            <MudTextField Label="Usuario" 
+                          For="@(() => _updateUserDto.UserName)" 
+                          @bind-Value="_updateUserDto.UserName" 
+                          Variant="Variant.Outlined"
+                          Immediate="true" />
+            <MudTextField Label="Correo electrónico" 
+                          For="@(() => _updateUserDto.Email)" 
+                          @bind-Value="_updateUserDto.Email" 
+                          Variant="Variant.Outlined"
+                          Immediate="true" />
+            <MudButton Variant="Variant.Filled" 
+                       Color="Color.Primary" 
+                       OnClick="Save" 
+                       StartIcon="@Icons.Material.Filled.Save">
+                Guardar cambios
+            </MudButton>
         </MudForm>
-        <MudDivider Class="my-4" />
-        <MudForm @ref="_pwdForm" Spacing="3">
-            <MudTextField Label="Contraseña actual" For="@(() => pwd.CurrentPassword)" @bind-Value="pwd.CurrentPassword" InputType="InputType.Password" />
-            <MudTextField Label="Nueva contraseña" For="@(() => pwd.NewPassword)" @bind-Value="pwd.NewPassword" InputType="InputType.Password" />
-            <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="ChangePassword">Cambiar contraseña</MudButton>
+        
+        <MudDivider Class="my-6" />
+        
+        <MudText Typo="Typo.h6" Class="mb-4">
+            <MudIcon Icon="@Icons.Material.Filled.Lock" Class="mr-2" /> Cambiar Contraseña
+        </MudText>
+        
+        <MudForm @ref="_pwdForm" 
+                 Model="@_changePasswordDto" 
+                 Validation="@(_changePasswordDtoValidator.ValidateValue)" 
+                 ValidationDelay="0" 
+                 Spacing="3">
+            <MudTextField Label="Contraseña actual" 
+                          For="@(() => _changePasswordDto.CurrentPassword)" 
+                          @bind-Value="_changePasswordDto.CurrentPassword" 
+                          InputType="InputType.Password" 
+                          Variant="Variant.Outlined"
+                          Immediate="true" />
+            <MudTextField Label="Nueva contraseña" 
+                          For="@(() => _changePasswordDto.NewPassword)" 
+                          @bind-Value="_changePasswordDto.NewPassword" 
+                          InputType="InputType.Password" 
+                          Variant="Variant.Outlined"
+                          Immediate="true" />
+            <MudButton Variant="Variant.Filled" 
+                       Color="Color.Secondary" 
+                       OnClick="ChangePassword" 
+                       StartIcon="@Icons.Material.Filled.VpnKey">
+                Cambiar contraseña
+            </MudButton>
         </MudForm>
     </MudPaper>
 </MudContainer>
@@ -31,39 +86,49 @@
 @code {
     private MudForm _form = null!;
     private MudForm _pwdForm = null!;
-    private UpdateUserDto model = new();
-    private ChangePasswordDto pwd = new();
+    
+    private UpdateUserDto _updateUserDto = new();
+    private UpdateUserDtoValidator _updateUserDtoValidator = new();
+    
+    private ChangePasswordDto _changePasswordDto = new();
+    private ChangePasswordDtoValidator _changePasswordDtoValidator = new();
 
     protected override async Task OnInitializedAsync()
     {
-        var me = await Auth.GetCurrentUserAsync();
-        model.UserId = me.UserId;
-        model.UserName = me.UserName;
-        model.Email = me.Email;
-        pwd.UserId = me.UserId;
+        try
+        {
+            var currentUser = await Auth.GetCurrentUserAsync();
+            _updateUserDto.UserId = currentUser.UserId;
+            _updateUserDto.UserName = currentUser.UserName;
+            _updateUserDto.Email = currentUser.Email;
+            _changePasswordDto.UserId = currentUser.UserId;
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Error al cargar el perfil de usuario.", Severity.Error);
+        }
     }
 
     private async Task Save()
     {
         try
         {
-            await UserService.UpdateUserAsync(model);
-            Snackbar.Add("Perfil actualizado.", Severity.Success);
-        }
-        catch (ServiceException ex)
-        {
-            Snackbar.Add(ex.Message, Severity.Error);
-        }
-    }
+            if (_form is not null)
+            {
+                await _form.Validate();
+                if (!_form.IsValid)
+                    return;
+            }
 
-    private async Task ChangePassword()
-    {
-        try
+            await UserService.UpdateUserAsync(_updateUserDto);
+            Snackbar.Add("Perfil actualizado correctamente.", Severity.Success);
+        }
+        catch (ServiceValidationException ex)
         {
-            await Auth.ChangePasswordAsync(pwd);
-            Snackbar.Add("Contraseña cambiada.", Severity.Success);
-            pwd.CurrentPassword = string.Empty;
-            pwd.NewPassword = string.Empty;
+            foreach (var error in ex.Errors)
+            {
+                Snackbar.Add(error.Message, Severity.Error);
+            }
         }
         catch (ServiceBusinessException ex)
         {
@@ -72,6 +137,50 @@
         catch (ServiceException ex)
         {
             Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Error inesperado al actualizar el perfil.", Severity.Error);
+        }
+    }
+
+    private async Task ChangePassword()
+    {
+        try
+        {
+            if (_pwdForm is not null)
+            {
+                await _pwdForm.Validate();
+                if (!_pwdForm.IsValid)
+                    return;
+            }
+
+            await Auth.ChangePasswordAsync(_changePasswordDto);
+            Snackbar.Add("Contraseña cambiada correctamente.", Severity.Success);
+            
+            // Clear password fields after successful change
+            _changePasswordDto.CurrentPassword = string.Empty;
+            _changePasswordDto.NewPassword = string.Empty;
+            _pwdForm?.ResetValidation();
+        }
+        catch (ServiceValidationException ex)
+        {
+            foreach (var error in ex.Errors)
+            {
+                Snackbar.Add(error.Message, Severity.Error);
+            }
+        }
+        catch (ServiceBusinessException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (ServiceException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Error inesperado al cambiar la contraseña.", Severity.Error);
         }
     }
 }

@@ -1,3 +1,5 @@
+using FluentValidation;
+using GeneralReservationSystem.API.Helpers;
 using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.Entities;
@@ -10,8 +12,13 @@ namespace GeneralReservationSystem.API.Controllers
 {
     [Route("api/trips")]
     [ApiController]
-    public class TripsController(ITripService tripService) : ControllerBase
+    public class TripsController(ITripService tripService, IValidator<PagedSearchRequestDto> pagedSearchValidator, IValidator<CreateTripDto> createTripValidator, IValidator<UpdateTripDto> updateTripValidator, IValidator<TripKeyDto> tripKeyValidator) : ControllerBase
     {
+        private readonly IValidator<PagedSearchRequestDto> _pagedSearchValidator = pagedSearchValidator;
+        private readonly IValidator<CreateTripDto> _createTripValidator = createTripValidator;
+        private readonly IValidator<UpdateTripDto> _updateTripValidator = updateTripValidator;
+        private readonly IValidator<TripKeyDto> _tripKeyValidator = tripKeyValidator;
+
         [HttpGet]
         public async Task<IActionResult> GetAllTrips(CancellationToken cancellationToken)
         {
@@ -22,6 +29,9 @@ namespace GeneralReservationSystem.API.Controllers
         [HttpPost("search")]
         public async Task<IActionResult> SearchTrips([FromBody] PagedSearchRequestDto searchDto, CancellationToken cancellationToken)
         {
+            var validationResult = await ValidationHelper.ValidateAsync(_pagedSearchValidator, searchDto, cancellationToken);
+            if (validationResult != null)
+                return validationResult;
             PagedResult<TripWithDetailsDto> result = await tripService.SearchTripsAsync(searchDto, cancellationToken);
             return Ok(result);
         }
@@ -29,9 +39,12 @@ namespace GeneralReservationSystem.API.Controllers
         [HttpGet("{tripId:int}")]
         public async Task<IActionResult> GetTrip([FromRoute] int tripId, CancellationToken cancellationToken)
         {
+            var keyDto = new TripKeyDto { TripId = tripId };
+            var validationResult = await ValidationHelper.ValidateAsync(_tripKeyValidator, keyDto, cancellationToken);
+            if (validationResult != null)
+                return validationResult;
             try
             {
-                TripKeyDto keyDto = new() { TripId = tripId };
                 Trip trip = await tripService.GetTripAsync(keyDto, cancellationToken);
                 return Ok(trip);
             }
@@ -45,6 +58,9 @@ namespace GeneralReservationSystem.API.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateTrip([FromBody] CreateTripDto dto, CancellationToken cancellationToken)
         {
+            var validationResult = await ValidationHelper.ValidateAsync(_createTripValidator, dto, cancellationToken);
+            if (validationResult != null)
+                return validationResult;
             try
             {
                 Trip trip = await tripService.CreateTripAsync(dto, cancellationToken);
@@ -60,9 +76,12 @@ namespace GeneralReservationSystem.API.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateTrip([FromRoute] int tripId, [FromBody] UpdateTripDto dto, CancellationToken cancellationToken)
         {
+            dto.TripId = tripId;
+            var validationResult = await ValidationHelper.ValidateAsync(_updateTripValidator, dto, cancellationToken);
+            if (validationResult != null)
+                return validationResult;
             try
             {
-                dto.TripId = tripId;
                 Trip trip = await tripService.UpdateTripAsync(dto, cancellationToken);
                 return Ok(trip);
             }
@@ -80,9 +99,12 @@ namespace GeneralReservationSystem.API.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteTrip([FromRoute] int tripId, CancellationToken cancellationToken)
         {
+            var keyDto = new TripKeyDto { TripId = tripId };
+            var validationResult = await ValidationHelper.ValidateAsync(_tripKeyValidator, keyDto, cancellationToken);
+            if (validationResult != null)
+                return validationResult;
             try
             {
-                TripKeyDto keyDto = new() { TripId = tripId };
                 await tripService.DeleteTripAsync(keyDto, cancellationToken);
                 return NoContent();
             }

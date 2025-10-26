@@ -1,23 +1,19 @@
 using GeneralReservationSystem.Application.Exceptions.Services;
+using GeneralReservationSystem.Web.Exceptions;
 using Microsoft.AspNetCore.Components.WebAssembly.Http;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 
 namespace GeneralReservationSystem.Web.Services.Implementations
 {
-    public abstract class ApiServiceBase
+    public abstract class ApiServiceBase(HttpClient httpClient)
     {
-        protected readonly HttpClient _httpClient;
-        protected readonly JsonSerializerOptions _jsonOptions;
-
-        protected ApiServiceBase(HttpClient httpClient)
+        protected readonly HttpClient _httpClient = httpClient;
+        protected static readonly JsonSerializerOptions jsonOptions = new()
         {
-            _httpClient = httpClient;
-            _jsonOptions = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            };
-        }
+            PropertyNameCaseInsensitive = true
+        };
 
         private static HttpRequestMessage CreateRequestWithCredentials(HttpMethod method, string url)
         {
@@ -31,7 +27,7 @@ namespace GeneralReservationSystem.Web.Services.Implementations
             HttpRequestMessage request = CreateRequestWithCredentials(HttpMethod.Get, url);
             HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
             await EnsureSuccessOrThrow(response);
-            return await response.Content.ReadFromJsonAsync<T>(_jsonOptions, cancellationToken)
+            return await response.Content.ReadFromJsonAsync<T>(jsonOptions, cancellationToken)
                 ?? throw new ServiceException("La respuesta del servidor está vacía.");
         }
 
@@ -41,7 +37,7 @@ namespace GeneralReservationSystem.Web.Services.Implementations
             request.Content = JsonContent.Create(content);
             HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
             await EnsureSuccessOrThrow(response);
-            return await response.Content.ReadFromJsonAsync<T>(_jsonOptions, cancellationToken)
+            return await response.Content.ReadFromJsonAsync<T>(jsonOptions, cancellationToken)
                 ?? throw new ServiceException("La respuesta del servidor está vacía.");
         }
 
@@ -59,7 +55,7 @@ namespace GeneralReservationSystem.Web.Services.Implementations
             request.Content = JsonContent.Create(content);
             HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
             await EnsureSuccessOrThrow(response);
-            return await response.Content.ReadFromJsonAsync<T>(_jsonOptions, cancellationToken)
+            return await response.Content.ReadFromJsonAsync<T>(jsonOptions, cancellationToken)
                 ?? throw new ServiceException("La respuesta del servidor está vacía.");
         }
 
@@ -70,7 +66,7 @@ namespace GeneralReservationSystem.Web.Services.Implementations
             await EnsureSuccessOrThrow(response);
         }
 
-        private async Task EnsureSuccessOrThrow(HttpResponseMessage response)
+        private static async Task EnsureSuccessOrThrow(HttpResponseMessage response)
         {
             if (response.IsSuccessStatusCode)
             {
@@ -78,34 +74,83 @@ namespace GeneralReservationSystem.Web.Services.Implementations
             }
 
             string errorContent = await response.Content.ReadAsStringAsync();
-            string errorMessage = "Error en la solicitud al servidor.";
+
+            throw response.StatusCode switch
+            {
+                HttpStatusCode.BadRequest when CheckBadRequestForValidationErrors(errorContent) =>
+                    new ServiceValidationException($"La solicitud es inválida.", ParseBadRequestErrors(errorContent)),
+                HttpStatusCode.Unauthorized => new ServiceBusinessException($"No está autorizado para realizar esta acción."),
+                HttpStatusCode.Forbidden => new ServiceBusinessException($"No tiene permisos para realizar esta acción."),
+                HttpStatusCode.NotFound => new ServiceNotFoundException(ParseErrorMessage(errorContent)),
+                HttpStatusCode.Conflict => new ServiceBusinessException(ParseErrorMessage(errorContent)),
+                _ => new ServiceException(ParseErrorMessage(errorContent))
+            };
+        }
+
+        private static bool CheckBadRequestForValidationErrors(string errorObj)
+        {
+            return !string.IsNullOrWhiteSpace(errorObj); // Assuming any content indicates validation errors.
+        }
+        private class ErrorResponse
+        {
+            public string? Error { get; set; }
+        }
+
+        private static string ParseErrorMessage(string errorContents)
+        {
 
             try
             {
-                ErrorResponse? errorObj = JsonSerializer.Deserialize<ErrorResponse>(errorContent, _jsonOptions);
-                if (errorObj?.Error != null)
+                ErrorResponse? errorResponse = JsonSerializer.Deserialize<ErrorResponse>(errorContents, jsonOptions);
+                if (errorResponse?.Error != null)
                 {
-                    errorMessage = errorObj.Error;
+                    return errorResponse.Error;
                 }
             }
             catch
             {
-                errorMessage = !string.IsNullOrWhiteSpace(errorContent) ? errorContent : errorMessage;
+                // Ignore deserialization errors
             }
-
-            throw response.StatusCode switch
-            {
-                System.Net.HttpStatusCode.NotFound => new ServiceNotFoundException(errorMessage),
-                System.Net.HttpStatusCode.Conflict => new ServiceBusinessException(errorMessage),
-                System.Net.HttpStatusCode.Unauthorized => new ServiceBusinessException($"No está autorizado para realizar esta acción."),
-                System.Net.HttpStatusCode.Forbidden => new ServiceBusinessException($"No tiene permisos para realizar esta acción."),
-                _ => new ServiceException(errorMessage)
-            };
+            return "Error en la solicitud al servidor.";
         }
 
-        private class ErrorResponse
+        private static ValidationError[] ParseBadRequestErrors(string errorObj)
         {
-            public string? Error { get; set; }
+            if (errorObj == null)
+            {
+                return [];
+            }
+
+            try
+            {
+                // Try to deserialize as array of ValidationError
+                ValidationError[]? errors = JsonSerializer.Deserialize<ValidationError[]>(errorObj, jsonOptions);
+                if (errors != null)
+                {
+                    return errors;
+                }
+            }
+            catch
+            {
+                // Ignore deserialization errors
+            }
+
+            // Fallback: try to deserialize as a single ValidationError
+            try
+            {
+                ValidationError? error = JsonSerializer.Deserialize<ValidationError>(errorObj, jsonOptions);
+                if (error != null)
+                {
+                    return [error];
+                }
+            }
+            catch
+            {
+                // Ignore deserialization errors
+            }
+
+            // Fallback: return no specific validation errors
+            return [];
         }
     }
 }

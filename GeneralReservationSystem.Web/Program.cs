@@ -1,4 +1,5 @@
 using GeneralReservationSystem.Web;
+using GeneralReservationSystem.Application;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using MudBlazor.Services;
@@ -13,5 +14,7 @@ builder.Services.AddMudServices();
 // it has to be supplied via appsettings.json or overridden in code here. It is baked into the client at build time.
 string apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? builder.HostEnvironment.BaseAddress;
 builder.Services.AddClientServices(apiBaseUrl);
+
+builder.Services.AddFluentValidators();
 
 await builder.Build().RunAsync();
