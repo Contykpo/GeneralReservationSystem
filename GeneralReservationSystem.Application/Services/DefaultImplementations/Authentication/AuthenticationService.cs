@@ -50,7 +50,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
                 string normalizedInput = dto.UserNameOrEmail.Trim().ToUpperInvariant();
                 User user = await userRepository.Query()
                     .Where(u => u.NormalizedUserName == normalizedInput || u.NormalizedEmail == normalizedInput)
-                    .FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el usuario para autenticar.");
+                    .FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el usuario.");
                 return !PasswordHelper.VerifyPassword(dto.Password, user.PasswordHash, user.PasswordSalt)
                     ? throw new ServiceBusinessException("Usuario o contraseña incorrectos.")
                     : new UserInfo

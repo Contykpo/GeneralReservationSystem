@@ -4,7 +4,7 @@ using GeneralReservationSystem.Application.DTOs.Authentication;
 using GeneralReservationSystem.Application.Entities.Authentication;
 using GeneralReservationSystem.Application.Services.Interfaces.Authentication;
 
-namespace GeneralReservationSystem.Web.Services.Implementations.Authentication
+namespace GeneralReservationSystem.Web.Services.Implementations
 {
     public class UserService(HttpClient httpClient) : ApiServiceBase(httpClient), IUserService
     {

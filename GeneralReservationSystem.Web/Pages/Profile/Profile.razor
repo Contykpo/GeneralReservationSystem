@@ -3,6 +3,7 @@
 @attribute [Authorize]
 
 @using FluentValidation
+@using GeneralReservationSystem.Web.Authentication
 @using Microsoft.AspNetCore.Authorization
 @using GeneralReservationSystem.Application.DTOs.Authentication
 @using GeneralReservationSystem.Application.DTOs
@@ -12,12 +13,15 @@
 @using GeneralReservationSystem.Application.Validators.Authentication
 @using GeneralReservationSystem.Web.Services.Interfaces.Authentication
 @using GeneralReservationSystem.Web.Exceptions
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
 
 @using Severity = MudBlazor.Severity
 
-@inject IClientAuthenticationService Auth
+@inject IClientAuthenticationService ClientAuthenticationService
+@inject AuthenticationStateProvider AuthStateProvider
 @inject IUserService UserService
 @inject ISnackbar Snackbar
+@inject NavigationManager Navigation
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="mt-4">
     <PageTitle>Perfil</PageTitle>
@@ -97,7 +101,7 @@
     {
         try
         {
-            var currentUser = await Auth.GetCurrentUserAsync();
+            var currentUser = await ClientAuthenticationService.GetCurrentUserAsync();
             _updateUserDto.UserId = currentUser.UserId;
             _updateUserDto.UserName = currentUser.UserName;
             _updateUserDto.Email = currentUser.Email;
@@ -121,7 +125,13 @@
             }
 
             await UserService.UpdateUserAsync(_updateUserDto);
-            Snackbar.Add("Perfil actualizado correctamente.", Severity.Success);
+            await ClientAuthenticationService.LogoutAsync();
+            if (AuthStateProvider is CustomAuthenticationStateProvider custom)
+            {
+                custom.MarkUserAsLoggedOut();
+            }
+            Snackbar.Add("Perfil actualizado. Por favor, vuelve a iniciar sesión.", Severity.Info);
+            Navigation.NavigateToLogin("/login");
         }
         catch (ServiceValidationException ex)
         {
@@ -155,7 +165,7 @@
                     return;
             }
 
-            await Auth.ChangePasswordAsync(_changePasswordDto);
+            await ClientAuthenticationService.ChangePasswordAsync(_changePasswordDto);
             Snackbar.Add("Contraseña cambiada correctamente.", Severity.Success);
             
             // Clear password fields after successful change

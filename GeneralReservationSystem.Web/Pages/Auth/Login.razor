@@ -1,4 +1,4 @@
-@page "/authentication/login"
+@page "/login"
 
 @using GeneralReservationSystem.Application.DTOs.Authentication
 @using GeneralReservationSystem.Application.Exceptions.Services
@@ -54,6 +54,10 @@
                 custom.MarkUserAsAuthenticated(user);
             }
             Navigation.NavigateTo("/");
+        }
+        catch (ServiceNotFoundException ex)
+        {
+            _error = ex.Message;
         }
         catch (ServiceBusinessException ex)
         {
