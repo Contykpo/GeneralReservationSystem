@@ -3,8 +3,10 @@
 @attribute [Authorize(Roles = "Admin")]
 
 @using FluentValidation
+@using GeneralReservationSystem.Web.Authentication
 @using GeneralReservationSystem.Web.Helpers
 @using GeneralReservationSystem.Web.Exceptions
+@using GeneralReservationSystem.Web.Services.Interfaces.Authentication
 @using Microsoft.AspNetCore.Authorization
 @using GeneralReservationSystem.Application.Common
 @using GeneralReservationSystem.Application.DTOs
@@ -13,13 +15,17 @@
 @using GeneralReservationSystem.Application.Exceptions.Services
 @using GeneralReservationSystem.Application.Services.Interfaces.Authentication
 @using GeneralReservationSystem.Application.Validators.Authentication
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
 
 @using AppFilterOperator = GeneralReservationSystem.Application.Common.FilterOperator
 @using Severity = MudBlazor.Severity
 
+@inject IClientAuthenticationService ClientAuthenticationService
+@inject AuthenticationStateProvider AuthStateProvider
 @inject IUserService UserService
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
+@inject NavigationManager Navigation
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
     <PageTitle>Gestión de Usuarios</PageTitle>
@@ -149,7 +155,7 @@
     private MudTable<UserInfo> _table = null!;
     private bool _loading = false;
     private string _searchString = string.Empty;
-    
+
     // Advanced filters
     private string _filterUserName = string.Empty;
     private string _filterEmail = string.Empty;
@@ -225,7 +231,7 @@
             {
                 filters.Add(new Filter("UserName", AppFilterOperator.Contains, _filterUserName));
             }
-            
+
             if (!string.IsNullOrWhiteSpace(_filterEmail))
             {
                 filters.Add(new Filter("Email", AppFilterOperator.Contains, _filterEmail));
@@ -275,8 +281,21 @@
 
             await UserService.UpdateUserAsync(_editUserDto);
             Snackbar.Add("Usuario actualizado correctamente.", Severity.Success);
-            CloseEditDialog();
-            await _table.ReloadServerData();
+            if ((await ClientAuthenticationService.GetCurrentUserAsync()).UserId == _editUserDto.UserId)
+            {
+                await ClientAuthenticationService.LogoutAsync();
+                if (AuthStateProvider is CustomAuthenticationStateProvider custom)
+                {
+                    custom.MarkUserAsLoggedOut();
+                }
+                Snackbar.Add("Perfil actualizado. Por favor, vuelve a iniciar sesión.", Severity.Info);
+                Navigation.NavigateToLogin("/login");
+            }
+            else
+            {
+                CloseEditDialog();
+                await _table.ReloadServerData();
+            }
         }
         catch (ServiceNotFoundException ex)
         {
@@ -311,7 +330,20 @@
         {
             await UserService.DeleteUserAsync(new UserKeyDto { UserId = item.UserId });
             Snackbar.Add("Usuario eliminado correctamente.", Severity.Success);
-            await _table.ReloadServerData();
+            if ((await ClientAuthenticationService.GetCurrentUserAsync()).UserId == _editUserDto.UserId)
+            {
+                await ClientAuthenticationService.LogoutAsync();
+                if (AuthStateProvider is CustomAuthenticationStateProvider custom)
+                {
+                    custom.MarkUserAsLoggedOut();
+                }
+                Snackbar.Add("Perfil borrado. Por favor, vuelve a iniciar sesión en otra cuenta.", Severity.Info);
+                Navigation.NavigateToLogin("/login");
+            }
+            else
+            {
+                await _table.ReloadServerData();
+            }
         }
         catch (ServiceNotFoundException ex)
         {

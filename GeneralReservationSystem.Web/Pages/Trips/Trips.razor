@@ -31,6 +31,7 @@
                             <MudForm @ref="_createForm" Model="@_createTripDto" Validation="@(_createTripDtoValidator.ValidateValue)" ValidationDelay="0" Spacing="3">
                                 <MudSelect T="int" Label="Estación de salida"
                                           @bind-Value="_createTripDto.DepartureStationId"
+                                          For="@(() => _createTripDto.DepartureStationId)"
                                           Variant="Variant.Outlined"
                                           Immediate="true">
                                     <MudSelectItem T="int" Value="0" Disabled="true">Seleccione una estación</MudSelectItem>
@@ -43,16 +44,17 @@
                                 </MudSelect>
                                 <MudDatePicker Label="Fecha de salida" 
                                                Date="_createTripDto.DepartureTime" 
-                                               DateChanged="OnCreateDepartureDateChanged" 
+                                               DateChanged="OnCreateDepartureDateChanged"
                                                DateFormat="dd/MM/yyyy" 
                                                Variant="Variant.Outlined" />
                                 <MudTimePicker Label="Hora de salida" 
                                                Time="_createTripDto.DepartureTime.TimeOfDay" 
-                                               TimeChanged="OnCreateDepartureTimeChanged" 
+                                               TimeChanged="OnCreateDepartureTimeChanged"
                                                TimeFormat="HH:mm" 
                                                Variant="Variant.Outlined" />
                                 <MudSelect T="int" Label="Estación de llegada"
                                           @bind-Value="_createTripDto.ArrivalStationId"
+                                          For="@(() => _createTripDto.ArrivalStationId)"
                                           Variant="Variant.Outlined"
                                            Immediate="true">
                                     <MudSelectItem T="int" Value="0" Disabled="true">Seleccione una estación</MudSelectItem>
@@ -65,12 +67,12 @@
                                 </MudSelect>
                                 <MudDatePicker Label="Fecha de llegada" 
                                                Date="_createTripDto.ArrivalTime" 
-                                               DateChanged="OnCreateArrivalDateChanged" 
+                                               DateChanged="OnCreateArrivalDateChanged"
                                                DateFormat="dd/MM/yyyy" 
                                                Variant="Variant.Outlined" />
                                 <MudTimePicker Label="Hora de llegada" 
                                                Time="_createTripDto.ArrivalTime.TimeOfDay" 
-                                               TimeChanged="OnCreateArrivalTimeChanged" 
+                                               TimeChanged="OnCreateArrivalTimeChanged"
                                                TimeFormat="HH:mm" 
                                                Variant="Variant.Outlined" />
                                 <MudNumericField Label="Asientos disponibles" 
@@ -105,7 +107,8 @@
                     <MudGrid>
                         <MudItem xs="12" sm="6" md="3">
                             <MudSelect T="int?" Label="Estación de salida"
-                                      @bind-Value="_filterDepartureStationId"
+                                      Value="_filterDepartureStationId"
+                                      ValueChanged="@(async (int? value) => { _filterDepartureStationId = value; await OnFilterChanged(); })"
                                       Variant="Variant.Outlined"
                                       Clearable="true"
                                       Immediate="true">
@@ -120,7 +123,8 @@
                         </MudItem>
                         <MudItem xs="12" sm="6" md="3">
                             <MudSelect T="int?" Label="Estación de llegada"
-                                      @bind-Value="_filterArrivalStationId"
+                                      Value="_filterArrivalStationId"
+                                      ValueChanged="@(async (int? value) => { _filterArrivalStationId = value; await OnFilterChanged(); })"
                                       Variant="Variant.Outlined"
                                       Clearable="true"
                                       Immediate="true">
@@ -134,14 +138,16 @@
                             </MudSelect>
                         </MudItem>
                         <MudItem xs="12" sm="6" md="3">
-                            <MudDatePicker @bind-Date="_filterDepartureDate" 
+                            <MudDatePicker Date="_filterDepartureDate"
+                                           DateChanged="@(async (DateTime? date) => { _filterDepartureDate = date; await OnFilterChanged(); })"
                                            Label="Fecha de salida" 
                                            Variant="Variant.Outlined"
                                            Clearable="true"
                                            DateFormat="dd/MM/yyyy" />
                         </MudItem>
                         <MudItem xs="12" sm="6" md="3">
-                            <MudDatePicker @bind-Date="_filterArrivalDate" 
+                            <MudDatePicker Date="_filterArrivalDate"
+                                           DateChanged="@(async (DateTime? date) => { _filterArrivalDate = date; await OnFilterChanged(); })"
                                            Label="Fecha de llegada" 
                                            Variant="Variant.Outlined"
                                            Clearable="true"
@@ -163,7 +169,6 @@
                       Breakpoint="Breakpoint.Sm"
                       Dense="true"
                       RowsPerPage="10"
-                      SortLabel="TripId"
                       Elevation="0">
                 <ToolBarContent>
                     <MudTextField @bind-Value="_searchString" 
@@ -176,13 +181,12 @@
                                   OnClearButtonClick="@(() => { _searchString = string.Empty; _table!.ReloadServerData(); })"
                                   Immediate="true"
                                   DebounceInterval="300"
-                                  OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())"></MudTextField>
+                                  OnDebounceIntervalElapsed="@(async () => { await OnSearchChanged(); })"></MudTextField>
                 </ToolBarContent>
                 <HeaderContent>
-                    <MudTh><MudTableSortLabel SortLabel="TripId" T="TripWithDetailsDto">ID</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortLabel="DepartureStationId" T="TripWithDetailsDto">Salida</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="DepartureStationName" T="TripWithDetailsDto">Salida</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel SortLabel="DepartureTime" T="TripWithDetailsDto">Hora Salida</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortLabel="ArrivalStationId" T="TripWithDetailsDto">Llegada</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="ArrivalStationName" T="TripWithDetailsDto">Llegada</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel SortLabel="ArrivalTime" T="TripWithDetailsDto">Hora Llegada</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel SortLabel="AvailableSeats" T="TripWithDetailsDto">Asientos</MudTableSortLabel></MudTh>
                     <MudTh>Reservados</MudTh>
@@ -190,10 +194,15 @@
                     <MudTh Style="text-align: right">Acciones</MudTh>
                 </HeaderContent>
                 <RowTemplate>
-                    <MudTd DataLabel="ID">@context.TripId</MudTd>
-                    <MudTd DataLabel="Salida">@context.DepartureStationId</MudTd>
+                    <MudTd DataLabel="Salida">
+                        @context.DepartureStationName
+                        <div class="mud-typography-caption">@context.DepartureCity, @context.DepartureRegion, @context.DepartureCountry</div>
+                    </MudTd>
                     <MudTd DataLabel="Hora Salida">@context.DepartureTime.ToString("dd/MM/yyyy HH:mm")</MudTd>
-                    <MudTd DataLabel="Llegada">@context.ArrivalStationId</MudTd>
+                    <MudTd DataLabel="Llegada">
+                        @context.ArrivalStationName
+                        <div class="mud-typography-caption">@context.ArrivalCity, @context.ArrivalRegion, @context.ArrivalCountry</div>
+                    </MudTd>
                     <MudTd DataLabel="Hora Llegada">@context.ArrivalTime.ToString("dd/MM/yyyy HH:mm")</MudTd>
                     <MudTd DataLabel="Asientos">@context.AvailableSeats</MudTd>
                     <MudTd DataLabel="Reservados">@context.ReservedSeats</MudTd>
@@ -231,13 +240,14 @@
         <MudForm Model="@_editTripDto" @ref="_updateForm" Validation="@(_updateTripDtoValidator.ValidateValue)" ValidationDelay="0">
             <MudSelect T="int?" Label="Estación de salida"
                       @bind-Value="_editTripDto.DepartureStationId"
+                      For="@(() => _editTripDto.DepartureStationId)"
                       Variant="Variant.Outlined"
                       Margin="Margin.Dense"
                        Immediate="true">
                 <MudSelectItem T="int" Value="0" Disabled="true">Seleccione una estación</MudSelectItem>
                 @foreach (var station in _stations)
                 {
-                    <MudSelectItem T="int?" Value="@station.StationId">
+                    <MudSelectItem T="int" Value="@station.StationId">
                         @station.StationName, @station.City, @station.Region, @station.Country
                     </MudSelectItem>
                 }
@@ -249,20 +259,21 @@
                            Variant="Variant.Outlined"
                            Margin="Margin.Dense" />
             <MudTimePicker Label="Hora de salida"
-                           Time="_editTripDto.DepartureTime?.TimeOfDay ?? TimeSpan.Zero"
+                           Time="_editTripDto.DepartureTime?.TimeOfDay"
                            TimeChanged="OnEditDepartureTimeChanged"
                            TimeFormat="HH:mm"
                            Variant="Variant.Outlined"
                            Margin="Margin.Dense" />
             <MudSelect T="int?" Label="Estación de llegada"
                       @bind-Value="_editTripDto.ArrivalStationId"
+                      For="@(() => _editTripDto.ArrivalStationId)"
                       Variant="Variant.Outlined"
                       Margin="Margin.Dense"
                        Immediate="true">
                 <MudSelectItem T="int" Value="0" Disabled="true">Seleccione una estación</MudSelectItem>
                 @foreach (var station in _stations)
                 {
-                    <MudSelectItem T="int?" Value="@station.StationId">
+                    <MudSelectItem T="int" Value="@station.StationId">
                         @station.StationName, @station.City, @station.Region, @station.Country
                     </MudSelectItem>
                 }
@@ -274,7 +285,7 @@
                            Variant="Variant.Outlined"
                            Margin="Margin.Dense" />
             <MudTimePicker Label="Hora de llegada"
-                           Time="_editTripDto.ArrivalTime?.TimeOfDay ?? TimeSpan.Zero"
+                           Time="_editTripDto.ArrivalTime?.TimeOfDay"
                            TimeChanged="OnEditArrivalTimeChanged"
                            TimeFormat="HH:mm"
                            Variant="Variant.Outlined"
@@ -383,12 +394,12 @@
             _loading = false;
         }
 
-        return new TableData<TripWithDetailsDto> { Items = [], TotalItems = 0 };
+        return new TableData<TripWithDetailsDto> { Items = Array.Empty<TripWithDetailsDto>(), TotalItems = 0 };
     }
 
     private IList<Filter> BuildFilters(TableState state)
     {
-        List<Filter> filters = [];
+        List<Filter> filters = new List<Filter>();
 
         // Global search filter
         if (!string.IsNullOrWhiteSpace(_searchString))
@@ -399,6 +410,18 @@
                 filters.Add(new Filter("DepartureStationId", AppFilterOperator.Equals, numericValue));
                 filters.Add(new Filter("ArrivalStationId", AppFilterOperator.Equals, numericValue));
                 filters.Add(new Filter("AvailableSeats", AppFilterOperator.Equals, numericValue));
+            }
+            else
+            {
+                // Search text across station names and locations
+                filters.Add(new Filter("DepartureStationName", AppFilterOperator.Contains, _searchString));
+                filters.Add(new Filter("DepartureCity", AppFilterOperator.Contains, _searchString));
+                filters.Add(new Filter("DepartureRegion", AppFilterOperator.Contains, _searchString));
+                filters.Add(new Filter("DepartureCountry", AppFilterOperator.Contains, _searchString));
+                filters.Add(new Filter("ArrivalStationName", AppFilterOperator.Contains, _searchString));
+                filters.Add(new Filter("ArrivalCity", AppFilterOperator.Contains, _searchString));
+                filters.Add(new Filter("ArrivalRegion", AppFilterOperator.Contains, _searchString));
+                filters.Add(new Filter("ArrivalCountry", AppFilterOperator.Contains, _searchString));
             }
         }
         // Advanced filters
@@ -440,6 +463,29 @@
         _table!.ReloadServerData();
     }
 
+    private async Task OnFilterChanged()
+    {
+        // Clear search string when using advanced filters
+        if (!string.IsNullOrWhiteSpace(_searchString))
+        {
+            _searchString = string.Empty;
+        }
+        await _table!.ReloadServerData();
+    }
+
+    private async Task OnSearchChanged()
+    {
+        // Clear advanced filters when using search
+        if (!string.IsNullOrWhiteSpace(_searchString))
+        {
+            _filterDepartureStationId = null;
+            _filterArrivalStationId = null;
+            _filterDepartureDate = null;
+            _filterArrivalDate = null;
+        }
+        await _table!.ReloadServerData();
+    }
+
     private async Task HandleCreate()
     {
         try
@@ -448,13 +494,6 @@
             {
                 await _createForm.Validate();
                 if (!_createForm.IsValid) return;
-            }
-
-            // Additional business validation
-            if (_createTripDto.ArrivalTime <= _createTripDto.DepartureTime)
-            {
-                Snackbar.Add("La fecha/hora de llegada debe ser posterior a la salida.", Severity.Error);
-                return;
             }
 
             await TripService.CreateTripAsync(_createTripDto);
@@ -518,14 +557,6 @@
                 await _updateForm.Validate();
                 if (!_updateForm.IsValid)
                     return;
-            }
-
-            // Additional business validation
-            if (_editTripDto.DepartureTime.HasValue && _editTripDto.ArrivalTime.HasValue && 
-                _editTripDto.ArrivalTime <= _editTripDto.DepartureTime)
-            {
-                Snackbar.Add("La fecha/hora de llegada debe ser posterior a la salida.", Severity.Error);
-                return;
             }
 
             await TripService.UpdateTripAsync(_editTripDto);
@@ -598,45 +629,85 @@
     }
 
     // Create form handlers
-    private void OnCreateDepartureDateChanged(DateTime? date)
+    private async void OnCreateDepartureDateChanged(DateTime? date)
     {
         _createTripDto.DepartureTime = Combine(date, _createTripDto.DepartureTime.TimeOfDay);
+        if (_createForm is not null)
+        {
+            await _createForm.Validate();
+        }
+        StateHasChanged();
     }
 
-    private void OnCreateDepartureTimeChanged(TimeSpan? time)
+    private async void OnCreateDepartureTimeChanged(TimeSpan? time)
     {
         _createTripDto.DepartureTime = Combine(_createTripDto.DepartureTime.Date, time);
+        if (_createForm is not null)
+        {
+            await _createForm.Validate();
+        }
+        StateHasChanged();
     }
 
-    private void OnCreateArrivalDateChanged(DateTime? date)
+    private async void OnCreateArrivalDateChanged(DateTime? date)
     {
         _createTripDto.ArrivalTime = Combine(date, _createTripDto.ArrivalTime.TimeOfDay);
+        if (_createForm is not null)
+        {
+            await _createForm.Validate();
+        }
+        StateHasChanged();
     }
 
-    private void OnCreateArrivalTimeChanged(TimeSpan? time)
+    private async void OnCreateArrivalTimeChanged(TimeSpan? time)
     {
         _createTripDto.ArrivalTime = Combine(_createTripDto.ArrivalTime.Date, time);
+        if (_createForm is not null)
+        {
+            await _createForm.Validate();
+        }
+        StateHasChanged();
     }
 
     // Edit form handlers
-    private void OnEditDepartureDateChanged(DateTime? date)
+    private async void OnEditDepartureDateChanged(DateTime? date)
     {
         _editTripDto.DepartureTime = Combine(date, _editTripDto.DepartureTime?.TimeOfDay);
+        if (_updateForm is not null)
+        {
+            await _updateForm.Validate();
+        }
+        StateHasChanged();
     }
 
-    private void OnEditDepartureTimeChanged(TimeSpan? time)
+    private async void OnEditDepartureTimeChanged(TimeSpan? time)
     {
         _editTripDto.DepartureTime = Combine(_editTripDto.DepartureTime?.Date, time);
+        if (_updateForm is not null)
+        {
+            await _updateForm.Validate();
+        }
+        StateHasChanged();
     }
 
-    private void OnEditArrivalDateChanged(DateTime? date)
+    private async void OnEditArrivalDateChanged(DateTime? date)
     {
         _editTripDto.ArrivalTime = Combine(date, _editTripDto.ArrivalTime?.TimeOfDay);
+        if (_updateForm is not null)
+        {
+            await _updateForm.Validate();
+        }
+        StateHasChanged();
     }
 
-    private void OnEditArrivalTimeChanged(TimeSpan? time)
+    private async void OnEditArrivalTimeChanged(TimeSpan? time)
     {
         _editTripDto.ArrivalTime = Combine(_editTripDto.ArrivalTime?.Date, time);
+        if (_updateForm is not null)
+        {
+            await _updateForm.Validate();
+        }
+        StateHasChanged();
     }
 
     private static DateTime Combine(DateTime? date, TimeSpan? time)

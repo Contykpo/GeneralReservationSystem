@@ -166,15 +166,31 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             try
             {
                 var query = unitOfWork.TripRepository.Query()
-                    .Select(t => new
+                    .Join(unitOfWork.StationRepository.Query(),
+                        trip => trip.DepartureStationId,
+                        departureStation => departureStation.StationId,
+                        (trip, departureStation) => new { trip, departureStation })
+                    .Join(unitOfWork.StationRepository.Query(),
+                        trip => trip.trip.ArrivalStationId,
+                        arrivalStation => arrivalStation.StationId,
+                        (trip, arrivalStation) => new { trip, arrivalStation })
+                    .Select(x => new
                     {
-                        t.TripId,
-                        t.DepartureStationId,
-                        t.DepartureTime,
-                        t.ArrivalStationId,
-                        t.ArrivalTime,
-                        t.AvailableSeats,
-                        ReservedSeats = unitOfWork.ReservationRepository.Query().Count(r => r.TripId == t.TripId)
+                        TripId = x.trip.trip.TripId,
+                        DepartureStationId = x.trip.trip.DepartureStationId,
+                        DepartureStationName = x.trip.departureStation.StationName,
+                        DepartureCity = x.trip.departureStation.City,
+                        DepartureRegion = x.trip.departureStation.Region,
+                        DepartureCountry = x.trip.departureStation.Country,
+                        DepartureTime = x.trip.trip.DepartureTime,
+                        ArrivalStationId = x.arrivalStation.StationId,
+                        ArrivalStationName = x.arrivalStation.StationName,
+                        ArrivalCity = x.arrivalStation.City,
+                        ArrivalRegion = x.arrivalStation.Region,
+                        ArrivalCountry = x.arrivalStation.Country,
+                        ArrivalTime = x.trip.trip.ArrivalTime,
+                        AvailableSeats = x.trip.trip.AvailableSeats,
+                        ReservedSeats = unitOfWork.ReservationRepository.Query().Count(r => r.TripId == x.trip.trip.TripId)
                     })
                     .ApplyFilters(searchDto.Filters);
 
@@ -184,18 +200,25 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
                     .Take(searchDto.PageSize)
                     .ToListAsync(cancellationToken);
 
-                List<TripWithDetailsDto> castedItems = items
+                List<TripWithDetailsDto> castedItems = [.. items
                     .Select(x => new TripWithDetailsDto
                     {
                         TripId = x.TripId,
                         DepartureStationId = x.DepartureStationId,
+                        DepartureStationName = x.DepartureStationName,
+                        DepartureCity = x.DepartureCity,
+                        DepartureRegion = x.DepartureRegion,
+                        DepartureCountry = x.DepartureCountry,
                         DepartureTime = x.DepartureTime,
                         ArrivalStationId = x.ArrivalStationId,
+                        ArrivalStationName = x.ArrivalStationName,
+                        ArrivalCity = x.ArrivalCity,
+                        ArrivalRegion = x.ArrivalRegion,
+                        ArrivalCountry = x.ArrivalCountry,
                         ArrivalTime = x.ArrivalTime,
                         AvailableSeats = x.AvailableSeats,
                         ReservedSeats = x.ReservedSeats
-                    })
-                    .ToList();
+                    })];
 
                 int count = await query.CountAsync(cancellationToken);
 
