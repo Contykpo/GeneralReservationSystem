@@ -102,10 +102,9 @@ BEGIN
             TripId INT NOT NULL,
             UserId INT NOT NULL,
             Seat INT NOT NULL,
-            CONSTRAINT PK_Reservation PRIMARY KEY (TripId, UserId, Seat),
+            CONSTRAINT PK_Reservation PRIMARY KEY (TripId, Seat),  -- Ensure a seat can only be booked once per trip
             CONSTRAINT FK_Reservation_User FOREIGN KEY(UserId) REFERENCES ApplicationUser(UserId) ON DELETE CASCADE,
             CONSTRAINT FK_Reservation_Trip FOREIGN KEY(TripId) REFERENCES Trip(TripId) ON DELETE CASCADE,
-            CONSTRAINT UQ_Reservation_Trip_Seat UNIQUE (TripId, Seat) -- Ensure a seat can only be booked once per trip
         );
     END
 

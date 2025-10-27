@@ -7,16 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Components\**" />
     <Compile Remove="Services\Implementations\Administration\**" />
     <Compile Remove="Services\Interfaces\Administration\**" />
-    <Content Remove="Components\**" />
     <Content Remove="Services\Implementations\Administration\**" />
     <Content Remove="Services\Interfaces\Administration\**" />
-    <EmbeddedResource Remove="Components\**" />
     <EmbeddedResource Remove="Services\Implementations\Administration\**" />
     <EmbeddedResource Remove="Services\Interfaces\Administration\**" />
-    <None Remove="Components\**" />
     <None Remove="Services\Implementations\Administration\**" />
     <None Remove="Services\Interfaces\Administration\**" />
   </ItemGroup>

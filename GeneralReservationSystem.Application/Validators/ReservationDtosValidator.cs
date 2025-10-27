@@ -7,9 +7,11 @@ namespace GeneralReservationSystem.Application.Validators
     {
         public CreateReservationDtoValidator()
         {
-            RuleFor(x => x.TripId)
+            _ = RuleFor(x => x.TripId)
                 .GreaterThan(0).WithMessage("El Id de viaje debe ser un número positivo.");
-            RuleFor(x => x.Seat)
+            _ = RuleFor(x => x.UserId)
+                .GreaterThan(0).WithMessage("El Id de usuario debe ser un número positivo.");
+            _ = RuleFor(x => x.Seat)
                 .GreaterThan(0).WithMessage("El número de asiento debe ser un número positivo.");
         }
     }
@@ -18,9 +20,20 @@ namespace GeneralReservationSystem.Application.Validators
     {
         public ReservationKeyDtoValidator()
         {
-            RuleFor(x => x.TripId)
+            _ = RuleFor(x => x.TripId)
                 .GreaterThan(0).WithMessage("El Id de viaje debe ser un número positivo.");
-            RuleFor(x => x.UserId)
+            _ = RuleFor(x => x.Seat)
+                .GreaterThan(0).WithMessage("El número de asiento debe ser un número positivo.");
+        }
+    }
+
+    public class TripUserReservationsKeyDtoValidator : AppValidator<TripUserReservationsKeyDto>
+    {
+        public TripUserReservationsKeyDtoValidator()
+        {
+            _ = RuleFor(x => x.TripId)
+                .GreaterThan(0).WithMessage("El Id de viaje debe ser un número positivo.");
+            _ = RuleFor(x => x.UserId)
                 .GreaterThan(0).WithMessage("El Id de usuario debe ser un número positivo.");
         }
     }

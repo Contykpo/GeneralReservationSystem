@@ -17,4 +17,15 @@
         public ServiceNotFoundException(string message) : base(message) { }
         public ServiceNotFoundException(string message, Exception innerException) : base(message, innerException) { }
     }
+
+    public class ServiceValidationException(string message, ValidationError[] errors) : ServiceException(message)
+    {
+        public ValidationError[] Errors { get; } = errors;
+    }
+
+    public class ValidationError
+    {
+        public string PropertyName { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+    }
 }

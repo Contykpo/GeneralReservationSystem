@@ -10,8 +10,8 @@
             <MudIcon Icon="@Icon" Size="Size.Large" Color="@IconColor" />
         </MudCardHeader>
         <MudCardContent>
-            <h2 class="@HeadingClass">@StatusCode - @Title</h2>
-            <p class="mb-4">@Message</p>
+            <MudText Typo="Typo.h3" class="@HeadingClass">@StatusCode - @Title</MudText>
+            <MudText class="mb-4">@Message</MudText>
         </MudCardContent>
         <MudCardActions>
             <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/">

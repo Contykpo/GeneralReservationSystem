@@ -1,5 +1,4 @@
 using GeneralReservationSystem.Application.Exceptions.Services;
-using GeneralReservationSystem.Web.Exceptions;
 using Microsoft.AspNetCore.Components.WebAssembly.Http;
 using System.Net;
 using System.Net.Http.Json;
@@ -109,7 +108,6 @@ namespace GeneralReservationSystem.Web.Services.Implementations
             }
             catch
             {
-                // Ignore deserialization errors
             }
             return "Error en la solicitud al servidor.";
         }
@@ -123,7 +121,6 @@ namespace GeneralReservationSystem.Web.Services.Implementations
 
             try
             {
-                // Try to deserialize as array of ValidationError
                 ValidationError[]? errors = JsonSerializer.Deserialize<ValidationError[]>(errorObj, jsonOptions);
                 if (errors != null)
                 {
@@ -132,10 +129,8 @@ namespace GeneralReservationSystem.Web.Services.Implementations
             }
             catch
             {
-                // Ignore deserialization errors
             }
 
-            // Fallback: try to deserialize as a single ValidationError
             try
             {
                 ValidationError? error = JsonSerializer.Deserialize<ValidationError>(errorObj, jsonOptions);
@@ -146,10 +141,8 @@ namespace GeneralReservationSystem.Web.Services.Implementations
             }
             catch
             {
-                // Ignore deserialization errors
             }
 
-            // Fallback: return no specific validation errors
             return [];
         }
     }

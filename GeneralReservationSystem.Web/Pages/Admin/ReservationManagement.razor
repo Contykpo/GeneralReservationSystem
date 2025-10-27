@@ -219,7 +219,7 @@
     {
         try
         {
-            await ClientReservationService.DeleteReservationAsync(new ReservationKeyDto { TripId = item.TripId, UserId = item.UserId });
+            await ClientReservationService.DeleteReservationAsync(new ReservationKeyDto { TripId = item.TripId, Seat = item.Seat });
             Snackbar.Add("Reserva eliminada correctamente.", Severity.Success);
             await _table.ReloadServerData();
         }

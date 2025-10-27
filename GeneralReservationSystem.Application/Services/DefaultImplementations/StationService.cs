@@ -121,16 +121,16 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                var query = unitOfWork.StationRepository.Query()
+                IQueryable<Station> query = unitOfWork.StationRepository.Query()
                     .ApplyFilters(searchDto.Filters);
 
-                var items = await query
+                List<Station> items = await query
                     .ApplySorts(searchDto.Orders)
                     .Skip((searchDto.Page - 1) * searchDto.PageSize)
                     .Take(searchDto.PageSize)
                     .ToListAsync(cancellationToken);
 
-                var count = await query.CountAsync(cancellationToken);
+                int count = await query.CountAsync(cancellationToken);
 
                 unitOfWork.Commit();
 

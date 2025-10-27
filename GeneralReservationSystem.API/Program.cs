@@ -1,8 +1,8 @@
 using GeneralReservationSystem.API.Middleware;
+using GeneralReservationSystem.Application;
 using GeneralReservationSystem.Infrastructure;
 using GeneralReservationSystem.Infrastructure.Helpers;
 using GeneralReservationSystem.Infrastructure.Middleware;
-using GeneralReservationSystem.Application;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 

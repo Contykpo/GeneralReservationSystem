@@ -15,17 +15,15 @@ namespace GeneralReservationSystem.API.Controllers
     [Authorize]
     public class UsersController(IUserService userService, IValidator<PagedSearchRequestDto> pagedSearchValidator, IValidator<UpdateUserDto> updateUserValidator, IValidator<UserKeyDto> userKeyValidator) : ControllerBase
     {
-        private readonly IValidator<PagedSearchRequestDto> _pagedSearchValidator = pagedSearchValidator;
-        private readonly IValidator<UpdateUserDto> _updateUserValidator = updateUserValidator;
-        private readonly IValidator<UserKeyDto> _userKeyValidator = userKeyValidator;
-
         [HttpPost("search")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> SearchUsers([FromBody] PagedSearchRequestDto searchDto, CancellationToken cancellationToken)
         {
-            var validationResult = await ValidationHelper.ValidateAsync(_pagedSearchValidator, searchDto, cancellationToken);
+            IActionResult? validationResult = await ValidationHelper.ValidateAsync(pagedSearchValidator, searchDto, cancellationToken);
             if (validationResult != null)
+            {
                 return validationResult;
+            }
 
             Application.Common.PagedResult<UserInfo> result = await userService.SearchUsersAsync(searchDto, cancellationToken);
             return Ok(result);
@@ -35,15 +33,17 @@ namespace GeneralReservationSystem.API.Controllers
         [Authorize]
         public async Task<IActionResult> GetCurrentUser(CancellationToken cancellationToken)
         {
-            string? userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            string? userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized();
             }
-            var userKeyDto = new UserKeyDto { UserId = int.Parse(userId) };
-            var validationResult = await ValidationHelper.ValidateAsync(_userKeyValidator, userKeyDto, cancellationToken);
+            UserKeyDto userKeyDto = new() { UserId = int.Parse(userId) };
+            IActionResult? validationResult = await ValidationHelper.ValidateAsync(userKeyValidator, userKeyDto, cancellationToken);
             if (validationResult != null)
+            {
                 return validationResult;
+            }
 
             try
             {
@@ -67,7 +67,7 @@ namespace GeneralReservationSystem.API.Controllers
         [HttpGet("{userId:int}")]
         public async Task<IActionResult> GetUserById([FromRoute] int userId, CancellationToken cancellationToken)
         {
-            string? currentIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            string? currentIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(currentIdStr))
             {
                 return Unauthorized();
@@ -77,10 +77,12 @@ namespace GeneralReservationSystem.API.Controllers
             {
                 return Forbid();
             }
-            var userKeyDto = new UserKeyDto { UserId = userId };
-            var validationResult = await ValidationHelper.ValidateAsync(_userKeyValidator, userKeyDto, cancellationToken);
+            UserKeyDto userKeyDto = new() { UserId = userId };
+            IActionResult? validationResult = await ValidationHelper.ValidateAsync(userKeyValidator, userKeyDto, cancellationToken);
             if (validationResult != null)
+            {
                 return validationResult;
+            }
 
             try
             {
@@ -98,15 +100,17 @@ namespace GeneralReservationSystem.API.Controllers
         [Authorize]
         public async Task<IActionResult> UpdateCurrentUser([FromBody] UpdateUserDto dto, CancellationToken cancellationToken)
         {
-            string? userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            string? userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized();
             }
             dto.UserId = int.Parse(userId);
-            var validationResult = await ValidationHelper.ValidateAsync(_updateUserValidator, dto, cancellationToken);
+            IActionResult? validationResult = await ValidationHelper.ValidateAsync(updateUserValidator, dto, cancellationToken);
             if (validationResult != null)
+            {
                 return validationResult;
+            }
 
             try
             {
@@ -133,7 +137,7 @@ namespace GeneralReservationSystem.API.Controllers
         [HttpPut("{userId:int}")]
         public async Task<IActionResult> UpdateUserById([FromRoute] int userId, [FromBody] UpdateUserDto dto, CancellationToken cancellationToken)
         {
-            string? currentIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            string? currentIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(currentIdStr))
             {
                 return Unauthorized();
@@ -144,9 +148,11 @@ namespace GeneralReservationSystem.API.Controllers
                 return Forbid();
             }
             dto.UserId = userId;
-            var validationResult = await ValidationHelper.ValidateAsync(_updateUserValidator, dto, cancellationToken);
+            IActionResult? validationResult = await ValidationHelper.ValidateAsync(updateUserValidator, dto, cancellationToken);
             if (validationResult != null)
+            {
                 return validationResult;
+            }
 
             try
             {
@@ -174,15 +180,17 @@ namespace GeneralReservationSystem.API.Controllers
         [Authorize]
         public async Task<IActionResult> DeleteCurrentUser(CancellationToken cancellationToken)
         {
-            string? userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            string? userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized();
             }
-            var userKeyDto = new UserKeyDto { UserId = int.Parse(userId) };
-            var validationResult = await ValidationHelper.ValidateAsync(_userKeyValidator, userKeyDto, cancellationToken);
+            UserKeyDto userKeyDto = new() { UserId = int.Parse(userId) };
+            IActionResult? validationResult = await ValidationHelper.ValidateAsync(userKeyValidator, userKeyDto, cancellationToken);
             if (validationResult != null)
+            {
                 return validationResult;
+            }
 
             try
             {
@@ -199,7 +207,7 @@ namespace GeneralReservationSystem.API.Controllers
         [HttpDelete("{userId:int}")]
         public async Task<IActionResult> DeleteUserById([FromRoute] int userId, CancellationToken cancellationToken)
         {
-            string? currentIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            string? currentIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(currentIdStr))
             {
                 return Unauthorized();
@@ -209,10 +217,12 @@ namespace GeneralReservationSystem.API.Controllers
             {
                 return Forbid();
             }
-            var userKeyDto = new UserKeyDto { UserId = userId };
-            var validationResult = await ValidationHelper.ValidateAsync(_userKeyValidator, userKeyDto, cancellationToken);
+            UserKeyDto userKeyDto = new() { UserId = userId };
+            IActionResult? validationResult = await ValidationHelper.ValidateAsync(userKeyValidator, userKeyDto, cancellationToken);
             if (validationResult != null)
+            {
                 return validationResult;
+            }
 
             try
             {

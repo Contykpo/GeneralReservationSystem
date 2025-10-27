@@ -11,6 +11,11 @@ namespace GeneralReservationSystem.Web.Services.Implementations
         {
             return await GetAsync<Trip>($"/api/trips/{keyDto.TripId}", cancellationToken);
         }
+        public async Task<TripWithDetailsDto> GetTripWithDetailsAsync(TripKeyDto keyDto, CancellationToken cancellationToken = default)
+        {
+            return await GetAsync<TripWithDetailsDto>($"/api/trips/{keyDto.TripId}/details", cancellationToken);
+        }
+
 
         public async Task<IEnumerable<Trip>> GetAllTripsAsync(CancellationToken cancellationToken = default)
         {
@@ -35,6 +40,11 @@ namespace GeneralReservationSystem.Web.Services.Implementations
         public async Task DeleteTripAsync(TripKeyDto keyDto, CancellationToken cancellationToken = default)
         {
             await DeleteAsync($"/api/trips/{keyDto.TripId}", cancellationToken);
+        }
+
+        public async Task<IEnumerable<int>> GetFreeSeatsAsync(TripKeyDto keyDto, CancellationToken cancellationToken = default)
+        {
+            return await GetAsync<IEnumerable<int>>($"/api/trips/{keyDto.TripId}/free-seats", cancellationToken);
         }
     }
 }

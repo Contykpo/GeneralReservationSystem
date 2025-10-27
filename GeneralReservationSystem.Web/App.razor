@@ -1,4 +1,5 @@
-﻿@using GeneralReservationSystem.Web.Pages
+﻿@using GeneralReservationSystem.Web.Components
+@using GeneralReservationSystem.Web.Pages
 
 <CascadingAuthenticationState>
     <Router AppAssembly="@typeof(App).Assembly">
@@ -15,7 +16,7 @@
                     }
                 </NotAuthorized>
                 <Authorizing>
-                    <MudText>Autorizando...</MudText>
+                    <CenteredLoader Text="Autorizando..." />
                 </Authorizing>
             </AuthorizeRouteView>
             <FocusOnNavigate RouteData="@routeData" Selector="h1" />

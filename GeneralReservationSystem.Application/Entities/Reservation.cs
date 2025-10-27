@@ -6,8 +6,8 @@ namespace GeneralReservationSystem.Application.Entities
     {
         [Key]
         public int TripId { get; set; }
-        [Key]
         public int UserId { get; set; }
+        [Key]
         public int Seat { get; set; }
     }
 }

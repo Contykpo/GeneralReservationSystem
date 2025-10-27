@@ -7,9 +7,9 @@ namespace GeneralReservationSystem.Application.Validators
     {
         public PagedSearchRequestDtoValidator()
         {
-            RuleFor(x => x.Page)
+            _ = RuleFor(x => x.Page)
                 .GreaterThan(0);
-            RuleFor(x => x.PageSize)
+            _ = RuleFor(x => x.PageSize)
                 .InclusiveBetween(1, 1000);
         }
     }

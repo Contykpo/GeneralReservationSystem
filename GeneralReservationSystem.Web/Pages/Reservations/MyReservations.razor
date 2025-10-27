@@ -59,7 +59,7 @@
     {
         try
         {
-            await ClientReservationService.DeleteReservationAsync(new ReservationKeyDto { TripId = item.TripId });
+            await ClientReservationService.DeleteReservationAsync(new ReservationKeyDto { TripId = item.TripId, Seat = item.Seat });
             Snackbar.Add("Reserva eliminada.", Severity.Success);
             await dataGrid.ReloadServerData();
         }

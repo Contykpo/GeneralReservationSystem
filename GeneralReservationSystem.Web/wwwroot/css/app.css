@@ -1,5 +1,15 @@
 html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    min-height: 100%;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+}
+
+#app {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
 }
 
 h1:focus {

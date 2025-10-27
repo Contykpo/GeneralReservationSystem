@@ -149,6 +149,66 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             }
         }
 
+        public async Task<TripWithDetailsDto> GetTripWithDetailsAsync(TripKeyDto keyDto, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var item = await unitOfWork.TripRepository.Query()
+                    .Join(unitOfWork.StationRepository.Query(),
+                        trip => trip.DepartureStationId,
+                        departureStation => departureStation.StationId,
+                        (trip, departureStation) => new { trip, departureStation })
+                    .Join(unitOfWork.StationRepository.Query(),
+                        trip => trip.trip.ArrivalStationId,
+                        arrivalStation => arrivalStation.StationId,
+                        (trip, arrivalStation) => new { trip, arrivalStation })
+                    .Select(x => new
+                    {
+                        x.trip.trip.TripId,
+                        x.trip.trip.DepartureStationId,
+                        DepartureStationName = x.trip.departureStation.StationName,
+                        DepartureCity = x.trip.departureStation.City,
+                        DepartureRegion = x.trip.departureStation.Region,
+                        DepartureCountry = x.trip.departureStation.Country,
+                        x.trip.trip.DepartureTime,
+                        ArrivalStationId = x.arrivalStation.StationId,
+                        ArrivalStationName = x.arrivalStation.StationName,
+                        ArrivalCity = x.arrivalStation.City,
+                        ArrivalRegion = x.arrivalStation.Region,
+                        ArrivalCountry = x.arrivalStation.Country,
+                        x.trip.trip.ArrivalTime,
+                        x.trip.trip.AvailableSeats,
+                        ReservedSeats = unitOfWork.ReservationRepository.Query().Count(r => r.TripId == x.trip.trip.TripId)
+                    })
+                    .Where(trip => trip.TripId == keyDto.TripId).FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el viaje solicitado.");
+
+                unitOfWork.Commit();
+
+                return new TripWithDetailsDto
+                {
+                    TripId = item.TripId,
+                    DepartureStationId = item.DepartureStationId,
+                    DepartureStationName = item.DepartureStationName,
+                    DepartureCity = item.DepartureCity,
+                    DepartureRegion = item.DepartureRegion,
+                    DepartureCountry = item.DepartureCountry,
+                    DepartureTime = item.DepartureTime,
+                    ArrivalStationId = item.ArrivalStationId,
+                    ArrivalStationName = item.ArrivalStationName,
+                    ArrivalCity = item.ArrivalCity,
+                    ArrivalRegion = item.ArrivalRegion,
+                    ArrivalCountry = item.ArrivalCountry,
+                    ArrivalTime = item.ArrivalTime,
+                    AvailableSeats = item.AvailableSeats,
+                    ReservedSeats = item.ReservedSeats
+                };
+            }
+            catch (RepositoryException ex)
+            {
+                throw new ServiceException("Error al buscar viajes.", ex);
+            }
+        }
+
         public async Task<IEnumerable<Trip>> GetAllTripsAsync(CancellationToken cancellationToken = default)
         {
             try
@@ -176,20 +236,20 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
                         (trip, arrivalStation) => new { trip, arrivalStation })
                     .Select(x => new
                     {
-                        TripId = x.trip.trip.TripId,
-                        DepartureStationId = x.trip.trip.DepartureStationId,
+                        x.trip.trip.TripId,
+                        x.trip.trip.DepartureStationId,
                         DepartureStationName = x.trip.departureStation.StationName,
                         DepartureCity = x.trip.departureStation.City,
                         DepartureRegion = x.trip.departureStation.Region,
                         DepartureCountry = x.trip.departureStation.Country,
-                        DepartureTime = x.trip.trip.DepartureTime,
+                        x.trip.trip.DepartureTime,
                         ArrivalStationId = x.arrivalStation.StationId,
                         ArrivalStationName = x.arrivalStation.StationName,
                         ArrivalCity = x.arrivalStation.City,
                         ArrivalRegion = x.arrivalStation.Region,
                         ArrivalCountry = x.arrivalStation.Country,
-                        ArrivalTime = x.trip.trip.ArrivalTime,
-                        AvailableSeats = x.trip.trip.AvailableSeats,
+                        x.trip.trip.ArrivalTime,
+                        x.trip.trip.AvailableSeats,
                         ReservedSeats = unitOfWork.ReservationRepository.Query().Count(r => r.TripId == x.trip.trip.TripId)
                     })
                     .ApplyFilters(searchDto.Filters);
@@ -235,6 +295,30 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             catch (RepositoryException ex)
             {
                 throw new ServiceException("Error al buscar viajes.", ex);
+            }
+        }
+
+        public async Task<IEnumerable<int>> GetFreeSeatsAsync(TripKeyDto keyDto, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                Trip trip = await tripRepository.Query()
+                    .Where(t => t.TripId == keyDto.TripId)
+                    .FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el viaje solicitado.");
+
+                List<int> reservedSeats = unitOfWork.ReservationRepository.Query()
+                    .Where(r => r.TripId == trip.TripId)
+                    .Select(r => r.Seat)
+                    .ToList();
+
+                int total = trip.AvailableSeats;
+                List<int> seats = Enumerable.Range(1, total).Except(reservedSeats).ToList();
+
+                return seats;
+            }
+            catch (RepositoryException ex)
+            {
+                throw new ServiceException("Error al obtener los asientos libres.", ex);
             }
         }
     }

@@ -5,7 +5,7 @@
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-<MudLayout>
+<MudLayout Class="d-flex flex-column flex-fill">
     <MudAppBar Elevation="1">
         <MudLink Href="/" Underline="Underline.None" Typo="Typo.h5" Class="white-text">GRS</MudLink>
         <MudSpacer/>
@@ -24,7 +24,7 @@
         <NavMenu />
     </MudDrawer>
 
-    <MudMainContent>
+    <MudMainContent Class="d-flex flex-fill">
         @Body
     </MudMainContent>
 

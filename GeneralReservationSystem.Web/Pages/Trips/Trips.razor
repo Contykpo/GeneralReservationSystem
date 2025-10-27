@@ -1,5 +1,7 @@
 @page "/trips"
 
+@attribute [Authorize]
+
 @using FluentValidation
 @using GeneralReservationSystem.Application.Common
 @using GeneralReservationSystem.Application.DTOs
@@ -18,6 +20,7 @@
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 @inject IStationService StationService
+@inject NavigationManager Navigation
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="my-8">
     <PageTitle>Viajes</PageTitle>
@@ -207,7 +210,13 @@
                     <MudTd DataLabel="Asientos">@context.AvailableSeats</MudTd>
                     <MudTd DataLabel="Reservados">@context.ReservedSeats</MudTd>
                     <MudTd DataLabel="Libres">@context.FreeSeats</MudTd>
-                    <MudTd DataLabel="Acciones" Style="text-align: right">
+                    <MudTd DataLabel="Acciones" Style="text-align: right" Class="text-nowrap">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                                   Disabled="@(context.FreeSeats == 0 || DateTime.Now >= context.DepartureTime)"
+                                   OnClick="@(() => ReserveTrip(context.TripId))"
+                                   StartIcon="@Icons.Material.Filled.EventSeat">
+                            Reservar
+                        </MudButton>
                         <AuthorizeView Roles="Admin" Context="authContext">
                             <Authorized>
                                 <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Filled.Edit" OnClick="@(() => OpenEditDialog(context))" />
@@ -244,10 +253,10 @@
                       Variant="Variant.Outlined"
                       Margin="Margin.Dense"
                        Immediate="true">
-                <MudSelectItem T="int" Value="0" Disabled="true">Seleccione una estación</MudSelectItem>
+                <MudSelectItem T="int?" Value="null" Disabled="true">Seleccione una estación</MudSelectItem>
                 @foreach (var station in _stations)
                 {
-                    <MudSelectItem T="int" Value="@station.StationId">
+                    <MudSelectItem T="int?" Value="@station.StationId">
                         @station.StationName, @station.City, @station.Region, @station.Country
                     </MudSelectItem>
                 }
@@ -270,10 +279,10 @@
                       Variant="Variant.Outlined"
                       Margin="Margin.Dense"
                        Immediate="true">
-                <MudSelectItem T="int" Value="0" Disabled="true">Seleccione una estación</MudSelectItem>
+                <MudSelectItem T="int?" Value="null" Disabled="true">Seleccione una estación</MudSelectItem>
                 @foreach (var station in _stations)
                 {
-                    <MudSelectItem T="int" Value="@station.StationId">
+                    <MudSelectItem T="int?" Value="@station.StationId">
                         @station.StationName, @station.City, @station.Region, @station.Country
                     </MudSelectItem>
                 }
@@ -715,5 +724,10 @@
         var d = date ?? DateTime.Today;
         var t = time ?? TimeSpan.Zero;
         return d.Date + t;
+    }
+
+    private void ReserveTrip(int tripId)
+    {
+        Navigation.NavigateTo($"/trips/reserve/{tripId}");
     }
 }

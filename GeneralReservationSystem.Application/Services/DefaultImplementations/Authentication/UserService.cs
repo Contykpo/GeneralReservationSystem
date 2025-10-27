@@ -1,7 +1,6 @@
 ﻿using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.DTOs.Authentication;
-using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Entities.Authentication;
 using GeneralReservationSystem.Application.Exceptions.Repositories;
 using GeneralReservationSystem.Application.Exceptions.Services;
@@ -120,7 +119,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
                     .Take(searchDto.PageSize)
                     .ToListAsync(cancellationToken);
 
-                var userInfoItems = items
+                List<UserInfo> userInfoItems = items
                     .Select(x => new UserInfo
                     {
                         UserId = x.UserId,
@@ -130,7 +129,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
                     })
                     .ToList();
 
-                var count = await query.CountAsync(cancellationToken);
+                int count = await query.CountAsync(cancellationToken);
 
                 unitOfWork.Commit();
 

@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace GeneralReservationSystem.Application.DTOs.Authentication
+﻿namespace GeneralReservationSystem.Application.DTOs.Authentication
 {
     public class RegisterUserDto
     {

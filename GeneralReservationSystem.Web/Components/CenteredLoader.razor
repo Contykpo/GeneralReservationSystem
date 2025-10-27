@@ -1,0 +1,12 @@
+﻿<MudPaper Elevation="0" Class="pa-6 d-flex flex-column flex-fill justify-content-center align-content-center text-center">
+    <MudProgressCircular Indeterminate="true" Color="Color.Primary" Class="mx-auto" />
+    @if (!string.IsNullOrWhiteSpace(Text))
+    {
+        <MudText class="mt-4">@Text</MudText>
+    }
+</MudPaper>
+
+@code {
+    [Parameter]
+    public string? Text { get; set; }
+}

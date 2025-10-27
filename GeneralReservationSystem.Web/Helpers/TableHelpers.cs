@@ -1,6 +1,5 @@
 using GeneralReservationSystem.Application.Common;
 using MudBlazor;
-using AppFilterOperator = GeneralReservationSystem.Application.Common.FilterOperator;
 using SortDirection = GeneralReservationSystem.Application.Common.SortDirection;
 
 namespace GeneralReservationSystem.Web.Helpers

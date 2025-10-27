@@ -1,7 +1,4 @@
-﻿using GeneralReservationSystem.Application.Common;
-using System.ComponentModel.DataAnnotations;
-
-namespace GeneralReservationSystem.Application.DTOs
+﻿namespace GeneralReservationSystem.Application.DTOs
 {
     public class CreateTripDto
     {

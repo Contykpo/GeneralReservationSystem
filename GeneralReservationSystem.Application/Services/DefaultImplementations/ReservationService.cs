@@ -11,17 +11,18 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
 {
     public class ReservationService(IReservationRepository reservationRepository, IUnitOfWork unitOfWork) : IReservationService
     {
-        public async Task CreateReservationAsync(CreateReservationDto dto, int userId, CancellationToken cancellationToken = default)
+        public async Task<Reservation> CreateReservationAsync(CreateReservationDto dto, CancellationToken cancellationToken = default)
         {
             Reservation reservation = new()
             {
                 TripId = dto.TripId,
-                UserId = userId,
+                UserId = dto.UserId,
                 Seat = dto.Seat
             };
             try
             {
                 _ = await reservationRepository.CreateAsync(reservation, cancellationToken);
+                return reservation;
             }
             catch (ForeignKeyViolationException ex)
             {
@@ -42,7 +43,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             Reservation reservation = new()
             {
                 TripId = keyDto.TripId,
-                UserId = keyDto.UserId
+                Seat = keyDto.Seat
             };
             try
             {
@@ -63,7 +64,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             try
             {
                 Reservation reservation = await reservationRepository.Query()
-                    .Where(r => r.TripId == keyDto.TripId && r.UserId == keyDto.UserId)
+                    .Where(r => r.TripId == keyDto.TripId && r.Seat == keyDto.Seat)
                     .FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró la reserva solicitada.");
 
                 return reservation;
@@ -71,6 +72,20 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             catch (RepositoryException ex)
             {
                 throw new ServiceException("Error al consultar la reserva.", ex);
+            }
+        }
+
+        public async Task<IEnumerable<Reservation>> GetTripUserReservationsAsync(TripUserReservationsKeyDto keyDto, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await reservationRepository.Query()
+                    .Where(r => r.UserId == keyDto.UserId && r.TripId == keyDto.TripId)
+                    .ToListAsync(cancellationToken);
+            }
+            catch (RepositoryException ex)
+            {
+                throw new ServiceException("Error al obtener las reservas del usuario.", ex);
             }
         }
 
@@ -92,10 +107,10 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                var query = unitOfWork.ReservationRepository.Query()
+                IQueryable<Reservation> query = unitOfWork.ReservationRepository.Query()
                     .ApplyFilters(searchDto.Filters);
 
-                var items = await query
+                List<Reservation> items = await query
                     .ApplySorts(searchDto.Orders)
                     .Skip((searchDto.Page - 1) * searchDto.PageSize)
                     .Take(searchDto.PageSize)

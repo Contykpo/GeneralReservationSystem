@@ -15,17 +15,14 @@ namespace GeneralReservationSystem.API.Controllers
     [ApiController]
     public class AuthenticationController(IAuthenticationService authenticationService, JwtSettings jwtSettings, IValidator<RegisterUserDto> registerValidator, IValidator<LoginDto> loginValidator, IValidator<ChangePasswordDto> changePasswordValidator) : ControllerBase
     {
-        private readonly JwtSettings _jwtSettings = jwtSettings;
-        private readonly IValidator<RegisterUserDto> _registerValidator = registerValidator;
-        private readonly IValidator<LoginDto> _loginValidator = loginValidator;
-        private readonly IValidator<ChangePasswordDto> _changePasswordValidator = changePasswordValidator;
-
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterUserDto dto, CancellationToken cancellationToken)
         {
-            var validationResult = await ValidationHelper.ValidateAsync(_registerValidator, dto, cancellationToken);
+            IActionResult? validationResult = await ValidationHelper.ValidateAsync(registerValidator, dto, cancellationToken);
             if (validationResult != null)
+            {
                 return validationResult;
+            }
 
             try
             {
@@ -48,9 +45,11 @@ namespace GeneralReservationSystem.API.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto dto, CancellationToken cancellationToken)
         {
-            var validationResult = await ValidationHelper.ValidateAsync(_loginValidator, dto, cancellationToken);
+            IActionResult? validationResult = await ValidationHelper.ValidateAsync(loginValidator, dto, cancellationToken);
             if (validationResult != null)
+            {
                 return validationResult;
+            }
 
             try
             {
@@ -98,9 +97,11 @@ namespace GeneralReservationSystem.API.Controllers
         [Authorize]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto, CancellationToken cancellationToken)
         {
-            var validationResult = await ValidationHelper.ValidateAsync(_changePasswordValidator, dto, cancellationToken);
+            IActionResult? validationResult = await ValidationHelper.ValidateAsync(changePasswordValidator, dto, cancellationToken);
             if (validationResult != null)
+            {
                 return validationResult;
+            }
 
             try
             {
@@ -135,7 +136,7 @@ namespace GeneralReservationSystem.API.Controllers
                 IsAdmin = userInfo.IsAdmin
             };
 
-            _ = JwtHelper.GenerateAndSetJwtCookie(HttpContext, session, _jwtSettings);
+            _ = JwtHelper.GenerateAndSetJwtCookie(HttpContext, session, jwtSettings);
         }
     }
 }

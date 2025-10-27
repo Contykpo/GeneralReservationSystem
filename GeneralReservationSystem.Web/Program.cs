@@ -1,5 +1,5 @@
-using GeneralReservationSystem.Web;
 using GeneralReservationSystem.Application;
+using GeneralReservationSystem.Web;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using MudBlazor.Services;

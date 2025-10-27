@@ -14,11 +14,6 @@ namespace GeneralReservationSystem.API.Controllers
     [ApiController]
     public class StationsController(IStationService stationService, IValidator<PagedSearchRequestDto> pagedSearchValidator, IValidator<CreateStationDto> createStationValidator, IValidator<UpdateStationDto> updateStationValidator, IValidator<StationKeyDto> stationKeyValidator) : ControllerBase
     {
-        private readonly IValidator<PagedSearchRequestDto> _pagedSearchValidator = pagedSearchValidator;
-        private readonly IValidator<CreateStationDto> _createStationValidator = createStationValidator;
-        private readonly IValidator<UpdateStationDto> _updateStationValidator = updateStationValidator;
-        private readonly IValidator<StationKeyDto> _stationKeyValidator = stationKeyValidator;
-
         [HttpGet]
         public async Task<IActionResult> GetAllStations(CancellationToken cancellationToken)
         {
@@ -29,9 +24,11 @@ namespace GeneralReservationSystem.API.Controllers
         [HttpPost("search")]
         public async Task<IActionResult> SearchStations([FromBody] PagedSearchRequestDto searchDto, CancellationToken cancellationToken)
         {
-            var validationResult = await ValidationHelper.ValidateAsync(_pagedSearchValidator, searchDto, cancellationToken);
+            IActionResult? validationResult = await ValidationHelper.ValidateAsync(pagedSearchValidator, searchDto, cancellationToken);
             if (validationResult != null)
+            {
                 return validationResult;
+            }
 
             PagedResult<Station> result = await stationService.SearchStationsAsync(searchDto, cancellationToken);
             return Ok(result);
@@ -40,10 +37,12 @@ namespace GeneralReservationSystem.API.Controllers
         [HttpGet("{stationId:int}")]
         public async Task<IActionResult> GetStation([FromRoute] int stationId, CancellationToken cancellationToken)
         {
-            var keyDto = new StationKeyDto { StationId = stationId };
-            var validationResult = await ValidationHelper.ValidateAsync(_stationKeyValidator, keyDto, cancellationToken);
+            StationKeyDto keyDto = new() { StationId = stationId };
+            IActionResult? validationResult = await ValidationHelper.ValidateAsync(stationKeyValidator, keyDto, cancellationToken);
             if (validationResult != null)
+            {
                 return validationResult;
+            }
 
             try
             {
@@ -60,9 +59,11 @@ namespace GeneralReservationSystem.API.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateStation([FromBody] CreateStationDto dto, CancellationToken cancellationToken)
         {
-            var validationResult = await ValidationHelper.ValidateAsync(_createStationValidator, dto, cancellationToken);
+            IActionResult? validationResult = await ValidationHelper.ValidateAsync(createStationValidator, dto, cancellationToken);
             if (validationResult != null)
+            {
                 return validationResult;
+            }
 
             try
             {
@@ -80,9 +81,11 @@ namespace GeneralReservationSystem.API.Controllers
         public async Task<IActionResult> UpdateStation([FromRoute] int stationId, [FromBody] UpdateStationDto dto, CancellationToken cancellationToken)
         {
             dto.StationId = stationId;
-            var validationResult = await ValidationHelper.ValidateAsync(_updateStationValidator, dto, cancellationToken);
+            IActionResult? validationResult = await ValidationHelper.ValidateAsync(updateStationValidator, dto, cancellationToken);
             if (validationResult != null)
+            {
                 return validationResult;
+            }
 
             try
             {
@@ -103,10 +106,12 @@ namespace GeneralReservationSystem.API.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteStation([FromRoute] int stationId, CancellationToken cancellationToken)
         {
-            var keyDto = new StationKeyDto { StationId = stationId };
-            var validationResult = await ValidationHelper.ValidateAsync(_stationKeyValidator, keyDto, cancellationToken);
+            StationKeyDto keyDto = new() { StationId = stationId };
+            IActionResult? validationResult = await ValidationHelper.ValidateAsync(stationKeyValidator, keyDto, cancellationToken);
             if (validationResult != null)
+            {
                 return validationResult;
+            }
 
             try
             {
