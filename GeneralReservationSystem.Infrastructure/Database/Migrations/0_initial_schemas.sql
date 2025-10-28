@@ -15,10 +15,8 @@ BEGIN
         CREATE TABLE ApplicationUser (
             UserId INT IDENTITY(1,1) NOT NULL,
             UserName NVARCHAR(256) NOT NULL,
-            --NormalizedUserName NVARCHAR(256) NOT NULL,
             NormalizedUserName AS UPPER(LTRIM(RTRIM(UserName))) PERSISTED,
             Email NVARCHAR(256) NULL,
-            --NormalizedEmail NVARCHAR(256) NULL,
             NormalizedEmail AS UPPER(LTRIM(RTRIM(Email))) PERSISTED,
             -- EmailConfirmed BIT NOT NULL DEFAULT(0),
             PasswordHash VARBINARY(256) NOT NULL,
@@ -36,16 +34,12 @@ BEGIN
         CREATE TABLE Station (
             StationId INT IDENTITY(1,1) NOT NULL,
             StationName NVARCHAR(100) NOT NULL,
-            -- NormalizedStationName NVARCHAR(100) NOT NULL,
             NormalizedStationName AS UPPER(LTRIM(RTRIM(StationName))) PERSISTED,
             City NVARCHAR(50) NOT NULL,
-            -- NormalizedCity NVARCHAR(50) NOT NULL,
             NormalizedCity AS UPPER(LTRIM(RTRIM(City))) PERSISTED,
             Region NVARCHAR(50) NOT NULL,
-            -- NormalizedRegion NVARCHAR(50) NOT NULL,
             NormalizedRegion AS UPPER(LTRIM(RTRIM(Region))) PERSISTED,
             Country NVARCHAR(50) NOT NULL,
-            -- NormalizedCountry NVARCHAR(50) NOT NULL,
             NormalizedCountry AS UPPER(LTRIM(RTRIM(Country))) PERSISTED,
             CONSTRAINT PK_Station PRIMARY KEY (StationId),
             CONSTRAINT UQ_Station UNIQUE (NormalizedStationName, NormalizedCity, NormalizedRegion, NormalizedCountry)

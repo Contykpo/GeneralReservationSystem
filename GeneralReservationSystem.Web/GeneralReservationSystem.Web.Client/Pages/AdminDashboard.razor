@@ -1,0 +1,52 @@
+@page "/admin-dashboard"
+
+<PageTitle>Panel de Administración</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="my-8">
+    <MudPaper Elevation="2" Class="pa-8 mb-6" Style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 16px;">
+        <MudText Typo="Typo.h3" Class="mb-2"><b>Panel de Administración</b></MudText>
+        <MudText Typo="Typo.subtitle1" Class="mb-4">Accede rápidamente a las secciones administrativas del sistema</MudText>
+        <MudGrid>
+            <MudItem xs="12" sm="6" md="3">
+                <MudCard Class="pa-4" Style="border-radius: 12px;">
+                    <MudCardContent Class="d-flex flex-column align-center">
+                        <MudIcon Icon="@Icons.Material.Filled.Group" Color="Color.Info" Style="font-size: 60px;" Class="mb-2" />
+                        <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-2"><b>Usuarios</b></MudText>
+                        <MudText Typo="Typo.body2" Align="Align.Center">Gestiona los usuarios del sistema</MudText>
+                        <MudButton Href="/admin/users" Variant="Variant.Filled" Color="Color.Info" Class="mt-3">Ir a Usuarios</MudButton>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudCard Class="pa-4" Style="border-radius: 12px;">
+                    <MudCardContent Class="d-flex flex-column align-center">
+                        <MudIcon Icon="@Icons.Material.Filled.DirectionsBus" Color="Color.Warning" Style="font-size: 60px;" Class="mb-2" />
+                        <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-2"><b>Viajes</b></MudText>
+                        <MudText Typo="Typo.body2" Align="Align.Center">Administra los viajes disponibles</MudText>
+                        <MudButton Href="/trips" Variant="Variant.Filled" Color="Color.Warning" Class="mt-3">Ir a Viajes</MudButton>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudCard Class="pa-4" Style="border-radius: 12px;">
+                    <MudCardContent Class="d-flex flex-column align-center">
+                        <MudIcon Icon="@Icons.Material.Filled.BookOnline" Color="Color.Success" Style="font-size: 60px;" Class="mb-2" />
+                        <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-2"><b>Reservas</b></MudText>
+                        <MudText Typo="Typo.body2" Align="Align.Center">Gestiona las reservas realizadas</MudText>
+                        <MudButton Href="/admin/reservations" Variant="Variant.Filled" Color="Color.Success" Class="mt-3">Ir a Reservas</MudButton>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudCard Class="pa-4" Style="border-radius: 12px;">
+                    <MudCardContent Class="d-flex flex-column align-center">
+                        <MudIcon Icon="@Icons.Material.Filled.Assessment" Color="Color.Primary" Style="font-size: 60px;" Class="mb-2" />
+                        <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-2"><b>Reportes</b></MudText>
+                        <MudText Typo="Typo.body2" Align="Align.Center">Visualiza reportes y estadísticas (<it>Proximamente</it>)</MudText>
+                        <MudButton Href="/admin/reports" Variant="Variant.Filled" Color="Color.Primary" Class="mt-3">Ir a Reportes</MudButton>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+</MudContainer>
