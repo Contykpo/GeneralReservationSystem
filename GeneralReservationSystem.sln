@@ -19,9 +19,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeneralReservationSystem.Te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeneralReservationSystem.API", "GeneralReservationSystem.API\GeneralReservationSystem.API.csproj", "{04D9C2E5-FF3B-41B3-99DB-A3D2EA5104C6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeneralReservationSystem.Web", "GeneralReservationSystem.Web\GeneralReservationSystem.Web.csproj", "{D13CB2AF-FD96-4026-B618-94958BB5C88A}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeneralReservationSystem.Migration", "GeneralReservationSystem.Migration\GeneralReservationSystem.Migration.csproj", "{2C2FA244-3D1D-42B0-B43F-77BC06FCDE6D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeneralReservationSystem.Web", "GeneralReservationSystem.Web\GeneralReservationSystem.Web\GeneralReservationSystem.Web.csproj", "{546A2596-4683-434A-8828-67DDB1CB595C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeneralReservationSystem.Web.Client", "GeneralReservationSystem.Web\GeneralReservationSystem.Web.Client\GeneralReservationSystem.Web.Client.csproj", "{26596B42-53E9-4F3B-A092-3C1678E79E4D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -49,14 +51,18 @@ Global
 		{04D9C2E5-FF3B-41B3-99DB-A3D2EA5104C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{04D9C2E5-FF3B-41B3-99DB-A3D2EA5104C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{04D9C2E5-FF3B-41B3-99DB-A3D2EA5104C6}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D13CB2AF-FD96-4026-B618-94958BB5C88A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D13CB2AF-FD96-4026-B618-94958BB5C88A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D13CB2AF-FD96-4026-B618-94958BB5C88A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D13CB2AF-FD96-4026-B618-94958BB5C88A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2C2FA244-3D1D-42B0-B43F-77BC06FCDE6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2C2FA244-3D1D-42B0-B43F-77BC06FCDE6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2C2FA244-3D1D-42B0-B43F-77BC06FCDE6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2C2FA244-3D1D-42B0-B43F-77BC06FCDE6D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{546A2596-4683-434A-8828-67DDB1CB595C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{546A2596-4683-434A-8828-67DDB1CB595C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{546A2596-4683-434A-8828-67DDB1CB595C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{546A2596-4683-434A-8828-67DDB1CB595C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{26596B42-53E9-4F3B-A092-3C1678E79E4D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26596B42-53E9-4F3B-A092-3C1678E79E4D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26596B42-53E9-4F3B-A092-3C1678E79E4D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26596B42-53E9-4F3B-A092-3C1678E79E4D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -66,8 +72,9 @@ Global
 		{120F192D-1AC8-40B8-A62A-AB8B6F31CAFE} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{9B54F143-36E3-48F5-B183-4191579FC092} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{04D9C2E5-FF3B-41B3-99DB-A3D2EA5104C6} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
-		{D13CB2AF-FD96-4026-B618-94958BB5C88A} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{2C2FA244-3D1D-42B0-B43F-77BC06FCDE6D} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{546A2596-4683-434A-8828-67DDB1CB595C} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{26596B42-53E9-4F3B-A092-3C1678E79E4D} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {55D942AB-6EC8-4F5D-B4D0-983864A504DC}

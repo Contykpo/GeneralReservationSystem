@@ -60,5 +60,15 @@ services:
       - Jwt__SecretKey=${JWT_SECRET_KEY}
       - CorsOrigins=${CORS_ORIGINS}
 
+  generalreservationsystem.web:
+    build:
+      context: .
+      dockerfile: GeneralReservationSystem.Web/GeneralReservationSystem.Web/Dockerfile
+    ports:
+      - "${HOST_WEB_HTTP_PORTS:-5000}:${WEB_HTTP_PORTS:-8080}"
+      - "${HOST_WEB_HTTPS_PORTS:-5001}:${WEB_HTTPS_PORTS:-8081}"
+    depends_on:
+      - generalreservationsystem.api
+
 volumes:
   sql_data:
