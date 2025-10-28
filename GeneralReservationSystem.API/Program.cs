@@ -91,6 +91,7 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
+builder.Services.AddHealthChecks();
 
 WebApplication app = builder.Build();
 
@@ -102,5 +103,6 @@ app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHealthChecks("/health");
 app.MapOpenApi();
 app.Run();

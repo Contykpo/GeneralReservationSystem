@@ -48,15 +48,15 @@ services:
       context: .
       dockerfile: GeneralReservationSystem.API/Dockerfile
     ports:
-      - "${HOST_API_HTTP_PORTS:-5002}:${API_HTTP_PORTS:-8080}"
-      - "${HOST_API_HTTPS_PORTS:-5003}:${API_HTTPS_PORTS:-8081}"
+      - "${HOST_API_HTTP_PORTS:-5002}:${API_HTTP_PORT:-8080}"
+      - "${HOST_API_HTTPS_PORTS:-5003}:${API_HTTPS_PORT:-8081}"
     depends_on:
       generalreservationsystem.migrator:
         condition: service_completed_successfully
     environment:
       - ConnectionStrings__DefaultConnection=Server=${SQL_HOST},${SQL_PORT};Database=GRSDb;User Id=${DB_USER:-grs_app_user};Password=${DB_PASSWORD};TrustServerCertificate=True
-      - ASPNETCORE_HTTP_PORTS=${API_HTTP_PORTS:-8080}
-      - ASPNETCORE_HTTPS_PORTS=${API_HTTPS_PORTS:-8081}
+      - ASPNETCORE_HTTP_PORTS=${API_HTTP_PORT:-8080}
+      - ASPNETCORE_HTTPS_PORTS=${API_HTTPS_PORT:-8081}
       - Jwt__SecretKey=${JWT_SECRET_KEY}
       - CorsOrigins=${CORS_ORIGINS}
 
@@ -65,10 +65,11 @@ services:
       context: .
       dockerfile: GeneralReservationSystem.Web/GeneralReservationSystem.Web/Dockerfile
     ports:
-      - "${HOST_WEB_HTTP_PORTS:-5000}:${WEB_HTTP_PORTS:-8080}"
-      - "${HOST_WEB_HTTPS_PORTS:-5001}:${WEB_HTTPS_PORTS:-8081}"
+      - "${HOST_WEB_HTTP_PORTS:-5000}:${WEB_HTTP_PORT:-8080}"
+      - "${HOST_WEB_HTTPS_PORTS:-5001}:${WEB_HTTPS_PORT:-8081}"
     depends_on:
-      - generalreservationsystem.api
+      generalreservationsystem.api:
+        condition: service_healthy
 
 volumes:
   sql_data:
