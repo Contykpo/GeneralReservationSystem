@@ -9,7 +9,6 @@ namespace GeneralReservationSystem.Application.Services.Interfaces
     {
         Task<Reservation> GetReservationAsync(ReservationKeyDto keyDto, CancellationToken cancellationToken = default);
         Task<IEnumerable<UserReservationDetailsDto>> GetUserReservationsAsync(UserKeyDto keyDto, CancellationToken cancellationToken = default);
-        Task<IEnumerable<UserReservationDetailsDto>> GetTripUserReservationsAsync(TripUserReservationsKeyDto keyDto, CancellationToken cancellationToken = default);
         Task<PagedResult<ReservationDetailsDto>> SearchReservationsAsync(PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default);
         Task<PagedResult<UserReservationDetailsDto>> SearchUserReservationsAsync(UserKeyDto keyDto, PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default);
         Task<Reservation> CreateReservationAsync(CreateReservationDto dto, CancellationToken cancellationToken = default);

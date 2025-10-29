@@ -10,15 +10,51 @@
 @using GeneralReservationSystem.Application.Exceptions.Services
 @using GeneralReservationSystem.Application.Services.Interfaces
 
+@using AppFilterOperator = GeneralReservationSystem.Application.Common.FilterOperator
+
 @inject IClientReservationService ClientReservationService
 @inject ISnackbar Snackbar
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="my-8">
     <PageTitle>Mis Reservas</PageTitle>
+    <MudExpansionPanels Class="mb-3">
+        <MudExpansionPanel Text="Filtros avanzados" Icon="@Icons.Material.Filled.FilterList">
+            <MudGrid>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudTextField @bind-Value="_filterDepartureStationName" Label="Estación Salida" Variant="Variant.Outlined" Clearable="true" Immediate="true" DebounceInterval="300" OnDebounceIntervalElapsed="@(() => dataGrid.ReloadServerData())" />
+                </MudItem>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudTextField @bind-Value="_filterArrivalStationName" Label="Estación Llegada" Variant="Variant.Outlined" Clearable="true" Immediate="true" DebounceInterval="300" OnDebounceIntervalElapsed="@(() => dataGrid.ReloadServerData())" />
+                </MudItem>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudTextField @bind-Value="_filterDepartureCity" Label="Ciudad Salida" Variant="Variant.Outlined" Clearable="true" Immediate="true" DebounceInterval="300" OnDebounceIntervalElapsed="@(() => dataGrid.ReloadServerData())" />
+                </MudItem>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudTextField @bind-Value="_filterArrivalCity" Label="Ciudad Llegada" Variant="Variant.Outlined" Clearable="true" Immediate="true" DebounceInterval="300" OnDebounceIntervalElapsed="@(() => dataGrid.ReloadServerData())" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ClearFilters" StartIcon="@Icons.Material.Filled.Clear">Limpiar Filtros</MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudExpansionPanel>
+    </MudExpansionPanels>
     <MudDataGrid @ref="dataGrid"
                  T="UserReservationDetailsDto"
                  ServerData="ServerReload"
                  RowsPerPage="10">
+        <ToolBarContent>
+            <MudTextField @bind-Value="_searchString"
+                          Placeholder="Buscar en todos los campos"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          IconSize="Size.Medium"
+                          Class="mt-0"
+                          Clearable="true"
+                          OnClearButtonClick="@(() => { _searchString = string.Empty; dataGrid.ReloadServerData(); })"
+                          Immediate="true"
+                          DebounceInterval="300"
+                          OnDebounceIntervalElapsed="@(() => dataGrid.ReloadServerData())" />
+        </ToolBarContent>
         <Columns>
             <PropertyColumn Property="x => x.TripId" Title="Viaje" />
             <TemplateColumn Title="Salida">
@@ -54,13 +90,25 @@
 
 @code {
     private MudDataGrid<UserReservationDetailsDto> dataGrid = null!;
+    private string _searchString = string.Empty;
+    private string? _filterDepartureStationName = null;
+    private string? _filterArrivalStationName = null;
+    private string? _filterDepartureCity = null;
+    private string? _filterArrivalCity = null;
 
     private async Task<GridData<UserReservationDetailsDto>> ServerReload(GridState<UserReservationDetailsDto> state)
     {
         try
         {
-            var list = await ClientReservationService.GetCurrentUserReservationsAsync();
-            return new GridData<UserReservationDetailsDto> { Items = list, TotalItems = list.Count() };
+            var searchRequest = new PagedSearchRequestDto
+            {
+                Page = state.Page + 1,
+                PageSize = state.PageSize,
+                Filters = BuildFilters(),
+                Orders = []
+            };
+            var result = await ClientReservationService.SearchCurrentUserReservationsAsync(searchRequest);
+            return new GridData<UserReservationDetailsDto> { Items = result.Items, TotalItems = result.TotalCount };
         }
         catch (ServiceException ex)
         {
@@ -71,6 +119,40 @@
             Snackbar.Add("Error al cargar reservas.", Severity.Error);
         }
         return new GridData<UserReservationDetailsDto> { Items = Array.Empty<UserReservationDetailsDto>(), TotalItems = 0 };
+    }
+
+    private IList<Filter> BuildFilters()
+    {
+        List<Filter> filters = [];
+        if (!string.IsNullOrWhiteSpace(_searchString))
+        {
+            filters.Add(new Filter("DepartureStationName", AppFilterOperator.Contains, _searchString));
+            filters.Add(new Filter("ArrivalStationName", AppFilterOperator.Contains, _searchString));
+            filters.Add(new Filter("DepartureCity", AppFilterOperator.Contains, _searchString));
+            filters.Add(new Filter("ArrivalCity", AppFilterOperator.Contains, _searchString));
+        }
+        else
+        {
+            if (!string.IsNullOrWhiteSpace(_filterDepartureStationName))
+                filters.Add(new Filter("DepartureStationName", AppFilterOperator.Contains, _filterDepartureStationName));
+            if (!string.IsNullOrWhiteSpace(_filterArrivalStationName))
+                filters.Add(new Filter("ArrivalStationName", AppFilterOperator.Contains, _filterArrivalStationName));
+            if (!string.IsNullOrWhiteSpace(_filterDepartureCity))
+                filters.Add(new Filter("DepartureCity", AppFilterOperator.Contains, _filterDepartureCity));
+            if (!string.IsNullOrWhiteSpace(_filterArrivalCity))
+                filters.Add(new Filter("ArrivalCity", AppFilterOperator.Contains, _filterArrivalCity));
+        }
+        return filters;
+    }
+
+    private void ClearFilters()
+    {
+        _filterDepartureStationName = null;
+        _filterArrivalStationName = null;
+        _filterDepartureCity = null;
+        _filterArrivalCity = null;
+        _searchString = string.Empty;
+        dataGrid!.ReloadServerData();
     }
 
     private async Task HandleDelete(UserReservationDetailsDto item)

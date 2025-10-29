@@ -15,12 +15,6 @@ namespace GeneralReservationSystem.Application.DTOs
         public int Seat { get; set; }
     }
 
-    public class TripUserReservationsKeyDto
-    {
-        public int TripId { get; set; }
-        public int UserId { get; set; }
-    }
-
     public class ReservationDetailsDto
     {
         public int TripId { get; set; }

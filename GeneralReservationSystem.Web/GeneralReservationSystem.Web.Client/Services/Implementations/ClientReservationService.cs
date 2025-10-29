@@ -29,6 +29,11 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
             return await PostAsync<PagedResult<UserReservationDetailsDto>>($"/api/reservations/search/{keyDto.UserId}", searchDto, cancellationToken);
         }
 
+        public async Task<PagedResult<UserReservationDetailsDto>> SearchCurrentUserReservationsAsync(PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default)
+        {
+            return await PostAsync<PagedResult<UserReservationDetailsDto>>("/api/reservations/search/me", searchDto, cancellationToken);
+        }
+
         public async Task<Reservation> CreateReservationAsync(CreateReservationDto dto, CancellationToken cancellationToken = default)
         {
             return await PostAsync<Reservation>("/api/reservations", dto, cancellationToken);
@@ -39,19 +44,9 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
             await DeleteAsync($"/api/reservations/{keyDto.TripId}/{keyDto.Seat}", cancellationToken);
         }
 
-        public async Task<IEnumerable<UserReservationDetailsDto>> GetTripUserReservationsAsync(TripUserReservationsKeyDto keyDto, CancellationToken cancellationToken = default)
-        {
-            return await GetAsync<IEnumerable<UserReservationDetailsDto>>($"/api/reservations/{keyDto.TripId}/user/{keyDto.UserId}", cancellationToken);
-        }
-
         public async Task<IEnumerable<UserReservationDetailsDto>> GetCurrentUserReservationsAsync(CancellationToken cancellationToken = default)
         {
             return await GetAsync<IEnumerable<UserReservationDetailsDto>>("/api/reservations/me", cancellationToken);
-        }
-
-        public async Task<IEnumerable<UserReservationDetailsDto>> GetCurrentUserReservationsForTripAsync(TripKeyDto keyDto, CancellationToken cancellationToken = default)
-        {
-            return await GetAsync<IEnumerable<UserReservationDetailsDto>>($"/api/reservations/me/trip/{keyDto.TripId}", cancellationToken);
         }
 
         public async Task<Reservation> CreateCurrentUserReservationAsync(ReservationKeyDto keyDto, CancellationToken cancellationToken = default)
