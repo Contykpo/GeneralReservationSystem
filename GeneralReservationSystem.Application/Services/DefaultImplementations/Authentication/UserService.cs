@@ -114,7 +114,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
                     .ApplyFilters(searchDto.Filters);
 
                 var items = await query
-                    .ApplySorts(searchDto.Orders)
+                    .ApplyOrders(searchDto.Orders)
                     .Skip((searchDto.Page - 1) * searchDto.PageSize)
                     .Take(searchDto.PageSize)
                     .ToListAsync(cancellationToken);

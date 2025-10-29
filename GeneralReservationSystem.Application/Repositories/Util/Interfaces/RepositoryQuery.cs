@@ -78,12 +78,12 @@ namespace GeneralReservationSystem.Application.Repositories.Util.Interfaces
             return query.Where(lambda);
         }
 
-        public static IQueryable<T> ApplySorts<T>(this IQueryable<T> query, IEnumerable<SortOption> sorts)
+        public static IQueryable<T> ApplyOrders<T>(this IQueryable<T> query, IEnumerable<SortOption> sorts)
         {
             bool first = true;
             IOrderedQueryable<T>? orderedQuery = query as IOrderedQueryable<T>;
 
-            ArgumentNullException.ThrowIfNull(orderedQuery, "The query must be of type IOrderedQueryable<T> to apply sorts.");
+            ArgumentNullException.ThrowIfNull(orderedQuery, "The query must be of type IOrderedQueryable<T> to apply orders.");
 
             foreach (SortOption sort in sorts)
             {

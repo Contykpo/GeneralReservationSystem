@@ -185,7 +185,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
                     .ApplyFilters(searchDto.Filters);
 
                 var items = await query
-                    .ApplySorts(searchDto.Orders)
+                    .ApplyOrders(searchDto.Orders)
                     .Skip((searchDto.Page - 1) * searchDto.PageSize)
                     .Take(searchDto.PageSize)
                     .ToListAsync(cancellationToken);
@@ -265,10 +265,10 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
                         x.t.ArrivalTime,
                         x.r.Seat
                     })
-                    .ApplyFilters(searchDto.Filters); // Esto rompe el anterior where!!!! TODO TODO arreglar
+                    .ApplyFilters(searchDto.Filters); // TODO: This may override the user filter. May need an alternative approach to filters.
 
                 var items = await query
-                    .ApplySorts(searchDto.Orders)
+                    .ApplyOrders(searchDto.Orders)
                     .Skip((searchDto.Page - 1) * searchDto.PageSize)
                     .Take(searchDto.PageSize)
                     .ToListAsync(cancellationToken);
