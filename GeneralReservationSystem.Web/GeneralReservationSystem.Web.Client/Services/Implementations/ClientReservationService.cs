@@ -2,7 +2,7 @@ using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.DTOs.Authentication;
 using GeneralReservationSystem.Application.Entities;
-using GeneralReservationSystem.Application.Services.Interfaces;
+using GeneralReservationSystem.Web.Client.Helpers;
 using GeneralReservationSystem.Web.Client.Services.Interfaces;
 
 namespace GeneralReservationSystem.Web.Client.Services.Implementations
@@ -21,17 +21,20 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
 
         public async Task<PagedResult<ReservationDetailsDto>> SearchReservationsAsync(PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default)
         {
-            return await PostAsync<PagedResult<ReservationDetailsDto>>("/api/reservations/search", searchDto, cancellationToken);
+            string query = searchDto.ToQueryString();
+            return await GetAsync<PagedResult<ReservationDetailsDto>>($"/api/reservations/search?{query}", cancellationToken);
         }
 
         public async Task<PagedResult<UserReservationDetailsDto>> SearchUserReservationsAsync(UserKeyDto keyDto, PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default)
         {
-            return await PostAsync<PagedResult<UserReservationDetailsDto>>($"/api/reservations/search/{keyDto.UserId}", searchDto, cancellationToken);
+            string query = searchDto.ToQueryString();
+            return await GetAsync<PagedResult<UserReservationDetailsDto>>($"/api/reservations/search/{keyDto.UserId}?{query}", cancellationToken);
         }
 
         public async Task<PagedResult<UserReservationDetailsDto>> SearchCurrentUserReservationsAsync(PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default)
         {
-            return await PostAsync<PagedResult<UserReservationDetailsDto>>("/api/reservations/search/me", searchDto, cancellationToken);
+            string query = searchDto.ToQueryString();
+            return await GetAsync<PagedResult<UserReservationDetailsDto>>($"/api/reservations/search/me?{query}", cancellationToken);
         }
 
         public async Task<Reservation> CreateReservationAsync(CreateReservationDto dto, CancellationToken cancellationToken = default)

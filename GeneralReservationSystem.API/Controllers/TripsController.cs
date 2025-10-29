@@ -34,6 +34,21 @@ namespace GeneralReservationSystem.API.Controllers
             return Ok(result);
         }
 
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchTrips(CancellationToken cancellationToken)
+        {
+            PagedSearchRequestDto searchDto = new();
+            searchDto.PopulateFromQuery(Request.Query);
+            IActionResult? validationResult = await ValidationHelper.ValidateAsync(pagedSearchValidator, searchDto, cancellationToken);
+            if (validationResult != null)
+            {
+                return validationResult;
+            }
+
+            PagedResult<TripWithDetailsDto> result = await tripService.SearchTripsAsync(searchDto, cancellationToken);
+            return Ok(result);
+        }
+
         [HttpGet("{tripId:int}")]
         public async Task<IActionResult> GetTrip([FromRoute] int tripId, CancellationToken cancellationToken)
         {

@@ -17,29 +17,31 @@ namespace GeneralReservationSystem.API.Controllers
     [Authorize]
     public class ReservationsController(IReservationService reservationService, IValidator<PagedSearchRequestDto> pagedSearchValidator, IValidator<CreateReservationDto> createReservationValidator, IValidator<ReservationKeyDto> reservationKeyValidator, IValidator<UserKeyDto> userKeyValidator) : ControllerBase
     {
-        [HttpPost("search")]
+        [HttpGet("search")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> SearchReservations([FromBody] PagedSearchRequestDto searchDto, CancellationToken cancellationToken)
+        public async Task<IActionResult> SearchReservations(CancellationToken cancellationToken)
         {
+            PagedSearchRequestDto searchDto = new();
+            searchDto.PopulateFromQuery(Request.Query);
             IActionResult? validationResult = await ValidationHelper.ValidateAsync(pagedSearchValidator, searchDto, cancellationToken);
             if (validationResult != null)
             {
                 return validationResult;
             }
-
             PagedResult<ReservationDetailsDto> result = await reservationService.SearchReservationsAsync(searchDto, cancellationToken);
             return Ok(result);
         }
 
-        [HttpPost("search/{userId:int}")]
-        public async Task<IActionResult> SearchUserReservations([FromBody] PagedSearchRequestDto searchDto, [FromRoute] int userId, CancellationToken cancellationToken)
+        [HttpGet("search/{userId:int}")]
+        public async Task<IActionResult> SearchUserReservations([FromRoute] int userId, CancellationToken cancellationToken)
         {
             string? currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(currentUserId))
             {
                 return Unauthorized();
             }
-
+            PagedSearchRequestDto searchDto = new();
+            searchDto.PopulateFromQuery(Request.Query);
             IActionResult? paginationValidationResult = await ValidationHelper.ValidateAsync(pagedSearchValidator, searchDto, cancellationToken);
             if (paginationValidationResult != null)
             {
@@ -51,31 +53,29 @@ namespace GeneralReservationSystem.API.Controllers
             {
                 return userValidationResult;
             }
-
             if (int.Parse(currentUserId) != userId && !User.IsInRole("Admin"))
             {
                 return Forbid();
             }
-
             PagedResult<UserReservationDetailsDto> result = await reservationService.SearchUserReservationsAsync(keyDto, searchDto, cancellationToken);
             return Ok(result);
         }
 
-        [HttpPost("search/me")]
-        public async Task<IActionResult> SearchCurrentUserReservations([FromBody] PagedSearchRequestDto searchDto, CancellationToken cancellationToken)
+        [HttpGet("search/me")]
+        public async Task<IActionResult> SearchCurrentUserReservations(CancellationToken cancellationToken)
         {
             string? userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized();
             }
-
+            PagedSearchRequestDto searchDto = new();
+            searchDto.PopulateFromQuery(Request.Query);
             IActionResult? paginationValidationResult = await ValidationHelper.ValidateAsync(pagedSearchValidator, searchDto, cancellationToken);
             if (paginationValidationResult != null)
             {
                 return paginationValidationResult;
             }
-
             PagedResult<UserReservationDetailsDto> result = await reservationService.SearchUserReservationsAsync(new UserKeyDto { UserId = int.Parse(userId) }, searchDto, cancellationToken);
             return Ok(result);
         }

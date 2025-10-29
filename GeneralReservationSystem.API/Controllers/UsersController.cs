@@ -29,6 +29,22 @@ namespace GeneralReservationSystem.API.Controllers
             return Ok(result);
         }
 
+        [HttpGet("search")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> SearchUsers(CancellationToken cancellationToken)
+        {
+            PagedSearchRequestDto searchDto = new();
+            searchDto.PopulateFromQuery(Request.Query);
+            IActionResult? validationResult = await ValidationHelper.ValidateAsync(pagedSearchValidator, searchDto, cancellationToken);
+            if (validationResult != null)
+            {
+                return validationResult;
+            }
+
+            Application.Common.PagedResult<UserInfo> result = await userService.SearchUsersAsync(searchDto, cancellationToken);
+            return Ok(result);
+        }
+
         [HttpGet("me")]
         [Authorize]
         public async Task<IActionResult> GetCurrentUser(CancellationToken cancellationToken)

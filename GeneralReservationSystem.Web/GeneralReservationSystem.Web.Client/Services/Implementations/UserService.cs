@@ -3,6 +3,7 @@ using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.DTOs.Authentication;
 using GeneralReservationSystem.Application.Entities.Authentication;
 using GeneralReservationSystem.Application.Services.Interfaces.Authentication;
+using GeneralReservationSystem.Web.Client.Helpers;
 
 namespace GeneralReservationSystem.Web.Client.Services.Implementations
 {
@@ -15,7 +16,8 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
 
         public async Task<PagedResult<UserInfo>> SearchUsersAsync(PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default)
         {
-            return await PostAsync<PagedResult<UserInfo>>("/api/users/search", searchDto, cancellationToken);
+            string query = searchDto.ToQueryString();
+            return await GetAsync<PagedResult<UserInfo>>($"/api/users/search?{query}", cancellationToken);
         }
 
         public async Task<User> GetUserAsync(UserKeyDto keyDto, CancellationToken cancellationToken = default)

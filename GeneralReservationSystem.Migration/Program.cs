@@ -2,7 +2,7 @@
 
 ArgumentNullException.ThrowIfNull(Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection"));
 
-var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")!;
+string connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")!;
 
 MigrationsRunner.RunMigrations(connectionString);
 

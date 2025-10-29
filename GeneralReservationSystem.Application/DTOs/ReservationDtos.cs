@@ -1,6 +1,4 @@
-﻿using GeneralReservationSystem.Application.Common;
-
-namespace GeneralReservationSystem.Application.DTOs
+﻿namespace GeneralReservationSystem.Application.DTOs
 {
     public class CreateReservationDto
     {

@@ -34,6 +34,21 @@ namespace GeneralReservationSystem.API.Controllers
             return Ok(result);
         }
 
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchStations(CancellationToken cancellationToken)
+        {
+            PagedSearchRequestDto searchDto = new();
+            searchDto.PopulateFromQuery(Request.Query);
+            IActionResult? validationResult = await ValidationHelper.ValidateAsync(pagedSearchValidator, searchDto, cancellationToken);
+            if (validationResult != null)
+            {
+                return validationResult;
+            }
+
+            PagedResult<Station> result = await stationService.SearchStationsAsync(searchDto, cancellationToken);
+            return Ok(result);
+        }
+
         [HttpGet("{stationId:int}")]
         public async Task<IActionResult> GetStation([FromRoute] int stationId, CancellationToken cancellationToken)
         {

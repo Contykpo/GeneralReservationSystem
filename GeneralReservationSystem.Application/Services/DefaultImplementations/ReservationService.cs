@@ -190,7 +190,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
                     .Take(searchDto.PageSize)
                     .ToListAsync(cancellationToken);
 
-                 List<ReservationDetailsDto> castedItems = [.. items
+                List<ReservationDetailsDto> castedItems = [.. items
                     .Select(x => new ReservationDetailsDto
                     {
                         TripId = x.TripId,

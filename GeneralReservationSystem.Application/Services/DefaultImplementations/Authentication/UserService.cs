@@ -119,15 +119,14 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
                     .Take(searchDto.PageSize)
                     .ToListAsync(cancellationToken);
 
-                List<UserInfo> userInfoItems = items
+                List<UserInfo> userInfoItems = [.. items
                     .Select(x => new UserInfo
                     {
                         UserId = x.UserId,
                         UserName = x.UserName,
                         Email = x.Email,
                         IsAdmin = x.IsAdmin
-                    })
-                    .ToList();
+                    })];
 
                 int count = await query.CountAsync(cancellationToken);
 

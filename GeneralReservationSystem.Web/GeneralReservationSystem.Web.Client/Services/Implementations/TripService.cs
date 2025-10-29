@@ -2,6 +2,7 @@ using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Services.Interfaces;
+using GeneralReservationSystem.Web.Client.Helpers;
 
 namespace GeneralReservationSystem.Web.Client.Services.Implementations
 {
@@ -24,7 +25,8 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
 
         public async Task<PagedResult<TripWithDetailsDto>> SearchTripsAsync(PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default)
         {
-            return await PostAsync<PagedResult<TripWithDetailsDto>>("/api/trips/search", searchDto, cancellationToken);
+            string query = searchDto.ToQueryString();
+            return await GetAsync<PagedResult<TripWithDetailsDto>>($"/api/trips/search?{query}", cancellationToken);
         }
 
         public async Task<Trip> CreateTripAsync(CreateTripDto dto, CancellationToken cancellationToken = default)

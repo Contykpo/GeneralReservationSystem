@@ -306,13 +306,12 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
                     .Where(t => t.TripId == keyDto.TripId)
                     .FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el viaje solicitado.");
 
-                List<int> reservedSeats = unitOfWork.ReservationRepository.Query()
+                List<int> reservedSeats = [.. unitOfWork.ReservationRepository.Query()
                     .Where(r => r.TripId == trip.TripId)
-                    .Select(r => r.Seat)
-                    .ToList();
+                    .Select(r => r.Seat)];
 
                 int total = trip.AvailableSeats;
-                List<int> seats = Enumerable.Range(1, total).Except(reservedSeats).ToList();
+                List<int> seats = [.. Enumerable.Range(1, total).Except(reservedSeats)];
 
                 return seats;
             }

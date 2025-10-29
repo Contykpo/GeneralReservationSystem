@@ -2,6 +2,7 @@ using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Services.Interfaces;
+using GeneralReservationSystem.Web.Client.Helpers;
 
 namespace GeneralReservationSystem.Web.Client.Services.Implementations
 {
@@ -19,7 +20,8 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
 
         public async Task<PagedResult<Station>> SearchStationsAsync(PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default)
         {
-            return await PostAsync<PagedResult<Station>>("/api/stations/search", searchDto, cancellationToken);
+            string query = searchDto.ToQueryString();
+            return await GetAsync<PagedResult<Station>>($"/api/stations/search?{query}", cancellationToken);
         }
 
         public async Task<Station> CreateStationAsync(CreateStationDto dto, CancellationToken cancellationToken = default)

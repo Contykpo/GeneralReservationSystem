@@ -1,6 +1,6 @@
+using GeneralReservationSystem.Application;
 using GeneralReservationSystem.Application.Services.Interfaces;
 using GeneralReservationSystem.Application.Services.Interfaces.Authentication;
-using GeneralReservationSystem.Application;
 using GeneralReservationSystem.Web.Client.Authentication;
 using GeneralReservationSystem.Web.Client.Services.Implementations;
 using GeneralReservationSystem.Web.Client.Services.Implementations.Authentication;
