@@ -1,5 +1,6 @@
 using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.DTOs;
+using GeneralReservationSystem.Application.DTOs.Authentication;
 using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Exceptions.Repositories;
 using GeneralReservationSystem.Application.Exceptions.Services;
@@ -75,13 +76,64 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             }
         }
 
-        public async Task<IEnumerable<Reservation>> GetTripUserReservationsAsync(TripUserReservationsKeyDto keyDto, CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<UserReservationDetailsDto>> GetTripUserReservationsAsync(TripUserReservationsKeyDto keyDto, CancellationToken cancellationToken = default)
         {
             try
             {
-                return await reservationRepository.Query()
-                    .Where(r => r.UserId == keyDto.UserId && r.TripId == keyDto.TripId)
-                    .ToListAsync(cancellationToken);
+                var items = await reservationRepository.Query()
+                    .Join(unitOfWork.TripRepository.Query(),
+                        r => r.TripId,
+                        t => t.TripId,
+                        (r, t) => new { r, t })
+                    .Join(unitOfWork.StationRepository.Query(),
+                        x => x.t.DepartureStationId,
+                        dst => dst.StationId,
+                        (x, dst) => new { x.r, x.t, dst })
+                    .Join(unitOfWork.StationRepository.Query(),
+                        x => x.t.ArrivalStationId,
+                        ast => ast.StationId,
+                        (x, ast) => new { x.r, x.t, x.dst, ast })
+                    .Where(x => x.r.UserId == keyDto.UserId && x.r.TripId == keyDto.TripId)
+                    .Select(x => new
+                    {
+                        x.t.TripId,
+                        x.t.DepartureStationId,
+                        DepartureStationName = x.dst.StationName,
+                        DepartureCity = x.dst.City,
+                        DepartureRegion = x.dst.Region,
+                        DepartureCountry = x.dst.Country,
+                        x.t.DepartureTime,
+                        ArrivalStationId = x.ast.StationId,
+                        ArrivalStationName = x.ast.StationName,
+                        ArrivalCity = x.ast.City,
+                        ArrivalRegion = x.ast.Region,
+                        ArrivalCountry = x.ast.Country,
+                        x.t.ArrivalTime,
+                        x.r.Seat
+                    }).ToListAsync(cancellationToken);
+
+                List<UserReservationDetailsDto> castedItems = [.. items
+                    .Select(x => new UserReservationDetailsDto
+                    {
+                        TripId = x.TripId,
+                        DepartureStationId = x.DepartureStationId,
+                        DepartureStationName = x.DepartureStationName,
+                        DepartureCity = x.DepartureCity,
+                        DepartureRegion = x.DepartureRegion,
+                        DepartureCountry = x.DepartureCountry,
+                        DepartureTime = x.DepartureTime,
+                        ArrivalStationId = x.ArrivalStationId,
+                        ArrivalStationName = x.ArrivalStationName,
+                        ArrivalCity = x.ArrivalCity,
+                        ArrivalRegion = x.ArrivalRegion,
+                        ArrivalCountry = x.ArrivalCountry,
+                        ArrivalTime = x.ArrivalTime,
+                        Seat = x.Seat
+                    })];
+
+                unitOfWork.Commit();
+
+                return castedItems;
             }
             catch (RepositoryException ex)
             {
@@ -89,13 +141,64 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             }
         }
 
-        public async Task<IEnumerable<Reservation>> GetUserReservationsAsync(int userId, CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<UserReservationDetailsDto>> GetUserReservationsAsync(UserKeyDto keyDto, CancellationToken cancellationToken = default)
         {
             try
             {
-                return await reservationRepository.Query()
-                    .Where(r => r.UserId == userId)
-                    .ToListAsync(cancellationToken);
+                var items = await reservationRepository.Query()
+                    .Join(unitOfWork.TripRepository.Query(),
+                        r => r.TripId,
+                        t => t.TripId,
+                        (r, t) => new { r, t })
+                    .Join(unitOfWork.StationRepository.Query(),
+                        x => x.t.DepartureStationId,
+                        dst => dst.StationId,
+                        (x, dst) => new { x.r, x.t, dst })
+                    .Join(unitOfWork.StationRepository.Query(),
+                        x => x.t.ArrivalStationId,
+                        ast => ast.StationId,
+                        (x, ast) => new { x.r, x.t, x.dst, ast })
+                    .Where(x => x.r.UserId == keyDto.UserId)
+                    .Select(x => new
+                    {
+                        x.t.TripId,
+                        x.t.DepartureStationId,
+                        DepartureStationName = x.dst.StationName,
+                        DepartureCity = x.dst.City,
+                        DepartureRegion = x.dst.Region,
+                        DepartureCountry = x.dst.Country,
+                        x.t.DepartureTime,
+                        ArrivalStationId = x.ast.StationId,
+                        ArrivalStationName = x.ast.StationName,
+                        ArrivalCity = x.ast.City,
+                        ArrivalRegion = x.ast.Region,
+                        ArrivalCountry = x.ast.Country,
+                        x.t.ArrivalTime,
+                        x.r.Seat
+                    }).ToListAsync(cancellationToken);
+
+                List<UserReservationDetailsDto> castedItems = [.. items
+                    .Select(x => new UserReservationDetailsDto
+                    {
+                        TripId = x.TripId,
+                        DepartureStationId = x.DepartureStationId,
+                        DepartureStationName = x.DepartureStationName,
+                        DepartureCity = x.DepartureCity,
+                        DepartureRegion = x.DepartureRegion,
+                        DepartureCountry = x.DepartureCountry,
+                        DepartureTime = x.DepartureTime,
+                        ArrivalStationId = x.ArrivalStationId,
+                        ArrivalStationName = x.ArrivalStationName,
+                        ArrivalCity = x.ArrivalCity,
+                        ArrivalRegion = x.ArrivalRegion,
+                        ArrivalCountry = x.ArrivalCountry,
+                        ArrivalTime = x.ArrivalTime,
+                        Seat = x.Seat
+                    })];
+
+                unitOfWork.Commit();
+
+                return castedItems;
             }
             catch (RepositoryException ex)
             {
@@ -103,26 +206,164 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             }
         }
 
-        public async Task<PagedResult<Reservation>> SearchReservationsAsync(PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default)
+        public async Task<PagedResult<ReservationDetailsDto>> SearchReservationsAsync(PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default)
         {
             try
             {
-                IQueryable<Reservation> query = unitOfWork.ReservationRepository.Query()
+                var query = unitOfWork.ReservationRepository.Query()
+                    .Join(unitOfWork.UserRepository.Query(),
+                        r => r.UserId,
+                        u => u.UserId,
+                        (r, u) => new { r, u })
+                    .Join(unitOfWork.TripRepository.Query(),
+                        r => r.r.TripId,
+                        t => t.TripId,
+                        (r, t) => new { r.r, r.u, t })
+                    .Join(unitOfWork.StationRepository.Query(),
+                        x => x.t.DepartureStationId,
+                        dst => dst.StationId,
+                        (x, dst) => new { x.r, x.u, x.t, dst })
+                    .Join(unitOfWork.StationRepository.Query(),
+                        x => x.t.ArrivalStationId,
+                        ast => ast.StationId,
+                        (x, ast) => new { x.r, x.u, x.t, x.dst, ast })
+                    .Select(x => new
+                    {
+                        x.t.TripId,
+                        x.t.DepartureStationId,
+                        DepartureStationName = x.dst.StationName,
+                        DepartureCity = x.dst.City,
+                        DepartureRegion = x.dst.Region,
+                        DepartureCountry = x.dst.Country,
+                        x.t.DepartureTime,
+                        ArrivalStationId = x.ast.StationId,
+                        ArrivalStationName = x.ast.StationName,
+                        ArrivalCity = x.ast.City,
+                        ArrivalRegion = x.ast.Region,
+                        ArrivalCountry = x.ast.Country,
+                        x.t.ArrivalTime,
+                        x.u.UserId,
+                        x.u.UserName,
+                        x.u.Email,
+                        x.r.Seat
+                    })
                     .ApplyFilters(searchDto.Filters);
 
-                List<Reservation> items = await query
+                var items = await query
                     .ApplySorts(searchDto.Orders)
                     .Skip((searchDto.Page - 1) * searchDto.PageSize)
                     .Take(searchDto.PageSize)
                     .ToListAsync(cancellationToken);
 
+                 List<ReservationDetailsDto> castedItems = [.. items
+                    .Select(x => new ReservationDetailsDto
+                    {
+                        TripId = x.TripId,
+                        DepartureStationId = x.DepartureStationId,
+                        DepartureStationName = x.DepartureStationName,
+                        DepartureCity = x.DepartureCity,
+                        DepartureRegion = x.DepartureRegion,
+                        DepartureCountry = x.DepartureCountry,
+                        DepartureTime = x.DepartureTime,
+                        ArrivalStationId = x.ArrivalStationId,
+                        ArrivalStationName = x.ArrivalStationName,
+                        ArrivalCity = x.ArrivalCity,
+                        ArrivalRegion = x.ArrivalRegion,
+                        ArrivalCountry = x.ArrivalCountry,
+                        ArrivalTime = x.ArrivalTime,
+                        UserId = x.UserId,
+                        UserName = x.UserName,
+                        Email = x.Email,
+                        Seat = x.Seat
+                    })];
+
                 int count = await query.CountAsync(cancellationToken);
 
                 unitOfWork.Commit();
 
-                return new PagedResult<Reservation>
+                return new PagedResult<ReservationDetailsDto>
                 {
-                    Items = items,
+                    Items = castedItems,
+                    TotalCount = count,
+                    Page = searchDto.Page,
+                    PageSize = searchDto.PageSize
+                };
+            }
+            catch (RepositoryException ex)
+            {
+                throw new ServiceException("Error al buscar reservas.", ex);
+            }
+        }
+
+        public async Task<PagedResult<UserReservationDetailsDto>> SearchUserReservationsAsync(UserKeyDto keyDto, PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var query = unitOfWork.ReservationRepository.Query()
+                    .Join(unitOfWork.TripRepository.Query(),
+                        r => r.TripId,
+                        t => t.TripId,
+                        (r, t) => new { r, t })
+                    .Join(unitOfWork.StationRepository.Query(),
+                        x => x.t.DepartureStationId,
+                        dst => dst.StationId,
+                        (x, dst) => new { x.r, x.t, dst })
+                    .Join(unitOfWork.StationRepository.Query(),
+                        x => x.t.ArrivalStationId,
+                        ast => ast.StationId,
+                        (x, ast) => new { x.r, x.t, x.dst, ast })
+                    .Where(x => x.r.UserId == keyDto.UserId)
+                    .Select(x => new
+                    {
+                        x.t.TripId,
+                        x.t.DepartureStationId,
+                        DepartureStationName = x.dst.StationName,
+                        DepartureCity = x.dst.City,
+                        DepartureRegion = x.dst.Region,
+                        DepartureCountry = x.dst.Country,
+                        x.t.DepartureTime,
+                        ArrivalStationId = x.ast.StationId,
+                        ArrivalStationName = x.ast.StationName,
+                        ArrivalCity = x.ast.City,
+                        ArrivalRegion = x.ast.Region,
+                        ArrivalCountry = x.ast.Country,
+                        x.t.ArrivalTime,
+                        x.r.Seat
+                    })
+                    .ApplyFilters(searchDto.Filters); // Esto rompe el anterior where!!!! TODO TODO arreglar
+
+                var items = await query
+                    .ApplySorts(searchDto.Orders)
+                    .Skip((searchDto.Page - 1) * searchDto.PageSize)
+                    .Take(searchDto.PageSize)
+                    .ToListAsync(cancellationToken);
+
+                List<UserReservationDetailsDto> castedItems = [.. items
+                    .Select(x => new UserReservationDetailsDto
+                    {
+                        TripId = x.TripId,
+                        DepartureStationId = x.DepartureStationId,
+                        DepartureStationName = x.DepartureStationName,
+                        DepartureCity = x.DepartureCity,
+                        DepartureRegion = x.DepartureRegion,
+                        DepartureCountry = x.DepartureCountry,
+                        DepartureTime = x.DepartureTime,
+                        ArrivalStationId = x.ArrivalStationId,
+                        ArrivalStationName = x.ArrivalStationName,
+                        ArrivalCity = x.ArrivalCity,
+                        ArrivalRegion = x.ArrivalRegion,
+                        ArrivalCountry = x.ArrivalCountry,
+                        ArrivalTime = x.ArrivalTime,
+                        Seat = x.Seat
+                    })];
+
+                int count = await query.CountAsync(cancellationToken);
+
+                unitOfWork.Commit();
+
+                return new PagedResult<UserReservationDetailsDto>
+                {
+                    Items = castedItems,
                     TotalCount = count,
                     Page = searchDto.Page,
                     PageSize = searchDto.PageSize

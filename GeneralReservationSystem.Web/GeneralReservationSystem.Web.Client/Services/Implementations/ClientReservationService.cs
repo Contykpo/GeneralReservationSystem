@@ -1,6 +1,8 @@
 using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.DTOs;
+using GeneralReservationSystem.Application.DTOs.Authentication;
 using GeneralReservationSystem.Application.Entities;
+using GeneralReservationSystem.Application.Services.Interfaces;
 using GeneralReservationSystem.Web.Client.Services.Interfaces;
 
 namespace GeneralReservationSystem.Web.Client.Services.Implementations
@@ -12,14 +14,19 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
             return await GetAsync<Reservation>($"/api/reservations/{keyDto.TripId}/{keyDto.Seat}", cancellationToken);
         }
 
-        public async Task<IEnumerable<Reservation>> GetUserReservationsAsync(int userId, CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<UserReservationDetailsDto>> GetUserReservationsAsync(UserKeyDto keyDto, CancellationToken cancellationToken = default)
         {
-            return await GetAsync<IEnumerable<Reservation>>($"/api/reservations/user/{userId}", cancellationToken);
+            return await GetAsync<IEnumerable<UserReservationDetailsDto>>($"/api/reservations/user/{keyDto.UserId}", cancellationToken);
         }
 
-        public async Task<PagedResult<Reservation>> SearchReservationsAsync(PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default)
+        public async Task<PagedResult<ReservationDetailsDto>> SearchReservationsAsync(PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default)
         {
-            return await PostAsync<PagedResult<Reservation>>("/api/reservations/search", searchDto, cancellationToken);
+            return await PostAsync<PagedResult<ReservationDetailsDto>>("/api/reservations/search", searchDto, cancellationToken);
+        }
+
+        public async Task<PagedResult<UserReservationDetailsDto>> SearchUserReservationsAsync(UserKeyDto keyDto, PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default)
+        {
+            return await PostAsync<PagedResult<UserReservationDetailsDto>>($"/api/reservations/search/{keyDto.UserId}", searchDto, cancellationToken);
         }
 
         public async Task<Reservation> CreateReservationAsync(CreateReservationDto dto, CancellationToken cancellationToken = default)
@@ -32,19 +39,19 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
             await DeleteAsync($"/api/reservations/{keyDto.TripId}/{keyDto.Seat}", cancellationToken);
         }
 
-        public async Task<IEnumerable<Reservation>> GetTripUserReservationsAsync(TripUserReservationsKeyDto keyDto, CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<UserReservationDetailsDto>> GetTripUserReservationsAsync(TripUserReservationsKeyDto keyDto, CancellationToken cancellationToken = default)
         {
-            return await GetAsync<IEnumerable<Reservation>>($"/api/reservations/{keyDto.TripId}/user/{keyDto.UserId}", cancellationToken);
+            return await GetAsync<IEnumerable<UserReservationDetailsDto>>($"/api/reservations/{keyDto.TripId}/user/{keyDto.UserId}", cancellationToken);
         }
 
-        public async Task<IEnumerable<Reservation>> GetCurrentUserReservationsAsync(CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<UserReservationDetailsDto>> GetCurrentUserReservationsAsync(CancellationToken cancellationToken = default)
         {
-            return await GetAsync<IEnumerable<Reservation>>("/api/reservations/me", cancellationToken);
+            return await GetAsync<IEnumerable<UserReservationDetailsDto>>("/api/reservations/me", cancellationToken);
         }
 
-        public async Task<IEnumerable<Reservation>> GetCurrentUserReservationsForTripAsync(int tripId, CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<UserReservationDetailsDto>> GetCurrentUserReservationsForTripAsync(TripKeyDto keyDto, CancellationToken cancellationToken = default)
         {
-            return await GetAsync<IEnumerable<Reservation>>($"/api/reservations/me/trip/{tripId}", cancellationToken);
+            return await GetAsync<IEnumerable<UserReservationDetailsDto>>($"/api/reservations/me/trip/{keyDto.TripId}", cancellationToken);
         }
 
         public async Task<Reservation> CreateCurrentUserReservationAsync(ReservationKeyDto keyDto, CancellationToken cancellationToken = default)

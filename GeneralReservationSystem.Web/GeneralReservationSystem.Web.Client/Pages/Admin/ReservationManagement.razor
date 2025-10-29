@@ -60,6 +60,24 @@
                                              DebounceInterval="300"
                                              OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
                         </MudItem>
+                        <MudItem xs="12" sm="6" md="4">
+                            <MudTextField @bind-Value="_filterDepartureStationName" Label="Estación Salida" Variant="Variant.Outlined" Clearable="true" Immediate="true" DebounceInterval="300" OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="4">
+                            <MudTextField @bind-Value="_filterArrivalStationName" Label="Estación Llegada" Variant="Variant.Outlined" Clearable="true" Immediate="true" DebounceInterval="300" OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="4">
+                            <MudTextField @bind-Value="_filterDepartureCity" Label="Ciudad Salida" Variant="Variant.Outlined" Clearable="true" Immediate="true" DebounceInterval="300" OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="4">
+                            <MudTextField @bind-Value="_filterArrivalCity" Label="Ciudad Llegada" Variant="Variant.Outlined" Clearable="true" Immediate="true" DebounceInterval="300" OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="4">
+                            <MudTextField @bind-Value="_filterUserName" Label="Usuario" Variant="Variant.Outlined" Clearable="true" Immediate="true" DebounceInterval="300" OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="4">
+                            <MudTextField @bind-Value="_filterEmail" Label="Email" Variant="Variant.Outlined" Clearable="true" Immediate="true" DebounceInterval="300" OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
+                        </MudItem>
                         <MudItem xs="12">
                             <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ClearFilters" StartIcon="@Icons.Material.Filled.Clear">Limpiar Filtros</MudButton>
                         </MudItem>
@@ -68,7 +86,7 @@
             </MudExpansionPanels>
 
             <MudTable @ref="_table" 
-                      T="Reservation" 
+                      T="ReservationDetailsDto" 
                       ServerData="ServerReload"
                       Loading="@_loading" 
                       LoadingProgressColor="Color.Primary"
@@ -92,14 +110,35 @@
                                   OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())"></MudTextField>
                 </ToolBarContent>
                 <HeaderContent>
-                    <MudTh><MudTableSortLabel SortLabel="TripId" T="Reservation">ID Viaje</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortLabel="UserId" T="Reservation">ID Usuario</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortLabel="Seat" T="Reservation">Asiento</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="TripId" T="ReservationDetailsDto">ID Viaje</MudTableSortLabel></MudTh>
+                    <MudTh>Salida</MudTh>
+                    <MudTh>Llegada</MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="UserId" T="ReservationDetailsDto">Usuario</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="Seat" T="ReservationDetailsDto">Asiento</MudTableSortLabel></MudTh>
                     <MudTh Style="text-align: right">Acciones</MudTh>
                 </HeaderContent>
                 <RowTemplate>
                     <MudTd DataLabel="ID Viaje">@context.TripId</MudTd>
-                    <MudTd DataLabel="ID Usuario">@context.UserId</MudTd>
+                    <MudTd DataLabel="Salida">
+                        <div>
+                            <b>@context.DepartureStationName</b><br />
+                            @context.DepartureCity, @context.DepartureRegion, @context.DepartureCountry<br />
+                            <span>@context.DepartureTime.ToString("g")</span>
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="Llegada">
+                        <div>
+                            <b>@context.ArrivalStationName</b><br />
+                            @context.ArrivalCity, @context.ArrivalRegion, @context.ArrivalCountry<br />
+                            <span>@context.ArrivalTime.ToString("g")</span>
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="Usuario">
+                        <div>
+                            <b>@context.UserName</b><br />
+                            <span>@context.Email</span>
+                        </div>
+                    </MudTd>
                     <MudTd DataLabel="Asiento">@context.Seat</MudTd>
                     <MudTd DataLabel="Acciones" Style="text-align: right">
                         <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => HandleDelete(context))" />
@@ -120,7 +159,7 @@
 </MudContainer>
 
 @code {
-    private MudTable<Reservation> _table = null!;
+    private MudTable<ReservationDetailsDto> _table = null!;
     private bool _loading = false;
     private string _searchString = string.Empty;
     
@@ -128,8 +167,14 @@
     private int? _filterTripId = null;
     private int? _filterUserId = null;
     private int? _filterSeat = null;
+    private string? _filterDepartureStationName = null;
+    private string? _filterArrivalStationName = null;
+    private string? _filterDepartureCity = null;
+    private string? _filterArrivalCity = null;
+    private string? _filterUserName = null;
+    private string? _filterEmail = null;
 
-    private async Task<TableData<Reservation>> ServerReload(TableState state, CancellationToken cancellationToken)
+    private async Task<TableData<ReservationDetailsDto>> ServerReload(TableState state, CancellationToken cancellationToken)
     {
         _loading = true;
         try
@@ -143,7 +188,7 @@
             };
 
             var result = await ClientReservationService.SearchReservationsAsync(searchRequest, cancellationToken);
-            return new TableData<Reservation>
+            return new TableData<ReservationDetailsDto>
             {
                 Items = result.Items,
                 TotalItems = result.TotalCount
@@ -166,7 +211,7 @@
             _loading = false;
         }
 
-        return new TableData<Reservation> { Items = [], TotalItems = 0 };
+        return new TableData<ReservationDetailsDto> { Items = [], TotalItems = 0 };
     }
 
     private IList<Filter> BuildFilters(TableState state)
@@ -176,31 +221,42 @@
         // Global search filter
         if (!string.IsNullOrWhiteSpace(_searchString))
         {
-            // Try to parse as integer for numeric fields
             if (int.TryParse(_searchString, out var numericValue))
             {
                 filters.Add(new Filter("TripId", AppFilterOperator.Equals, numericValue));
                 filters.Add(new Filter("UserId", AppFilterOperator.Equals, numericValue));
                 filters.Add(new Filter("Seat", AppFilterOperator.Equals, numericValue));
             }
+            else
+            {
+                filters.Add(new Filter("DepartureStationName", AppFilterOperator.Contains, _searchString));
+                filters.Add(new Filter("ArrivalStationName", AppFilterOperator.Contains, _searchString));
+                filters.Add(new Filter("DepartureCity", AppFilterOperator.Contains, _searchString));
+                filters.Add(new Filter("ArrivalCity", AppFilterOperator.Contains, _searchString));
+                filters.Add(new Filter("UserName", AppFilterOperator.Contains, _searchString));
+                filters.Add(new Filter("Email", AppFilterOperator.Contains, _searchString));
+            }
         }
-        // Advanced filters
         else
         {
             if (_filterTripId.HasValue)
-            {
                 filters.Add(new Filter("TripId", AppFilterOperator.Equals, _filterTripId.Value));
-            }
-            
             if (_filterUserId.HasValue)
-            {
                 filters.Add(new Filter("UserId", AppFilterOperator.Equals, _filterUserId.Value));
-            }
-            
             if (_filterSeat.HasValue)
-            {
                 filters.Add(new Filter("Seat", AppFilterOperator.Equals, _filterSeat.Value));
-            }
+            if (!string.IsNullOrWhiteSpace(_filterDepartureStationName))
+                filters.Add(new Filter("DepartureStationName", AppFilterOperator.Contains, _filterDepartureStationName));
+            if (!string.IsNullOrWhiteSpace(_filterArrivalStationName))
+                filters.Add(new Filter("ArrivalStationName", AppFilterOperator.Contains, _filterArrivalStationName));
+            if (!string.IsNullOrWhiteSpace(_filterDepartureCity))
+                filters.Add(new Filter("DepartureCity", AppFilterOperator.Contains, _filterDepartureCity));
+            if (!string.IsNullOrWhiteSpace(_filterArrivalCity))
+                filters.Add(new Filter("ArrivalCity", AppFilterOperator.Contains, _filterArrivalCity));
+            if (!string.IsNullOrWhiteSpace(_filterUserName))
+                filters.Add(new Filter("UserName", AppFilterOperator.Contains, _filterUserName));
+            if (!string.IsNullOrWhiteSpace(_filterEmail))
+                filters.Add(new Filter("Email", AppFilterOperator.Contains, _filterEmail));
         }
 
         return filters;
@@ -211,11 +267,17 @@
         _filterTripId = null;
         _filterUserId = null;
         _filterSeat = null;
+        _filterDepartureStationName = null;
+        _filterArrivalStationName = null;
+        _filterDepartureCity = null;
+        _filterArrivalCity = null;
+        _filterUserName = null;
+        _filterEmail = null;
         _searchString = string.Empty;
         _table!.ReloadServerData();
     }
 
-    private async Task HandleDelete(Reservation item)
+    private async Task HandleDelete(ReservationDetailsDto item)
     {
         try
         {

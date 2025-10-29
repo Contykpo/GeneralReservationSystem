@@ -16,11 +16,29 @@
 <MudContainer MaxWidth="MaxWidth.Large" Class="my-8">
     <PageTitle>Mis Reservas</PageTitle>
     <MudDataGrid @ref="dataGrid"
-                 T="Reservation"
+                 T="UserReservationDetailsDto"
                  ServerData="ServerReload"
                  RowsPerPage="10">
         <Columns>
             <PropertyColumn Property="x => x.TripId" Title="Viaje" />
+            <TemplateColumn Title="Salida">
+                <CellTemplate>
+                    <div>
+                        <b>@context.Item.DepartureStationName</b><br />
+                        @context.Item.DepartureCity, @context.Item.DepartureRegion, @context.Item.DepartureCountry<br />
+                        <span>@context.Item.DepartureTime.ToString("g")</span>
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Llegada">
+                <CellTemplate>
+                    <div>
+                        <b>@context.Item.ArrivalStationName</b><br />
+                        @context.Item.ArrivalCity, @context.Item.ArrivalRegion, @context.Item.ArrivalCountry<br />
+                        <span>@context.Item.ArrivalTime.ToString("g")</span>
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
             <PropertyColumn Property="x => x.Seat" Title="Asiento" />
             <TemplateColumn>
                 <CellTemplate>
@@ -29,20 +47,20 @@
             </TemplateColumn>
         </Columns>
         <PagerContent>
-            <MudDataGridPager T="Reservation" />
+            <MudDataGridPager T="UserReservationDetailsDto" />
         </PagerContent>
     </MudDataGrid>
 </MudContainer>
 
 @code {
-    private MudDataGrid<Reservation> dataGrid = null!;
+    private MudDataGrid<UserReservationDetailsDto> dataGrid = null!;
 
-    private async Task<GridData<Reservation>> ServerReload(GridState<Reservation> state)
+    private async Task<GridData<UserReservationDetailsDto>> ServerReload(GridState<UserReservationDetailsDto> state)
     {
         try
         {
             var list = await ClientReservationService.GetCurrentUserReservationsAsync();
-            return new GridData<Reservation> { Items = list, TotalItems = list.Count() };
+            return new GridData<UserReservationDetailsDto> { Items = list, TotalItems = list.Count() };
         }
         catch (ServiceException ex)
         {
@@ -52,10 +70,10 @@
         {
             Snackbar.Add("Error al cargar reservas.", Severity.Error);
         }
-        return new GridData<Reservation> { Items = Array.Empty<Reservation>(), TotalItems = 0 };
+        return new GridData<UserReservationDetailsDto> { Items = Array.Empty<UserReservationDetailsDto>(), TotalItems = 0 };
     }
 
-    private async Task HandleDelete(Reservation item)
+    private async Task HandleDelete(UserReservationDetailsDto item)
     {
         try
         {

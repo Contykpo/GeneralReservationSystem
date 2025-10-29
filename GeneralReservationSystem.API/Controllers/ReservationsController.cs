@@ -1,6 +1,7 @@
 using FluentValidation;
 using GeneralReservationSystem.API.Helpers;
 using GeneralReservationSystem.Application.DTOs;
+using GeneralReservationSystem.Application.DTOs.Authentication;
 using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Services.Interfaces;
@@ -13,7 +14,7 @@ namespace GeneralReservationSystem.API.Controllers
     [Route("api/reservations")]
     [ApiController]
     [Authorize]
-    public class ReservationsController(IReservationService reservationService, IValidator<PagedSearchRequestDto> pagedSearchValidator, IValidator<CreateReservationDto> createReservationValidator, IValidator<ReservationKeyDto> reservationKeyValidator, IValidator<TripUserReservationsKeyDto> tripUserReservationsKeyValidator) : ControllerBase
+    public class ReservationsController(IReservationService reservationService, IValidator<PagedSearchRequestDto> pagedSearchValidator, IValidator<CreateReservationDto> createReservationValidator, IValidator<ReservationKeyDto> reservationKeyValidator, IValidator<TripUserReservationsKeyDto> tripUserReservationsKeyValidator, IValidator<UserKeyDto> userKeyValidator) : ControllerBase
     {
         [HttpPost("search")]
         [Authorize(Roles = "Admin")]
@@ -25,7 +26,37 @@ namespace GeneralReservationSystem.API.Controllers
                 return validationResult;
             }
 
-            Application.Common.PagedResult<Reservation> result = await reservationService.SearchReservationsAsync(searchDto, cancellationToken);
+            Application.Common.PagedResult<ReservationDetailsDto> result = await reservationService.SearchReservationsAsync(searchDto, cancellationToken);
+            return Ok(result);
+        }
+
+        [HttpPost("search/{userId:int}")]
+        public async Task<IActionResult> SearchUserReservations([FromBody] PagedSearchRequestDto searchDto, [FromRoute] int userId, CancellationToken cancellationToken)
+        {
+            IActionResult? paginationValidationResult = await ValidationHelper.ValidateAsync(pagedSearchValidator, searchDto, cancellationToken);
+            if (paginationValidationResult != null)
+            {
+                return paginationValidationResult;
+            }
+            var keyDto = new UserKeyDto { UserId = userId };
+            IActionResult? userValidationResult = await ValidationHelper.ValidateAsync(userKeyValidator, keyDto, cancellationToken);
+            if (userValidationResult != null)
+            {
+                return userValidationResult;
+            }
+
+            string? currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Unauthorized();
+            }
+
+            if (int.Parse(currentUserId) != userId && !User.IsInRole("Admin"))
+            {
+                return Forbid();
+            }
+
+            Application.Common.PagedResult<UserReservationDetailsDto> result = await reservationService.SearchUserReservationsAsync(keyDto, searchDto, cancellationToken);
             return Ok(result);
         }
 
@@ -39,7 +70,7 @@ namespace GeneralReservationSystem.API.Controllers
                 return Unauthorized();
             }
 
-            IEnumerable<Reservation> reservations = await reservationService.GetUserReservationsAsync(int.Parse(userId), cancellationToken);
+            IEnumerable<UserReservationDetailsDto> reservations = await reservationService.GetUserReservationsAsync(new UserKeyDto{ UserId = int.Parse(userId) }, cancellationToken);
             return Ok(reservations);
         }
 
@@ -47,7 +78,14 @@ namespace GeneralReservationSystem.API.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetUserReservations([FromRoute] int userId, CancellationToken cancellationToken)
         {
-            IEnumerable<Reservation> reservations = await reservationService.GetUserReservationsAsync(userId, cancellationToken);
+            var keyDto = new UserKeyDto { UserId = userId };
+            IActionResult? validationResult = await ValidationHelper.ValidateAsync(userKeyValidator, keyDto, cancellationToken);
+            if (validationResult != null)
+            {
+                return validationResult;
+            }
+
+            IEnumerable<UserReservationDetailsDto> reservations = await reservationService.GetUserReservationsAsync(keyDto, cancellationToken);
             return Ok(reservations);
         }
 
@@ -135,7 +173,7 @@ namespace GeneralReservationSystem.API.Controllers
 
             try
             {
-                IEnumerable<Reservation> reservations = await reservationService.GetTripUserReservationsAsync(keyDto, cancellationToken);
+                IEnumerable<UserReservationDetailsDto> reservations = await reservationService.GetTripUserReservationsAsync(keyDto, cancellationToken);
                 return Ok(reservations);
             }
             catch (ServiceNotFoundException ex)

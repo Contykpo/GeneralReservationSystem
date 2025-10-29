@@ -6,8 +6,8 @@ namespace GeneralReservationSystem.Web.Client.Services.Interfaces
 {
     public interface IClientReservationService : IReservationService
     {
-        Task<IEnumerable<Reservation>> GetCurrentUserReservationsAsync(CancellationToken cancellationToken = default);
-        Task<IEnumerable<Reservation>> GetCurrentUserReservationsForTripAsync(int tripId, CancellationToken cancellationToken = default);
+        Task<IEnumerable<UserReservationDetailsDto>> GetCurrentUserReservationsAsync(CancellationToken cancellationToken = default);
+        Task<IEnumerable<UserReservationDetailsDto>> GetCurrentUserReservationsForTripAsync(TripKeyDto keyDto, CancellationToken cancellationToken = default);
         Task<Reservation> CreateCurrentUserReservationAsync(ReservationKeyDto keyDto, CancellationToken cancellationToken = default);
     }
 }
