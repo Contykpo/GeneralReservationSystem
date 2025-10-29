@@ -60,11 +60,20 @@ namespace GeneralReservationSystem.Application.Repositories.Util.Interfaces
     {
         public static IQueryable<T> ApplyFilters<T>(this IQueryable<T> query, IEnumerable<Filter> filters)
         {
-            foreach (Filter filter in filters)
+            var filterList = filters?.ToList();
+            if (filterList == null || filterList.Count == 0)
+                return query;
+
+            var expressions = filterList.Select(f => f.ToExpression<T>()).ToList();
+            var parameter = Expression.Parameter(typeof(T), "x");
+            Expression? body = null;
+            foreach (var expr in expressions)
             {
-                query = query.Where(filter.ToExpression<T>());
+                var replaced = new ReplaceParameterVisitor(expr.Parameters[0], parameter).Visit(expr.Body);
+                body = body == null ? replaced : Expression.OrElse(body, replaced);
             }
-            return query;
+            var lambda = Expression.Lambda<Func<T, bool>>(body!, parameter);
+            return query.Where(lambda);
         }
 
         public static IQueryable<T> ApplySorts<T>(this IQueryable<T> query, IEnumerable<SortOption> sorts)
@@ -88,7 +97,6 @@ namespace GeneralReservationSystem.Application.Repositories.Util.Interfaces
             }
             if (first)
             {
-                // No sorts applied, apply default sort by first property or field.
                 string firstPropertyOrFieldName = typeof(T).GetProperties().FirstOrDefault()?.Name ??
                     typeof(T).GetFields().FirstOrDefault()?.Name ??
                     throw new InvalidOperationException($"No fields or properties found for type '{typeof(T)}'");
@@ -96,6 +104,21 @@ namespace GeneralReservationSystem.Application.Repositories.Util.Interfaces
                 orderedQuery = orderedQuery.OrderBy(defaultSortExpression);
             }
             return orderedQuery;
+        }
+
+        private class ReplaceParameterVisitor : ExpressionVisitor
+        {
+            private readonly ParameterExpression _oldParam;
+            private readonly ParameterExpression _newParam;
+            public ReplaceParameterVisitor(ParameterExpression oldParam, ParameterExpression newParam)
+            {
+                _oldParam = oldParam;
+                _newParam = newParam;
+            }
+            protected override Expression VisitParameter(ParameterExpression node)
+            {
+                return node == _oldParam ? _newParam : base.VisitParameter(node);
+            }
         }
     }
 }
