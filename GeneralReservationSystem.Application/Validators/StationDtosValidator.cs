@@ -15,10 +15,10 @@ namespace GeneralReservationSystem.Application.Validators
                 .NotEmpty().WithMessage("La ciudad es obligatoria.")
                 .Length(2, 50).WithMessage("La ciudad debe tener entre 2 y 50 caracteres.")
                 .Matches(@"^[\p{L}\s'-]+$").WithMessage("La ciudad solo puede contener letras, espacios, apóstrofes o guiones.");
-            _ = RuleFor(x => x.Region)
-                .NotEmpty().WithMessage("La región es obligatoria.")
-                .Length(2, 50).WithMessage("La región debe tener entre 2 y 50 caracteres.")
-                .Matches(@"^[\p{L}\s'-]+$").WithMessage("La región solo puede contener letras, espacios, apóstrofes o guiones.");
+            _ = RuleFor(x => x.Province)
+                .NotEmpty().WithMessage("La provincia es obligatoria.")
+                .Length(2, 50).WithMessage("La provincia debe tener entre 2 y 50 caracteres.")
+                .Matches(@"^[\p{L}\s'-]+$").WithMessage("La provincia solo puede contener letras, espacios, apóstrofes o guiones.");
             _ = RuleFor(x => x.Country)
                 .NotEmpty().WithMessage("El país es obligatorio.")
                 .Length(2, 50).WithMessage("El país debe tener entre 2 y 50 caracteres.")
@@ -42,11 +42,11 @@ namespace GeneralReservationSystem.Application.Validators
                 .WithMessage("La ciudad debe tener entre 2 y 50 caracteres.")
                 .Matches(@"^[\p{L}\s'-]+$").When(x => x.City != null)
                 .WithMessage("La ciudad solo puede contener letras, espacios, apóstrofes o guiones.");
-            _ = RuleFor(x => x.Region)
-                .Length(2, 50).When(x => x.Region != null)
-                .WithMessage("La región debe tener entre 2 y 50 caracteres.")
-                .Matches(@"^[\p{L}\s'-]+$").When(x => x.Region != null)
-                .WithMessage("La región solo puede contener letras, espacios, apóstrofes o guiones.");
+            _ = RuleFor(x => x.Province)
+                .Length(2, 50).When(x => x.Province != null)
+                .WithMessage("La provincia debe tener entre 2 y 50 caracteres.")
+                .Matches(@"^[\p{L}\s'-]+$").When(x => x.Province != null)
+                .WithMessage("La provincia solo puede contener letras, espacios, apóstrofes o guiones.");
             _ = RuleFor(x => x.Country)
                 .Length(2, 50).When(x => x.Country != null)
                 .WithMessage("El país debe tener entre 2 y 50 caracteres.")

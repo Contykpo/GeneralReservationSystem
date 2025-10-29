@@ -43,7 +43,7 @@ else
                 <MudGrid>
                     <MudItem xs="12" md="8">
                         <MudText Typo="Typo.h5" Class="mb-2"><b>@_tripDetails!.DepartureStationName <MudIcon Icon="@Icons.Material.Filled.ArrowForward" /> @_tripDetails!.ArrivalStationName</b></MudText>
-                        <MudText Typo="Typo.body2" Class="mb-2">@_tripDetails!.DepartureCity, @_tripDetails!.DepartureRegion, @_tripDetails!.DepartureCountry <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small" /> @_tripDetails!.ArrivalCity, @_tripDetails!.ArrivalRegion, @_tripDetails!.ArrivalCountry</MudText>
+                        <MudText Typo="Typo.body2" Class="mb-2">@_tripDetails!.DepartureCity, @_tripDetails!.DepartureProvince, @_tripDetails!.DepartureCountry <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small" /> @_tripDetails!.ArrivalCity, @_tripDetails!.ArrivalProvince, @_tripDetails!.ArrivalCountry</MudText>
                         <MudText Typo="Typo.body1" Class="mb-1">Salida: @_tripDetails!.DepartureTime.ToString("dd/MM/yyyy HH:mm")</MudText>
                         <MudText Typo="Typo.body1" Class="mb-1">Llegada: @_tripDetails!.ArrivalTime.ToString("dd/MM/yyyy HH:mm")</MudText>
                         <MudText Typo="Typo.caption">Asientos totales: @_tripDetails!.AvailableSeats</MudText>

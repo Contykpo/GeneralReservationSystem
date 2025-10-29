@@ -41,7 +41,7 @@
                                     @foreach (var station in _stations)
                                     {
                                         <MudSelectItem T="int" Value="@station.StationId">
-                                            @station.StationName, @station.City, @station.Region, @station.Country
+                                            @station.StationName, @station.City, @station.Province, @station.Country
                                         </MudSelectItem>
                                     }
                                 </MudSelect>
@@ -64,7 +64,7 @@
                                     @foreach (var station in _stations)
                                     {
                                         <MudSelectItem T="int" Value="@station.StationId">
-                                            @station.StationName, @station.City, @station.Region, @station.Country
+                                            @station.StationName, @station.City, @station.Province, @station.Country
                                         </MudSelectItem>
                                     }
                                 </MudSelect>
@@ -119,7 +119,7 @@
                                 @foreach (var station in _stations)
                                 {
                                     <MudSelectItem T="int?" Value="@station.StationId">
-                                        @station.StationName, @station.City, @station.Region, @station.Country
+                                        @station.StationName, @station.City, @station.Province, @station.Country
                                     </MudSelectItem>
                                 }
                             </MudSelect>
@@ -135,7 +135,7 @@
                                 @foreach (var station in _stations)
                                 {
                                     <MudSelectItem T="int?" Value="@station.StationId">
-                                        @station.StationName, @station.City, @station.Region, @station.Country
+                                        @station.StationName, @station.City, @station.Province, @station.Country
                                     </MudSelectItem>
                                 }
                             </MudSelect>
@@ -199,12 +199,12 @@
                 <RowTemplate>
                     <MudTd DataLabel="Salida">
                         @context.DepartureStationName
-                        <div class="mud-typography-caption">@context.DepartureCity, @context.DepartureRegion, @context.DepartureCountry</div>
+                        <div class="mud-typography-caption">@context.DepartureCity, @context.DepartureProvince, @context.DepartureCountry</div>
                     </MudTd>
                     <MudTd DataLabel="Hora Salida">@context.DepartureTime.ToString("dd/MM/yyyy HH:mm")</MudTd>
                     <MudTd DataLabel="Llegada">
                         @context.ArrivalStationName
-                        <div class="mud-typography-caption">@context.ArrivalCity, @context.ArrivalRegion, @context.ArrivalCountry</div>
+                        <div class="mud-typography-caption">@context.ArrivalCity, @context.ArrivalProvince, @context.ArrivalCountry</div>
                     </MudTd>
                     <MudTd DataLabel="Hora Llegada">@context.ArrivalTime.ToString("dd/MM/yyyy HH:mm")</MudTd>
                     <MudTd DataLabel="Asientos">@context.AvailableSeats</MudTd>
@@ -257,7 +257,7 @@
                 @foreach (var station in _stations)
                 {
                     <MudSelectItem T="int?" Value="@station.StationId">
-                        @station.StationName, @station.City, @station.Region, @station.Country
+                        @station.StationName, @station.City, @station.Province, @station.Country
                     </MudSelectItem>
                 }
             </MudSelect>
@@ -283,7 +283,7 @@
                 @foreach (var station in _stations)
                 {
                     <MudSelectItem T="int?" Value="@station.StationId">
-                        @station.StationName, @station.City, @station.Region, @station.Country
+                        @station.StationName, @station.City, @station.Province, @station.Country
                     </MudSelectItem>
                 }
             </MudSelect>
@@ -425,11 +425,11 @@
                 // Search text across station names and locations
                 filters.Add(new Filter("DepartureStationName", AppFilterOperator.Contains, _searchString));
                 filters.Add(new Filter("DepartureCity", AppFilterOperator.Contains, _searchString));
-                filters.Add(new Filter("DepartureRegion", AppFilterOperator.Contains, _searchString));
+                filters.Add(new Filter("DepartureProvince", AppFilterOperator.Contains, _searchString));
                 filters.Add(new Filter("DepartureCountry", AppFilterOperator.Contains, _searchString));
                 filters.Add(new Filter("ArrivalStationName", AppFilterOperator.Contains, _searchString));
                 filters.Add(new Filter("ArrivalCity", AppFilterOperator.Contains, _searchString));
-                filters.Add(new Filter("ArrivalRegion", AppFilterOperator.Contains, _searchString));
+                filters.Add(new Filter("ArrivalProvince", AppFilterOperator.Contains, _searchString));
                 filters.Add(new Filter("ArrivalCountry", AppFilterOperator.Contains, _searchString));
             }
         }

@@ -119,7 +119,7 @@ Content-Type: application/json
 {
   "name": "Central Station",
   "city": "New York",
-  "region": "NY",
+  "province": "NY",
   "country": "USA"
 }
 
@@ -131,7 +131,7 @@ Content-Type: application/json
 {
   "name": "Updated Station",
   "city": "Los Angeles",
-  "region": "CA",
+  "province": "CA",
   "country": "USA"
 }
 

@@ -13,9 +13,9 @@ namespace GeneralReservationSystem.Application.Entities
         public string City { get; set; } = null!;
         [Computed]
         public string NormalizedCity { get; set; } = null!;
-        public string Region { get; set; } = null!;
+        public string Province { get; set; } = null!;
         [Computed]
-        public string NormalizedRegion { get; set; } = null!;
+        public string NormalizedProvince { get; set; } = null!;
         public string Country { get; set; } = null!;
         [Computed]
         public string NormalizedCountry { get; set; } = null!;

@@ -33,7 +33,7 @@
                         <AntiforgeryToken />
                         <MudTextField Label="Nombre" For="@(() => _createStationDto.StationName)" @bind-Value="_createStationDto.StationName" Variant="Variant.Outlined" Immediate="true" />
                         <MudTextField Label="Ciudad" For="@(() => _createStationDto.City)" @bind-Value="_createStationDto.City" Variant="Variant.Outlined" Immediate="true" />
-                        <MudTextField Label="Región" For="@(() => _createStationDto.Region)" @bind-Value="_createStationDto.Region" Variant="Variant.Outlined" Immediate="true" />
+                        <MudTextField Label="Provincia" For="@(() => _createStationDto.Province)" @bind-Value="_createStationDto.Province" Variant="Variant.Outlined" Immediate="true" />
                         <MudTextField Label="País" For="@(() => _createStationDto.Country)" @bind-Value="_createStationDto.Country" Variant="Variant.Outlined" Immediate="true" />
                     </MudForm>
                 </MudCardContent>
@@ -79,11 +79,11 @@
                                           OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
                         </MudItem>
                         <MudItem xs="12" sm="6" md="3">
-                            <MudTextField @bind-Value="_filterRegion" 
-                                          Label="Región" 
+                            <MudTextField @bind-Value="_filterProvince" 
+                                          Label="Provincia" 
                                           Variant="Variant.Outlined"
                                           Clearable="true"
-                                          OnClearButtonClick="@(() => { _filterRegion = string.Empty; _table!.ReloadServerData(); })"
+                                          OnClearButtonClick="@(() => { _filterProvince = string.Empty; _table!.ReloadServerData(); })"
                                           Immediate="true"
                                           DebounceInterval="300"
                                           OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
@@ -133,7 +133,7 @@
                     <MudTh><MudTableSortLabel SortLabel="StationId" T="Station">ID</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel SortLabel="StationName" T="Station">Nombre</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel SortLabel="City" T="Station">Ciudad</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortLabel="Region" T="Station">Región</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="Province" T="Station">Provincia</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel SortLabel="Country" T="Station">País</MudTableSortLabel></MudTh>
                     <MudTh Style="text-align: right">Acciones</MudTh>
                 </HeaderContent>
@@ -141,7 +141,7 @@
                     <MudTd DataLabel="ID">@context.StationId</MudTd>
                     <MudTd DataLabel="Nombre">@context.StationName</MudTd>
                     <MudTd DataLabel="Ciudad">@context.City</MudTd>
-                    <MudTd DataLabel="Región">@context.Region</MudTd>
+                    <MudTd DataLabel="Provincia">@context.Province</MudTd>
                     <MudTd DataLabel="País">@context.Country</MudTd>
                     <MudTd DataLabel="Acciones" Style="text-align: right">
                         <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Filled.Edit" OnClick="@(() => OpenEditDialog(context))" />
@@ -182,9 +182,9 @@
                           Variant="Variant.Outlined" 
                           Margin="Margin.Dense" 
                           Immediate="true" />
-            <MudTextField Label="Región"
-                          @bind-Value="_editStationDto.Region" 
-                          For="@(() => _editStationDto.Region)"
+            <MudTextField Label="Provincia"
+                          @bind-Value="_editStationDto.Province" 
+                          For="@(() => _editStationDto.Province)"
                           Variant="Variant.Outlined" 
                           Margin="Margin.Dense" 
                           Immediate="true" />
@@ -210,7 +210,7 @@
     // Advanced filters
     private string _filterStationName = string.Empty;
     private string _filterCity = string.Empty;
-    private string _filterRegion = string.Empty;
+    private string _filterProvince = string.Empty;
     private string _filterCountry = string.Empty;
 
     private MudForm _createForm = null!;
@@ -280,7 +280,7 @@
         {
             filters.Add(new Filter("StationName", AppFilterOperator.Contains, _searchString));
             filters.Add(new Filter("City", AppFilterOperator.Contains, _searchString));
-            filters.Add(new Filter("Region", AppFilterOperator.Contains, _searchString));
+            filters.Add(new Filter("Province", AppFilterOperator.Contains, _searchString));
             filters.Add(new Filter("Country", AppFilterOperator.Contains, _searchString));
         }
         // Advanced filters - specific field filtering
@@ -296,9 +296,9 @@
                 filters.Add(new Filter("City", AppFilterOperator.Contains, _filterCity));
             }
             
-            if (!string.IsNullOrWhiteSpace(_filterRegion))
+            if (!string.IsNullOrWhiteSpace(_filterProvince))
             {
-                filters.Add(new Filter("Region", AppFilterOperator.Contains, _filterRegion));
+                filters.Add(new Filter("Province", AppFilterOperator.Contains, _filterProvince));
             }
             
             if (!string.IsNullOrWhiteSpace(_filterCountry))
@@ -314,7 +314,7 @@
     {
         _filterStationName = string.Empty;
         _filterCity = string.Empty;
-        _filterRegion = string.Empty;
+        _filterProvince = string.Empty;
         _filterCountry = string.Empty;
         _searchString = string.Empty;
         _table!.ReloadServerData();
@@ -364,7 +364,7 @@
             StationId = station.StationId,
             StationName = station.StationName,
             City = station.City,
-            Region = station.Region,
+            Province = station.Province,
             Country = station.Country
         };
         _updateForm?.ResetValidation();

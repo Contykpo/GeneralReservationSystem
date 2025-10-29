@@ -37,12 +37,12 @@ BEGIN
             NormalizedStationName AS UPPER(LTRIM(RTRIM(StationName))) PERSISTED,
             City NVARCHAR(50) NOT NULL,
             NormalizedCity AS UPPER(LTRIM(RTRIM(City))) PERSISTED,
-            Region NVARCHAR(50) NOT NULL,
-            NormalizedRegion AS UPPER(LTRIM(RTRIM(Region))) PERSISTED,
+            Province NVARCHAR(50) NOT NULL,
+            NormalizedProvince AS UPPER(LTRIM(RTRIM(Province))) PERSISTED,
             Country NVARCHAR(50) NOT NULL,
             NormalizedCountry AS UPPER(LTRIM(RTRIM(Country))) PERSISTED,
             CONSTRAINT PK_Station PRIMARY KEY (StationId),
-            CONSTRAINT UQ_Station UNIQUE (NormalizedStationName, NormalizedCity, NormalizedRegion, NormalizedCountry)
+            CONSTRAINT UQ_Station UNIQUE (NormalizedStationName, NormalizedCity, NormalizedProvince, NormalizedCountry)
         );
     END
 

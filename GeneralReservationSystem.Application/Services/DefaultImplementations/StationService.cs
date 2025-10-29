@@ -17,7 +17,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             {
                 StationName = dto.StationName,
                 City = dto.City,
-                Region = dto.Region,
+                Province = dto.Province,
                 Country = dto.Country
             };
             try
@@ -48,9 +48,9 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
                 station.City = dto.City;
             }
 
-            if (dto.Region != null)
+            if (dto.Province != null)
             {
-                station.Region = dto.Region;
+                station.Province = dto.Province;
             }
 
             if (dto.Country != null)
