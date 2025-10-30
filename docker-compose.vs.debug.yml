@@ -14,3 +14,10 @@ services:
     volumes:
       - ${HOME}/.microsoft/usersecrets:/root/.microsoft/usersecrets:ro
       - ${HOME}/.aspnet/https:/root/.aspnet/https:ro
+
+  # VISUAL STUDIO WORKAROUND: https://stackoverflow.com/questions/77376227/docker-compose-vs-debug-command-arguments-not-passed-properly-to-the-program
+  generalreservationsystem.migrator:
+    command: [] # this to void the command line parameters from docker-compose.yml
+    labels:
+      com.microsoft.visualstudio.debuggee.arguments: --additionalProbingPath /root/.nuget/fallbackpackages2 --additionalProbingPath /root/.nuget/fallbackpackages /app/bin/Debug/net9.0/GeneralReservationSystem.Migration.dll migrate "Server=${SQL_HOST},${SQL_PORT};Database=GRSDb;User Id=${DB_OWNER:-grs_admin_user};Password=${DB_OWNER_PASSWORD};TrustServerCertificate=True"
+      com.microsoft.visualstudio.debuggee.program: "/usr/bin/dotnet"

@@ -40,8 +40,7 @@ services:
     depends_on:
       sqlserver.configurator:
         condition: service_completed_successfully
-    environment:
-      - ConnectionStrings__DefaultConnection=Server=${SQL_HOST},${SQL_PORT};Database=GRSDb;User Id=${DB_OWNER:-grs_admin_user};Password=${DB_OWNER_PASSWORD};TrustServerCertificate=True
+    command: migrate "Server=${SQL_HOST},${SQL_PORT};Database=GRSDb;User Id=${DB_OWNER:-grs_admin_user};Password=${DB_OWNER_PASSWORD};TrustServerCertificate=True"
 
   generalreservationsystem.api:
     build:

@@ -11,6 +11,8 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["GeneralReservationSystem.Migration/GeneralReservationSystem.Migration.csproj", "GeneralReservationSystem.Migration/"]
+COPY ["GeneralReservationSystem.Infrastructure/GeneralReservationSystem.Infrastructure.csproj", "GeneralReservationSystem.Infrastructure/"]
+COPY ["GeneralReservationSystem.Application/GeneralReservationSystem.Application.csproj", "GeneralReservationSystem.Application/"]
 RUN dotnet restore "./GeneralReservationSystem.Migration/GeneralReservationSystem.Migration.csproj"
 COPY . .
 WORKDIR "/src/GeneralReservationSystem.Migration"
