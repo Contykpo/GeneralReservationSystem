@@ -4,7 +4,6 @@ using GeneralReservationSystem.Application.Exceptions.Repositories;
 using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Helpers;
 using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication;
-using GeneralReservationSystem.Application.Repositories.Util.Interfaces;
 using GeneralReservationSystem.Application.Services.Interfaces.Authentication;
 
 namespace GeneralReservationSystem.Application.Services.DefaultImplementations.Authentication
@@ -48,9 +47,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
             try
             {
                 string normalizedInput = dto.UserNameOrEmail.Trim().ToUpperInvariant();
-                User user = await userRepository.Query()
-                    .Where(u => u.NormalizedUserName == normalizedInput || u.NormalizedEmail == normalizedInput)
-                    .FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el usuario.");
+                User user = await userRepository.GetByUserNameOrEmailAsync(normalizedInput, cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el usuario.");
                 return !PasswordHelper.VerifyPassword(dto.Password, user.PasswordHash, user.PasswordSalt)
                     ? throw new ServiceBusinessException("Usuario o contraseña incorrectos.")
                     : new UserInfo
@@ -75,12 +72,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
         {
             try
             {
-                /*User user = await userRepository.Query()
-                    .Where(u => u.UserId == dto.UserId)
-                    .FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el usuario para cambiar la contraseña.");*/
-                User user = userRepository.Query()
-                    .Where(u => u.UserId == dto.UserId)
-                    .FirstOrDefault() ?? throw new ServiceNotFoundException("No se encontró el usuario para cambiar la contraseña.");
+                User user = await userRepository.GetByIdAsync(dto.UserId, cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el usuario para cambiar la contraseña.");
 
                 if (!PasswordHelper.VerifyPassword(dto.CurrentPassword, user.PasswordHash, user.PasswordSalt))
                 {

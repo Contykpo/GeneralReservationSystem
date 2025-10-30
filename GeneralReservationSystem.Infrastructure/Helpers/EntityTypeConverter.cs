@@ -1,5 +1,3 @@
-using System.Data.SqlTypes;
-
 namespace GeneralReservationSystem.Infrastructure.Helpers
 {
     public static class EntityTypeConverter
@@ -12,22 +10,6 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             }
 
             Type underlying = Nullable.GetUnderlyingType(targetType) ?? targetType;
-
-            // Handle DateTime / DateTimeOffset bounds to avoid SqlDateTime overflow when sending to SQL Server
-            if (underlying == typeof(DateTime) && clrValue is DateTime dt)
-            {
-                DateTime sqlMin = SqlDateTime.MinValue.Value;
-                DateTime sqlMax = SqlDateTime.MaxValue.Value;
-                return (dt < sqlMin || dt > sqlMax) ? DBNull.Value : dt;
-            }
-
-            if (underlying == typeof(DateTimeOffset) && clrValue is DateTimeOffset dto)
-            {
-                DateTime sqlMin = SqlDateTime.MinValue.Value;
-                DateTime sqlMax = SqlDateTime.MaxValue.Value;
-                DateTime utc = dto.UtcDateTime;
-                return (utc < sqlMin || utc > sqlMax) ? DBNull.Value : dto;
-            }
 
             if (underlying == typeof(byte[]))
             {

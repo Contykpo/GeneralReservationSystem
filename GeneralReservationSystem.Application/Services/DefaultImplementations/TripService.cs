@@ -4,12 +4,11 @@ using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Exceptions.Repositories;
 using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Repositories.Interfaces;
-using GeneralReservationSystem.Application.Repositories.Util.Interfaces;
 using GeneralReservationSystem.Application.Services.Interfaces;
 
 namespace GeneralReservationSystem.Application.Services.DefaultImplementations
 {
-    public class TripService(ITripRepository tripRepository, IUnitOfWork unitOfWork) : ITripService
+    public class TripService(ITripRepository tripRepository) : ITripService
     {
         public async Task<Trip> CreateTripAsync(CreateTripDto dto, CancellationToken cancellationToken = default)
         {
@@ -138,10 +137,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                Trip trip = await tripRepository.Query()
-                    .Where(t => t.TripId == keyDto.TripId)
-                    .FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el viaje solicitado.");
-                return trip;
+                return await tripRepository.GetByIdAsync(keyDto.TripId, cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el viaje solicitado.");
             }
             catch (RepositoryException ex)
             {
@@ -153,7 +149,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                var item = await unitOfWork.TripRepository.Query()
+                /*var item = await unitOfWork.TripRepository.Query()
                     .Join(unitOfWork.StationRepository.Query(),
                         t => t.DepartureStationId,
                         dst => dst.StationId,
@@ -201,7 +197,9 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
                     ArrivalTime = item.ArrivalTime,
                     AvailableSeats = item.AvailableSeats,
                     ReservedSeats = item.ReservedSeats
-                };
+                };*/
+
+                return await tripRepository.GetTripWithDetailsAsync(keyDto.TripId, cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el viaje solicitado.");
             }
             catch (RepositoryException ex)
             {
@@ -225,7 +223,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                var query = unitOfWork.TripRepository.Query()
+                /*var query = unitOfWork.TripRepository.Query()
                     .Join(unitOfWork.StationRepository.Query(),
                         t => t.DepartureStationId,
                         dst => dst.StationId,
@@ -290,7 +288,9 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
                     TotalCount = count,
                     Page = searchDto.Page,
                     PageSize = searchDto.PageSize
-                };
+                };*/
+
+                return await tripRepository.SearchWithDetailsAsync(searchDto, cancellationToken);
             }
             catch (RepositoryException ex)
             {
@@ -302,7 +302,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                Trip trip = await tripRepository.Query()
+                /*Trip trip = await tripRepository.Query()
                     .Where(t => t.TripId == keyDto.TripId)
                     .FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el viaje solicitado.");
 
@@ -313,7 +313,9 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
                 int total = trip.AvailableSeats;
                 List<int> seats = [.. Enumerable.Range(1, total).Except(reservedSeats)];
 
-                return seats;
+                return seats;*/
+
+                return await tripRepository.GetFreeSeatsAsync(keyDto.TripId, cancellationToken);
             }
             catch (RepositoryException ex)
             {

@@ -5,18 +5,17 @@ using GeneralReservationSystem.Application.Entities.Authentication;
 using GeneralReservationSystem.Application.Exceptions.Repositories;
 using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication;
-using GeneralReservationSystem.Application.Repositories.Util.Interfaces;
 using GeneralReservationSystem.Application.Services.Interfaces.Authentication;
 
 namespace GeneralReservationSystem.Application.Services.DefaultImplementations.Authentication
 {
-    public class UserService(IUserRepository userRepository, IUnitOfWork unitOfWork) : IUserService
+    public class UserService(IUserRepository userRepository) : IUserService
     {
         public async Task<User> GetUserAsync(UserKeyDto keyDto, CancellationToken cancellationToken = default)
         {
             try
             {
-                User user = await userRepository.Query().Where(u => u.UserId == keyDto.UserId).FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el usuario solicitado.");
+                User user = await userRepository.GetByIdAsync(keyDto.UserId, cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el usuario solicitado.");
                 return user;
             }
             catch (RepositoryException ex)
@@ -103,7 +102,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
         {
             try
             {
-                var query = unitOfWork.UserRepository.Query()
+                /*var query = unitOfWork.UserRepository.Query()
                     .Select(u => new
                     {
                         u.UserId,
@@ -138,7 +137,9 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
                     TotalCount = count,
                     Page = searchDto.Page,
                     PageSize = searchDto.PageSize
-                };
+                };*/
+
+                return await userRepository.SearchWithInfoAsync(searchDto, cancellationToken);
             }
             catch (RepositoryException ex)
             {

@@ -1,46 +1,31 @@
 services:
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: sqlserver_container
+  postgres:
+    image: postgres
+    container_name: postgres_container
     ports:
-      - "1433:1433"
+      - "5432:5432"
     environment:
-      - ACCEPT_EULA=${ACCEPT_EULA}
-      - MSSQL_SA_USER=${SA_USER:-sa}
-      - MSSQL_SA_PASSWORD=${SA_PASSWORD}
+      - POSTGRES_USER=${SA_USER:-postgres}
+      - POSTGRES_PASSWORD=${SA_PASSWORD:-password123}
+      - POSTGRES_DB=grsdb
     volumes:
-      - sql_data:/var/opt/mssql
+      - sql_data:/var/lib/postgresql
+      - ./db_init.pgsql:/docker-entrypoint-initdb.d/init.sql
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -U ${MSSQL_SA_USER} -P ${MSSQL_SA_PASSWORD} -Q 'SELECT 1' -N -C || exit 1"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
-      retries: 10
-      start_period: 10s
       timeout: 3s
-        
-  sqlserver.configurator:
-    image: mcr.microsoft.com/mssql-tools:latest
-    volumes:
-      - ./db_init.sql:/db_init.sql
-    depends_on:
-      sqlserver:
-        condition: service_healthy
-    environment:
-      - SA_USER=${SA_USER:-sa}
-      - SA_PASSWORD=${SA_PASSWORD}
-      - SQL_HOST=${SQL_HOST}
-      - SQL_PORT=${SQL_PORT}
-    command: >
-      /bin/bash -c "/opt/mssql-tools/bin/sqlcmd -S ${SQL_HOST},${SQL_PORT} -U ${SA_USER:-sa} -P ${SA_PASSWORD} -C -i db_init.sql"
+      retries: 3
 
   generalreservationsystem.migrator:
     build:
       context: .
       dockerfile: GeneralReservationSystem.Migration/Dockerfile
     depends_on:
-      sqlserver.configurator:
-        condition: service_completed_successfully
-    command: migrate "Server=${SQL_HOST},${SQL_PORT};Database=GRSDb;User Id=${DB_OWNER:-grs_admin_user};Password=${DB_OWNER_PASSWORD};TrustServerCertificate=True"
+      postgres:
+        condition: service_healthy
+    command: migrate "Host=${SQL_HOST};Port=${SQL_PORT};Database=grsdb;Username=${DB_OWNER:-grs_admin_user};Password=${DB_OWNER_PASSWORD}"
 
   generalreservationsystem.api:
     build:
@@ -53,7 +38,7 @@ services:
       generalreservationsystem.migrator:
         condition: service_completed_successfully
     environment:
-      - ConnectionStrings__DefaultConnection=Server=${SQL_HOST},${SQL_PORT};Database=GRSDb;User Id=${DB_USER:-grs_app_user};Password=${DB_PASSWORD};TrustServerCertificate=True
+      - ConnectionStrings__DefaultConnection=Host=${SQL_HOST};Port=${SQL_PORT};Database=grsdb;Username=${DB_USER:-grs_app_user};Password=${DB_PASSWORD}
       - ASPNETCORE_HTTP_PORTS=${API_HTTP_PORT:-8080}
       - ASPNETCORE_HTTPS_PORTS=${API_HTTPS_PORT:-8081}
       - Jwt__SecretKey=${JWT_SECRET_KEY}

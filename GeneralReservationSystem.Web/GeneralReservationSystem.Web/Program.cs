@@ -12,6 +12,7 @@ builder.Services.AddRazorComponents()
 string apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "localhost";
 builder.Services.AddClientServices(apiBaseUrl);
 
+builder.Services.AddAuthentication();
 builder.Services.AddAuthorization();
 
 WebApplication app = builder.Build();

@@ -3,12 +3,14 @@
     "Docker Compose": {
       "commandName": "DockerCompose",
       "commandVersion": "1.0",
+      "composeLaunchAction": "LaunchBrowser",
+      "composeLaunchServiceName": "generalreservationsystem.web",
+      "composeLaunchUrl": "{Scheme}://localhost:{ServicePort}",
       "serviceActions": {
         "generalreservationsystem.api": "StartDebugging",
         "generalreservationsystem.web": "StartDebugging",
-        "generalreservationsystem.migrator": "StartWithoutDebugging",
-        "sqlserver.configurator": "StartWithoutDebugging",
-        "sqlserver": "StartWithoutDebugging"
+        "generalreservationsystem.migrator": "StartDebugging",
+        "postgres": "StartWithoutDebugging"
       }
     }
   }

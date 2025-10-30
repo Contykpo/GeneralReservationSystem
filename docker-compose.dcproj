@@ -2,14 +2,15 @@
 <Project ToolsVersion="15.0" Sdk="Microsoft.Docker.Sdk">
   <PropertyGroup Label="Globals">
     <ProjectVersion>2.1</ProjectVersion>
-	  <DockerTargetOS>Linux</DockerTargetOS>
+    <DockerTargetOS>Linux</DockerTargetOS>
     <DockerPublishLocally>False</DockerPublishLocally>
     <ProjectGuid>81dded9d-158b-e303-5f62-77a2896d2a5a</ProjectGuid>
-	<DockerLaunchAction>LaunchBrowser</DockerLaunchAction>
-	<DockerServiceUrl>{Scheme}://localhost:{ServicePort}</DockerServiceUrl>
-	<DockerServiceName>generalreservationsystem.web</DockerServiceName>
-	<DependencyAwareStart>true</DependencyAwareStart>
+    <DockerLaunchAction>LaunchBrowser</DockerLaunchAction>
+    <DockerServiceUrl>{Scheme}://localhost:{ServicePort}</DockerServiceUrl>
+    <DockerServiceName>generalreservationsystem.web</DockerServiceName>
+    <DependencyAwareStart>true</DependencyAwareStart>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'" />
   <ItemGroup>
     <None Include="docker-compose.vs.debug.yml">
       <DependentUpon>docker-compose.yml</DependentUpon>
@@ -17,9 +18,8 @@
     <None Include="docker-compose.vs.release.yml">
       <DependentUpon>docker-compose.yml</DependentUpon>
     </None>
-    <None Include="test_db_init.sql" />
     <None Include="docker-compose.yml" />
     <None Include=".dockerignore" />
-    <None Include="db_init.sql" />
+    <None Include="db_init.pgsql" />
   </ItemGroup>
 </Project>

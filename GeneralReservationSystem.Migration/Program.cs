@@ -4,12 +4,14 @@ namespace GeneralReservationSystem.Migration
 {
     internal class Program
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             Console.WriteLine("General Reservation System - Migration Tool");
 
             if (args.Length < 2 || string.IsNullOrWhiteSpace(args[1]))
+            {
                 throw new ArgumentException("Usage: <action> <connectionString> [migrationName]");
+            }
 
             string action = args[0].ToLowerInvariant();
             string connectionString = args[1];
@@ -26,12 +28,18 @@ namespace GeneralReservationSystem.Migration
                     break;
                 case "migrate-one":
                     if (string.IsNullOrWhiteSpace(migrationName))
+                    {
                         throw new ArgumentException("Migration name required for migrate-one.");
+                    }
+
                     MigrationsRunner.RunMigration(connectionString, migrationName);
                     break;
                 case "revert-one":
                     if (string.IsNullOrWhiteSpace(migrationName))
+                    {
                         throw new ArgumentException("Migration name required for revert-one.");
+                    }
+
                     MigrationsRunner.RunRevert(connectionString, migrationName);
                     break;
                 case "seed":

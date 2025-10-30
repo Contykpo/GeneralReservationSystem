@@ -4,12 +4,11 @@ using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Exceptions.Repositories;
 using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Repositories.Interfaces;
-using GeneralReservationSystem.Application.Repositories.Util.Interfaces;
 using GeneralReservationSystem.Application.Services.Interfaces;
 
 namespace GeneralReservationSystem.Application.Services.DefaultImplementations
 {
-    public class StationService(IStationRepository stationRepository, IUnitOfWork unitOfWork) : IStationService
+    public class StationService(IStationRepository stationRepository) : IStationService
     {
         public async Task<Station> CreateStationAsync(CreateStationDto dto, CancellationToken cancellationToken = default)
         {
@@ -94,10 +93,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                Station station = await stationRepository.Query()
-                    .Where(s => s.StationId == keyDto.StationId)
-                    .FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró la estación solicitada.");
-                return station;
+                return await stationRepository.GetByIdAsync(keyDto.StationId, cancellationToken) ?? throw new ServiceNotFoundException("No se encontró la estación solicitada.");
             }
             catch (RepositoryException ex)
             {
@@ -121,26 +117,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                IQueryable<Station> query = unitOfWork.StationRepository.Query()
-                    .ApplyFilters(searchDto.Filters);
-
-                List<Station> items = await query
-                    .ApplyOrders(searchDto.Orders)
-                    .Skip((searchDto.Page - 1) * searchDto.PageSize)
-                    .Take(searchDto.PageSize)
-                    .ToListAsync(cancellationToken);
-
-                int count = await query.CountAsync(cancellationToken);
-
-                unitOfWork.Commit();
-
-                return new PagedResult<Station>
-                {
-                    Items = items,
-                    TotalCount = count,
-                    Page = searchDto.Page,
-                    PageSize = searchDto.PageSize
-                };
+                return await stationRepository.SearchAsync(searchDto, cancellationToken);
             }
             catch (RepositoryException ex)
             {

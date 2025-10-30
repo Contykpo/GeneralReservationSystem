@@ -5,12 +5,11 @@ using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Exceptions.Repositories;
 using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Repositories.Interfaces;
-using GeneralReservationSystem.Application.Repositories.Util.Interfaces;
 using GeneralReservationSystem.Application.Services.Interfaces;
 
 namespace GeneralReservationSystem.Application.Services.DefaultImplementations
 {
-    public class ReservationService(IReservationRepository reservationRepository, IUnitOfWork unitOfWork) : IReservationService
+    public class ReservationService(IReservationRepository reservationRepository) : IReservationService
     {
         public async Task<Reservation> CreateReservationAsync(CreateReservationDto dto, CancellationToken cancellationToken = default)
         {
@@ -64,11 +63,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                Reservation reservation = await reservationRepository.Query()
-                    .Where(r => r.TripId == keyDto.TripId && r.Seat == keyDto.Seat)
-                    .FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró la reserva solicitada.");
-
-                return reservation;
+                return await reservationRepository.GetByKeyAsync(keyDto.TripId, keyDto.Seat, cancellationToken) ?? throw new ServiceNotFoundException("No se encontró la reserva solicitada.");
             }
             catch (RepositoryException ex)
             {
@@ -80,7 +75,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                var items = await reservationRepository.Query()
+                /*var items = await reservationRepository.Query()
                     .Join(unitOfWork.TripRepository.Query(),
                         r => r.TripId,
                         t => t.TripId,
@@ -133,7 +128,9 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
 
                 unitOfWork.Commit();
 
-                return castedItems;
+                return castedItems;*/
+
+                return await reservationRepository.GetByUserIdWithDetailsAsync(keyDto.UserId, cancellationToken);
             }
             catch (RepositoryException ex)
             {
@@ -145,7 +142,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                var query = unitOfWork.ReservationRepository.Query()
+                /*var query = unitOfWork.ReservationRepository.Query()
                     .Join(unitOfWork.UserRepository.Query(),
                         r => r.UserId,
                         u => u.UserId,
@@ -222,7 +219,9 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
                     TotalCount = count,
                     Page = searchDto.Page,
                     PageSize = searchDto.PageSize
-                };
+                };*/
+
+                return await reservationRepository.SearchWithDetailsAsync(searchDto, cancellationToken);
             }
             catch (RepositoryException ex)
             {
@@ -234,7 +233,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                var query = unitOfWork.ReservationRepository.Query()
+                /*var query = unitOfWork.ReservationRepository.Query()
                     .Join(unitOfWork.TripRepository.Query(),
                         r => r.TripId,
                         t => t.TripId,
@@ -302,7 +301,9 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
                     TotalCount = count,
                     Page = searchDto.Page,
                     PageSize = searchDto.PageSize
-                };
+                };*/
+
+                return await reservationRepository.SearchForUserIdWithDetailsAsync(keyDto.UserId, searchDto, cancellationToken);
             }
             catch (RepositoryException ex)
             {

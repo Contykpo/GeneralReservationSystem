@@ -1,6 +1,6 @@
-﻿using GeneralReservationSystem.Application.Helpers;
+﻿using GeneralReservationSystem.Application.Common;
+using GeneralReservationSystem.Application.Helpers;
 using GeneralReservationSystem.Application.Repositories.Interfaces;
-using GeneralReservationSystem.Application.Repositories.Util.Interfaces;
 using GeneralReservationSystem.Infrastructure.Helpers;
 using System.Data;
 using System.Data.Common;
@@ -9,7 +9,7 @@ using System.Text;
 
 namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
 {
-    public class Repository<T>(RepositoryQueryProvider queryProvider, Func<DbConnection> connectionFactory, DbTransaction? transaction = null) : IRepository<T> where T : class, new()
+    public class Repository<T>(Func<DbConnection> connectionFactory) : IRepository<T> where T : class, new()
     {
         protected static readonly string _tableName = EntityHelper.GetTableName<T>();
         protected static readonly PropertyInfo[] _properties = typeof(T).GetProperties();
@@ -75,22 +75,114 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
             }
         }
 
+        protected static string BuildPagedSql(IList<Filter> filters, IList<SortOption> orders, int page, int pageSize)
+        {
+            string whereClause = filters != null && filters.Count > 0
+                ? SqlCommandHelper.BuildFiltersClause<T>(filters)
+                : string.Empty;
+            string orderByClause = orders != null && orders.Count > 0
+                ? SqlCommandHelper.BuildOrderByClause<T>(orders)
+                : string.Empty;
+            int offset = (page - 1) * pageSize;
+            StringBuilder sql = new();
+            _ = sql.Append($"SELECT * FROM \"{_tableName}\"");
+            if (!string.IsNullOrEmpty(whereClause))
+            {
+                _ = sql.Append($" WHERE {whereClause}");
+            }
+
+            if (!string.IsNullOrEmpty(orderByClause))
+            {
+                _ = sql.Append($" ORDER BY {orderByClause}");
+            }
+
+            _ = sql.Append($" LIMIT {pageSize} OFFSET {offset}");
+            return sql.ToString();
+        }
+
+        protected static string BuildCountSql(IList<Filter> filters)
+        {
+            string whereClause = filters != null && filters.Count > 0
+                ? SqlCommandHelper.BuildFiltersClause<T>(filters)
+                : string.Empty;
+            StringBuilder sql = new();
+            _ = sql.Append($"SELECT COUNT(*) FROM \"{_tableName}\"");
+            if (!string.IsNullOrEmpty(whereClause))
+            {
+                _ = sql.Append($" WHERE {whereClause}");
+            }
+
+            return sql.ToString();
+        }
+
+        protected static void AddFilterParameters(DbCommand cmd, IList<Filter> filters, string paramPrefix = "p")
+        {
+            if (filters == null || filters.Count == 0)
+            {
+                return;
+            }
+
+            int paramIndex = 0;
+            foreach (Filter filter in filters)
+            {
+                PropertyInfo? prop = _properties.FirstOrDefault(p => p.Name == filter.PropertyOrField);
+                if (prop == null)
+                {
+                    continue;
+                }
+
+                string paramName = $"@{paramPrefix}{paramIndex}";
+                if (filter.Operator == FilterOperator.Between && filter.Value is object[] arr && arr.Length == 2)
+                {
+                    SqlCommandHelper.AddParameter(cmd, paramName + "_start", arr[0], prop.PropertyType);
+                    SqlCommandHelper.AddParameter(cmd, paramName + "_end", arr[1], prop.PropertyType);
+                }
+                else if (filter.Operator is not FilterOperator.IsNullOrEmpty and not FilterOperator.IsNotNullOrEmpty)
+                {
+                    SqlCommandHelper.AddParameter(cmd, paramName, filter.Value, prop.PropertyType);
+                }
+                paramIndex++;
+            }
+        }
+
+        protected async Task<PagedResult<TResult>> MapPagedResultAsync<TResult>(
+            DbCommand cmd,
+            DbCommand countCmd,
+            Func<DbDataReader, TResult> mapFunc,
+            int page,
+            int pageSize,
+            CancellationToken cancellationToken)
+        {
+            List<TResult> items = [];
+            using (DbDataReader reader = await SqlCommandHelper.ExecuteReaderAsync(cmd, cancellationToken))
+            {
+                while (await reader.ReadAsync(cancellationToken))
+                {
+                    items.Add(mapFunc(reader));
+                }
+            }
+
+            var totalCount = (long)(await SqlCommandHelper.ExecuteScalarAsync(countCmd, cancellationToken))!;
+            return new PagedResult<TResult>
+            {
+                Items = items,
+                TotalCount = (int)totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
+        }
+
         #endregion
 
         // TODO/FIX: "using" cierra la conexión y reader, pero puede ocurrir que tales deban ser administrados externamente al
         // repositorio. Decidir como arreglar esto (quizás no hace falta).
 
-        public RepositoryQuery<T> Query()
-        {
-            return new RepositoryQuery<T>(queryProvider);
-        }
-
         public async Task<IEnumerable<T>> GetAllAsync(CancellationToken cancellationToken = default)
         {
             using DbConnection conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(connectionFactory, cancellationToken);
-            using DbCommand cmd = SqlCommandHelper.CreateCommand(conn, transaction);
+            using DbCommand cmd = SqlCommandHelper.CreateCommand(conn);
 
-            cmd.CommandText = $"SELECT * FROM [{_tableName}]";
+            cmd.CommandText = $"SELECT * FROM \"{_tableName}\"";
             using DbDataReader reader = await SqlCommandHelper.ExecuteReaderAsync(cmd, cancellationToken);
             List<T> result = [];
             while (await reader.ReadAsync(cancellationToken))
@@ -103,7 +195,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
         public async Task<int> CreateAsync(T entity, CancellationToken cancellationToken = default)
         {
             using DbConnection conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(connectionFactory, cancellationToken);
-            using DbCommand cmd = SqlCommandHelper.CreateCommand(conn, transaction);
+            using DbCommand cmd = SqlCommandHelper.CreateCommand(conn);
 
             bool hasOutput = _computedProperties.Length != 0;
             cmd.CommandText = SqlCommandHelper.BuildInsertStatement(_tableName, _nonComputedProperties, _computedProperties, (p, i) => $"@p{i}");
@@ -129,7 +221,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
             }
 
             using DbConnection conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(connectionFactory, cancellationToken);
-            using DbCommand cmd = SqlCommandHelper.CreateCommand(conn, transaction);
+            using DbCommand cmd = SqlCommandHelper.CreateCommand(conn);
 
             string[] columns = [.. _nonComputedProperties.Select(EntityHelper.GetColumnName)];
             bool hasOutput = _computedProperties.Length != 0;
@@ -150,13 +242,11 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                 {
                     _ = valueRows.Append(',');
                 }
-
                 _ = valueRows.Append("(" + string.Join(",", valueNames) + ")");
             }
-
             cmd.CommandText = hasOutput
-                ? $"INSERT INTO [{_tableName}] (" + string.Join(",", columns) + ") " + SqlCommandHelper.BuildOutputClause(_computedProperties) + " VALUES " + valueRows.ToString()
-                : $"INSERT INTO [{_tableName}] (" + string.Join(",", columns) + ") VALUES " + valueRows.ToString();
+                ? $"INSERT INTO \"{_tableName}\" (" + string.Join(", ", columns.Select(c => $"\"{c}\"")) + ") VALUES " + valueRows.ToString() + " " + SqlCommandHelper.BuildReturningClause(_computedProperties)
+                : $"INSERT INTO \"{_tableName}\" (" + string.Join(", ", columns.Select(c => $"\"{c}\"")) + ") VALUES " + valueRows.ToString();
 
             return hasOutput
                 ? await ExecuteBulkWithOutputAsync(cmd, entityList, cancellationToken)
@@ -166,7 +256,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
         public async Task<int> UpdateAsync(T entity, Func<T, object?>? selector = null, CancellationToken cancellationToken = default)
         {
             using DbConnection conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(connectionFactory, cancellationToken);
-            using DbCommand cmd = SqlCommandHelper.CreateCommand(conn, transaction);
+            using DbCommand cmd = SqlCommandHelper.CreateCommand(conn);
 
             PropertyInfo[] setColumns;
             if (selector == null)
@@ -211,7 +301,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
             }
 
             using DbConnection conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(connectionFactory, cancellationToken);
-            using DbCommand cmd = SqlCommandHelper.CreateCommand(conn, transaction);
+            using DbCommand cmd = SqlCommandHelper.CreateCommand(conn);
 
             PropertyInfo[] setColumns;
             if (selector == null)
@@ -230,7 +320,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
             {
                 PropertyInfo setCol = setColumns[s];
                 string colName = EntityHelper.GetColumnName(setCol);
-                StringBuilder caseExpr = new($"{colName} = CASE");
+                StringBuilder caseExpr = new($"\"{colName}\" = CASE");
                 for (int i = 0; i < entityList.Count; i++)
                 {
                     List<string> whenParts = [];
@@ -241,21 +331,20 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                         string paramName = $"@key{i}_{k}";
                         object? rawValue = keyProp.GetValue(entityList[i]);
                         SqlCommandHelper.AddParameter(cmd, paramName, rawValue, keyProp.PropertyType);
-                        whenParts.Add($"[{keyCol}] = {paramName}");
+                        whenParts.Add($"\"{keyCol}\" = {paramName}");
                     }
                     string valueParam = $"@set{i}_{colName}";
                     object? rawSetValue = setCol.GetValue(entityList[i]);
                     SqlCommandHelper.AddParameter(cmd, valueParam, rawSetValue, setCol.PropertyType);
                     _ = caseExpr.Append($" WHEN {string.Join(" AND ", whenParts)} THEN {valueParam}");
                 }
-                _ = caseExpr.Append($" ELSE [{colName}] END");
+                _ = caseExpr.Append($" ELSE \"{colName}\" END");
                 setClauses.Add(caseExpr.ToString());
             }
-
             string whereClause = SqlCommandHelper.BuildBulkWhereClause(entityList, _keyProperties, cmd, "wkey");
             cmd.CommandText = hasOutput
-                ? $"UPDATE [{_tableName}] SET " + string.Join(",", setClauses) + " " + SqlCommandHelper.BuildOutputClause(_computedProperties) + " WHERE " + whereClause
-                : $"UPDATE [{_tableName}] SET " + string.Join(",", setClauses) + " WHERE " + whereClause;
+                ? $"UPDATE \"{_tableName}\" SET " + string.Join(",", setClauses) + " WHERE " + whereClause + " " + SqlCommandHelper.BuildReturningClause(_computedProperties)
+                : $"UPDATE \"{_tableName}\" SET " + string.Join(",", setClauses) + " WHERE " + whereClause;
 
             return hasOutput
                 ? await ExecuteBulkWithOutputAsync(cmd, entityList, cancellationToken)
@@ -265,7 +354,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
         public async Task<int> DeleteAsync(T entity, CancellationToken cancellationToken = default)
         {
             using DbConnection conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(connectionFactory, cancellationToken);
-            using DbCommand cmd = SqlCommandHelper.CreateCommand(conn, transaction);
+            using DbCommand cmd = SqlCommandHelper.CreateCommand(conn);
 
             cmd.CommandText = SqlCommandHelper.BuildDeleteStatement(_tableName, _keyProperties, (p, i) => $"@key{i}");
 
@@ -288,10 +377,10 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
             }
 
             using DbConnection conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(connectionFactory, cancellationToken);
-            using DbCommand cmd = SqlCommandHelper.CreateCommand(conn, transaction);
+            using DbCommand cmd = SqlCommandHelper.CreateCommand(conn);
 
             string whereClause = SqlCommandHelper.BuildBulkWhereClause(entityList, _keyProperties, cmd, "key");
-            cmd.CommandText = $"DELETE FROM [{_tableName}] WHERE " + whereClause;
+            cmd.CommandText = $"DELETE FROM \"{_tableName}\" WHERE " + whereClause;
 
             return await SqlCommandHelper.ExecuteNonQueryAsync(cmd, cancellationToken);
         }
