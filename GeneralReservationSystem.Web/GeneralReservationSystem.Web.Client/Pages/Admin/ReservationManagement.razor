@@ -34,24 +34,6 @@
                 <MudExpansionPanel Text="Filtros avanzados" Icon="@Icons.Material.Filled.FilterList">
                     <MudGrid>
                         <MudItem xs="12" sm="6" md="4">
-                            <MudNumericField @bind-Value="_filterTripId" 
-                                             Label="ID de Viaje" 
-                                             Variant="Variant.Outlined"
-                                             Clearable="true"
-                                             Immediate="true"
-                                             DebounceInterval="300"
-                                             OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
-                        </MudItem>
-                        <MudItem xs="12" sm="6" md="4">
-                            <MudNumericField @bind-Value="_filterUserId" 
-                                             Label="ID de Usuario" 
-                                             Variant="Variant.Outlined"
-                                             Clearable="true"
-                                             Immediate="true"
-                                             DebounceInterval="300"
-                                             OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
-                        </MudItem>
-                        <MudItem xs="12" sm="6" md="4">
                             <MudNumericField @bind-Value="_filterSeat" 
                                              Label="Asiento" 
                                              Variant="Variant.Outlined"
@@ -77,6 +59,12 @@
                         </MudItem>
                         <MudItem xs="12" sm="6" md="4">
                             <MudTextField @bind-Value="_filterEmail" Label="Email" Variant="Variant.Outlined" Clearable="true" Immediate="true" DebounceInterval="300" OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="6">
+                            <MudDateRangePicker @bind-DateRange="_filterDepartureDateRange" Label="Rango Fecha Salida" Variant="Variant.Outlined" Clearable="true" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="6">
+                            <MudDateRangePicker @bind-DateRange="_filterArrivalDateRange" Label="Rango Fecha Llegada" Variant="Variant.Outlined" Clearable="true" />
                         </MudItem>
                         <MudItem xs="12">
                             <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ClearFilters" StartIcon="@Icons.Material.Filled.Clear">Limpiar Filtros</MudButton>
@@ -162,10 +150,6 @@
     private MudTable<ReservationDetailsDto> _table = null!;
     private bool _loading = false;
     private string _searchString = string.Empty;
-    
-    // Advanced filters
-    private int? _filterTripId = null;
-    private int? _filterUserId = null;
     private int? _filterSeat = null;
     private string? _filterDepartureStationName = null;
     private string? _filterArrivalStationName = null;
@@ -173,6 +157,10 @@
     private string? _filterArrivalCity = null;
     private string? _filterUserName = null;
     private string? _filterEmail = null;
+    private DateRange? _filterDepartureDateRange { get => _filterDepartureDateRangeBacking; set { _filterDepartureDateRangeBacking = value; _table?.ReloadServerData(); } }
+    private DateRange? _filterArrivalDateRange { get => _filterArrivalDateRangeBacking; set { _filterArrivalDateRangeBacking = value; _table?.ReloadServerData(); } }
+    private DateRange? _filterDepartureDateRangeBacking = null;
+    private DateRange? _filterArrivalDateRangeBacking = null;
 
     private async Task<TableData<ReservationDetailsDto>> ServerReload(TableState state, CancellationToken cancellationToken)
     {
@@ -218,13 +206,10 @@
     {
         List<Filter> filters = [];
 
-        // Global search filter
         if (!string.IsNullOrWhiteSpace(_searchString))
         {
             if (int.TryParse(_searchString, out var numericValue))
             {
-                filters.Add(new Filter("TripId", AppFilterOperator.Equals, numericValue));
-                filters.Add(new Filter("UserId", AppFilterOperator.Equals, numericValue));
                 filters.Add(new Filter("Seat", AppFilterOperator.Equals, numericValue));
             }
             else
@@ -239,10 +224,6 @@
         }
         else
         {
-            if (_filterTripId.HasValue)
-                filters.Add(new Filter("TripId", AppFilterOperator.Equals, _filterTripId.Value));
-            if (_filterUserId.HasValue)
-                filters.Add(new Filter("UserId", AppFilterOperator.Equals, _filterUserId.Value));
             if (_filterSeat.HasValue)
                 filters.Add(new Filter("Seat", AppFilterOperator.Equals, _filterSeat.Value));
             if (!string.IsNullOrWhiteSpace(_filterDepartureStationName))
@@ -257,6 +238,10 @@
                 filters.Add(new Filter("UserName", AppFilterOperator.Contains, _filterUserName));
             if (!string.IsNullOrWhiteSpace(_filterEmail))
                 filters.Add(new Filter("Email", AppFilterOperator.Contains, _filterEmail));
+            if (_filterDepartureDateRange?.Start != null && _filterDepartureDateRange?.End != null)
+                filters.Add(new Filter("DepartureTime", AppFilterOperator.Between, new object[] { _filterDepartureDateRange.Start, _filterDepartureDateRange.End }));
+            if (_filterArrivalDateRange?.Start != null && _filterArrivalDateRange?.End != null)
+                filters.Add(new Filter("ArrivalTime", AppFilterOperator.Between, new object[] { _filterArrivalDateRange.Start, _filterArrivalDateRange.End }));
         }
 
         return filters;
@@ -264,8 +249,6 @@
 
     private void ClearFilters()
     {
-        _filterTripId = null;
-        _filterUserId = null;
         _filterSeat = null;
         _filterDepartureStationName = null;
         _filterArrivalStationName = null;
@@ -273,6 +256,8 @@
         _filterArrivalCity = null;
         _filterUserName = null;
         _filterEmail = null;
+        _filterDepartureDateRange = null;
+        _filterArrivalDateRange = null;
         _searchString = string.Empty;
         _table!.ReloadServerData();
     }

@@ -111,8 +111,6 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
             DbCommand command = SqlCommandHelper.CreateCommand(connection, transaction);
             command.CommandText = commandText;
 
-            Console.WriteLine($"Executing SQL Query: {command.CommandText}");
-
             for (int i = 0, n = paramNames.Length; i < n; i++)
             {
                 SqlCommandHelper.AddParameter(command, paramNames[i], paramValues[i], paramValues[i].GetType());
@@ -129,8 +127,6 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Util.Sql.Query
             DbConnection connection = await SqlCommandHelper.CreateAndOpenConnectionAsync(connectionFactory, cancellationToken);
             DbCommand command = SqlCommandHelper.CreateCommand(connection, transaction);
             command.CommandText = commandText;
-
-            Console.WriteLine($"Executing SQL Query: {command.CommandText}");
 
             for (int i = 0, n = paramNames.Length; i < n; i++)
             {

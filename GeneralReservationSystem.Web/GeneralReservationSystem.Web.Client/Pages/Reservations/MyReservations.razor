@@ -32,6 +32,12 @@
                 <MudItem xs="12" sm="6" md="3">
                     <MudTextField @bind-Value="_filterArrivalCity" Label="Ciudad Llegada" Variant="Variant.Outlined" Clearable="true" Immediate="true" DebounceInterval="300" OnDebounceIntervalElapsed="@(() => dataGrid.ReloadServerData())" />
                 </MudItem>
+                <MudItem xs="12" sm="6" md="6">
+                    <MudDateRangePicker @bind-DateRange="_filterDepartureDateRange" Label="Rango Fecha Salida" Variant="Variant.Outlined" Clearable="true" />
+                </MudItem>
+                <MudItem xs="12" sm="6" md="6">
+                    <MudDateRangePicker @bind-DateRange="_filterArrivalDateRange" Label="Rango Fecha Llegada" Variant="Variant.Outlined" Clearable="true" />
+                </MudItem>
                 <MudItem xs="12">
                     <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ClearFilters" StartIcon="@Icons.Material.Filled.Clear">Limpiar Filtros</MudButton>
                 </MudItem>
@@ -95,6 +101,10 @@
     private string? _filterArrivalStationName = null;
     private string? _filterDepartureCity = null;
     private string? _filterArrivalCity = null;
+    private DateRange? _filterDepartureDateRange { get => _filterDepartureDateRangeBacking; set { _filterDepartureDateRangeBacking = value; dataGrid?.ReloadServerData(); } }
+    private DateRange? _filterArrivalDateRange { get => _filterArrivalDateRangeBacking; set { _filterArrivalDateRangeBacking = value; dataGrid?.ReloadServerData(); } }
+    private DateRange? _filterDepartureDateRangeBacking = null;
+    private DateRange? _filterArrivalDateRangeBacking = null;
 
     private async Task<GridData<UserReservationDetailsDto>> ServerReload(GridState<UserReservationDetailsDto> state)
     {
@@ -141,6 +151,10 @@
                 filters.Add(new Filter("DepartureCity", AppFilterOperator.Contains, _filterDepartureCity));
             if (!string.IsNullOrWhiteSpace(_filterArrivalCity))
                 filters.Add(new Filter("ArrivalCity", AppFilterOperator.Contains, _filterArrivalCity));
+            if (_filterDepartureDateRange?.Start != null && _filterDepartureDateRange?.End != null)
+                filters.Add(new Filter("DepartureTime", AppFilterOperator.Between, new object[] { _filterDepartureDateRange.Start, _filterDepartureDateRange.End }));
+            if (_filterArrivalDateRange?.Start != null && _filterArrivalDateRange?.End != null)
+                filters.Add(new Filter("ArrivalTime", AppFilterOperator.Between, new object[] { _filterArrivalDateRange.Start, _filterArrivalDateRange.End }));
         }
         return filters;
     }
@@ -151,6 +165,8 @@
         _filterArrivalStationName = null;
         _filterDepartureCity = null;
         _filterArrivalCity = null;
+        _filterDepartureDateRange = null;
+        _filterArrivalDateRange = null;
         _searchString = string.Empty;
         dataGrid!.ReloadServerData();
     }

@@ -15,7 +15,8 @@ namespace GeneralReservationSystem.Application.Common
         StartsWith,
         EndsWith,
         IsNullOrEmpty,
-        IsNotNullOrEmpty
+        IsNotNullOrEmpty,
+        Between
     }
 
     public static class FilterOperatorExtensions
@@ -36,6 +37,7 @@ namespace GeneralReservationSystem.Application.Common
                 "ends with" => FilterOperator.EndsWith,
                 "is empty" => FilterOperator.IsNullOrEmpty,
                 "is not empty" => FilterOperator.IsNotNullOrEmpty,
+                "between" => FilterOperator.Between,
                 _ => FilterOperator.Equals
             };
         }
@@ -56,6 +58,7 @@ namespace GeneralReservationSystem.Application.Common
                 FilterOperator.EndsWith => "ends with",
                 FilterOperator.IsNullOrEmpty => "is empty",
                 FilterOperator.IsNotNullOrEmpty => "is not empty",
+                FilterOperator.Between => "between",
                 _ => "equals"
             };
         }
@@ -63,13 +66,32 @@ namespace GeneralReservationSystem.Application.Common
 
     public sealed record Filter(string PropertyOrField, FilterOperator Operator, object? Value)
     {
+        private static object? ExtractValueFromJsonElement(System.Text.Json.JsonElement jsonElement, Type memberType)
+        {
+            return memberType switch
+            {
+                Type t when t == typeof(string) => jsonElement.GetString(),
+                Type t when t == typeof(int) => jsonElement.GetInt32(),
+                Type t when t == typeof(long) => jsonElement.GetInt64(),
+                Type t when t == typeof(bool) => jsonElement.GetBoolean(),
+                Type t when t == typeof(DateTime) => jsonElement.GetDateTime(),
+                Type t when t.IsEnum => Enum.Parse(memberType, jsonElement.GetString() ?? string.Empty),
+                Type t when t == typeof(double) => jsonElement.GetDouble(),
+                Type t when t == typeof(decimal) => jsonElement.GetDecimal(),
+                Type t when t == typeof(float) => jsonElement.GetSingle(),
+                Type t when t == typeof(Guid) => jsonElement.GetGuid(),
+                _ when jsonElement.ValueKind == System.Text.Json.JsonValueKind.Null => null,
+                _ => throw new NotSupportedException($"Unsupported filter value type: {memberType}")
+            };
+        }
+
         public Expression<Func<T, bool>> ToExpression<T>()
         {
             ParameterExpression parameter = Expression.Parameter(typeof(T), "x");
             MemberExpression member = Expression.PropertyOrField(parameter, PropertyOrField);
             Type memberType = member.Type;
 
-            if (Operator is FilterOperator.GreaterThan or FilterOperator.GreaterThanOrEqual or FilterOperator.LessThan or FilterOperator.LessThanOrEqual)
+            if (Operator is FilterOperator.GreaterThan or FilterOperator.GreaterThanOrEqual or FilterOperator.LessThan or FilterOperator.LessThanOrEqual or FilterOperator.Between)
             {
                 if (!typeof(IComparable).IsAssignableFrom(memberType) && !(memberType.IsGenericType && memberType.GetGenericTypeDefinition() == typeof(Nullable<>) && typeof(IComparable).IsAssignableFrom(Nullable.GetUnderlyingType(memberType)!)))
                 {
@@ -87,23 +109,48 @@ namespace GeneralReservationSystem.Application.Common
             object? actualValue = Value;
             if (Value is System.Text.Json.JsonElement jsonElement)
             {
-                // Extract the value based on the target type
-                actualValue = memberType switch
+                if (Operator == FilterOperator.Between && jsonElement.ValueKind == System.Text.Json.JsonValueKind.Array)
                 {
-                    Type t when t == typeof(string) => jsonElement.GetString(),
-                    Type t when t == typeof(int) => jsonElement.GetInt32(),
-                    Type t when t == typeof(long) => jsonElement.GetInt64(),
-                    Type t when t == typeof(bool) => jsonElement.GetBoolean(),
-                    Type t when t == typeof(DateTime) => jsonElement.GetDateTime(),
-                    Type t when t.IsEnum => Enum.Parse(memberType, jsonElement.GetString() ?? string.Empty),
-                    Type t when t == typeof(double) => jsonElement.GetDouble(),
-                    Type t when t == typeof(decimal) => jsonElement.GetDecimal(),
-                    Type t when t == typeof(float) => jsonElement.GetSingle(),
-                    Type t when t == typeof(Guid) => jsonElement.GetGuid(),
-                    _ when jsonElement.ValueKind == System.Text.Json.JsonValueKind.Null => null,
-                    _ => throw new NotSupportedException($"Unsupported filter value type: {memberType}")
-                };
+                    if (jsonElement.GetArrayLength() != 2)
+                    {
+                        throw new ArgumentException("Value for Between operator must be an array of two elements.");
+                    }
+
+                    object? lower = ExtractValueFromJsonElement(jsonElement[0], memberType);
+                    object? upper = ExtractValueFromJsonElement(jsonElement[1], memberType);
+
+                    if (lower is null || upper is null)
+                    {
+                        throw new ArgumentException("Both lower and upper bounds must be non-null for the Between operator.");
+                    }
+
+                    actualValue = new object[]
+                    {
+                        lower,
+                        upper
+                    };
+                }
+                else
+                {
+                    actualValue = ExtractValueFromJsonElement(jsonElement, memberType);
+                }
             }
+
+            if (Operator == FilterOperator.Between)
+            {
+                if (actualValue is object[] arr && arr.Length == 2)
+                {
+                    ConstantExpression lower = Expression.Constant(Convert.ChangeType(arr[0], memberType), memberType);
+                    ConstantExpression upper = Expression.Constant(Convert.ChangeType(arr[1], memberType), memberType);
+                    return Expression.Lambda<Func<T, bool>>(
+                        Expression.AndAlso(
+                            Expression.GreaterThanOrEqual(member, lower),
+                            Expression.LessThanOrEqual(member, upper)
+                        ), parameter);
+                }
+                throw new ArgumentException("Value for Between operator must be an array of two elements.");
+            }
+
             ConstantExpression constant = Expression.Constant(Convert.ChangeType(actualValue, memberType), memberType);
 
             return Expression.Lambda<Func<T, bool>>(Operator switch
