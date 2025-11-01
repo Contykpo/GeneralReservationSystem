@@ -4,6 +4,11 @@ using GeneralReservationSystem.Infrastructure;
 using GeneralReservationSystem.Infrastructure.Helpers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using GeneralReservationSystem.Application.Exceptions.Repositories;
+using GeneralReservationSystem.Application.Exceptions.Services;
+using System.Data.Common;
+using System.Net;
+using System.Text.Json;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -94,8 +99,10 @@ builder.Services.AddHealthChecks();
 
 WebApplication app = builder.Build();
 
-app.UseMiddleware<ExceptionsMiddleware>();
-app.UseMiddleware<SessionMiddleware>();
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(GlobalExceptionHandler.HandleAsync);
+});
 
 app.UseHttpsRedirection();
 app.UseCors();

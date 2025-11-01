@@ -20,8 +20,8 @@ namespace GeneralReservationSystem.Application.Validators
                 .NotEmpty().WithMessage("La fecha de llegada es obligatoria.");
             _ = RuleFor(x => x.AvailableSeats)
                 .GreaterThan(0).WithMessage("El número de asientos disponibles debe ser un número positivo.");
-            _ = RuleFor(x => x)
-                .Must(x => x.ArrivalTime > x.DepartureTime)
+            _ = RuleFor(x => x.DepartureTime)
+                .Must((dto, departureTime) => dto.ArrivalTime > departureTime)
                 .WithMessage("La fecha/hora de llegada debe ser posterior a la salida.");
         }
     }
@@ -44,8 +44,9 @@ namespace GeneralReservationSystem.Application.Validators
             _ = RuleFor(x => x.AvailableSeats)
                 .GreaterThan(0).When(x => x.AvailableSeats.HasValue)
                 .WithMessage("El número de asientos disponibles debe ser un número positivo.");
-            _ = RuleFor(x => x)
-                .Must(x => x.ArrivalTime > x.DepartureTime).When(x => x.ArrivalTime.HasValue && x.DepartureTime.HasValue)
+            _ = RuleFor(x => x.DepartureTime)
+                .Must((dto, departureTime) => departureTime > dto.DepartureTime)
+                .When(x => x.ArrivalTime.HasValue && x.DepartureTime.HasValue)
                 .WithMessage("La fecha/hora de llegada debe ser posterior a la salida.");
         }
     }

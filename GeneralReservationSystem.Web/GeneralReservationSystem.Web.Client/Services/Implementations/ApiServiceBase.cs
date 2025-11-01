@@ -90,6 +90,7 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
         {
             return !string.IsNullOrWhiteSpace(errorObj); // Assuming any content indicates validation errors.
         }
+
         private class ErrorResponse
         {
             public string? Error { get; set; }
@@ -114,11 +115,6 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
 
         private static ValidationError[] ParseBadRequestErrors(string errorObj)
         {
-            if (errorObj == null)
-            {
-                return [];
-            }
-
             try
             {
                 ValidationError[]? errors = JsonSerializer.Deserialize<ValidationError[]>(errorObj, jsonOptions);

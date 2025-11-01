@@ -23,9 +23,5 @@
         public ValidationError[] Errors { get; } = errors;
     }
 
-    public class ValidationError
-    {
-        public string PropertyName { get; set; } = string.Empty;
-        public string Message { get; set; } = string.Empty;
-    }
+    public sealed record ValidationError(string Error, string Field);
 }

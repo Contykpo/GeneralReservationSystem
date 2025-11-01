@@ -53,14 +53,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
         },
         OnAuthenticationFailed = context =>
         {
-            context.Response.Redirect("/login?ReturnUrl=" + Uri.EscapeDataString(context.Request.Path + context.Request.QueryString));
+            context.Response.Redirect("/login");
             return Task.CompletedTask;
         },
         OnChallenge = context =>
         {
             if (!context.Response.HasStarted)
             {
-                context.Response.Redirect("/login?ReturnUrl=" + Uri.EscapeDataString(context.Request.Path + context.Request.QueryString));
+                context.Response.Redirect("/login");
             }
             context.HandleResponse();
             return Task.CompletedTask;

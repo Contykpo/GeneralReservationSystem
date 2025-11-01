@@ -340,7 +340,7 @@
         {
             foreach (var error in ex.Errors)
             {
-                Snackbar.Add(error.Message, Severity.Error);
+                Snackbar.Add(error.Error, Severity.Error);
             }
         }
         catch (ServiceBusinessException ex)
@@ -404,7 +404,7 @@
         {
             foreach (var error in ex.Errors)
             {
-                Snackbar.Add(error.Message, Severity.Error);
+                Snackbar.Add(error.Error, Severity.Error);
             }
         }
         catch (ServiceBusinessException ex)
