@@ -85,7 +85,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                 : string.Empty;
             int offset = (page - 1) * pageSize;
             StringBuilder sql = new();
-            _ = sql.Append($"SELECT * FROM \"{_tableName}\"");
+            _ = sql.Append($"SELECT * FROM grsdb.\"{_tableName}\"");
             if (!string.IsNullOrEmpty(whereClause))
             {
                 _ = sql.Append($" WHERE {whereClause}");
@@ -106,7 +106,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                 ? SqlCommandHelper.BuildFiltersClause<T>(filters)
                 : string.Empty;
             StringBuilder sql = new();
-            _ = sql.Append($"SELECT COUNT(*) FROM \"{_tableName}\"");
+            _ = sql.Append($"SELECT COUNT(*) FROM grsdb.\"{_tableName}\"");
             if (!string.IsNullOrEmpty(whereClause))
             {
                 _ = sql.Append($" WHERE {whereClause}");
@@ -182,7 +182,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
             using DbConnection conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(connectionFactory, cancellationToken);
             using DbCommand cmd = SqlCommandHelper.CreateCommand(conn);
 
-            cmd.CommandText = $"SELECT * FROM \"{_tableName}\"";
+            cmd.CommandText = $"SELECT * FROM grsdb.\"{_tableName}\"";
             using DbDataReader reader = await SqlCommandHelper.ExecuteReaderAsync(cmd, cancellationToken);
             List<T> result = [];
             while (await reader.ReadAsync(cancellationToken))
@@ -380,7 +380,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
             using DbCommand cmd = SqlCommandHelper.CreateCommand(conn);
 
             string whereClause = SqlCommandHelper.BuildBulkWhereClause(entityList, _keyProperties, cmd, "key");
-            cmd.CommandText = $"DELETE FROM \"{_tableName}\" WHERE " + whereClause;
+            cmd.CommandText = $"DELETE FROM grsdb.\"{_tableName}\" WHERE " + whereClause;
 
             return await SqlCommandHelper.ExecuteNonQueryAsync(cmd, cancellationToken);
         }

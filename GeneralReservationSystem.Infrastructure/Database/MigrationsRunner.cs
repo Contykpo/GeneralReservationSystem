@@ -9,7 +9,7 @@ namespace GeneralReservationSystem.Infrastructure.Database
         private static void EnsureMigrationsTableExists(NpgsqlConnection connection)
         {
             string createTableSql = "" +
-                "CREATE TABLE IF NOT EXISTS \"__migrations\" (" +
+                "CREATE TABLE IF NOT EXISTS grsdb.\"__migrations\" (" +
                     "\"MigrationName\" VARCHAR(256) PRIMARY KEY," +
                     "\"AppliedAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW()" +
                 ");";
@@ -30,11 +30,11 @@ namespace GeneralReservationSystem.Infrastructure.Database
             {
                 if (resourceName.Contains("Migrations") && resourceName.EndsWith(".pgsql"))
                 {
-                    string migrationName = Path.GetFileNameWithoutExtension(resourceName.Split('.').Last());
+                    string migrationName = Path.GetFileNameWithoutExtension(resourceName).Split('.').Last();
                     using NpgsqlTransaction transaction = connection.BeginTransaction();
                     try
                     {
-                        string checkSql = "SELECT COUNT(*) FROM \"__migrations\" WHERE \"MigrationName\" = @MigrationName";
+                        string checkSql = "SELECT COUNT(*) FROM grsdb.\"__migrations\" WHERE \"MigrationName\" = @MigrationName";
                         using NpgsqlCommand checkCommand = new(checkSql, connection, transaction);
                         _ = checkCommand.Parameters.AddWithValue("MigrationName", migrationName);
                         long count = (long)(checkCommand.ExecuteScalar() ?? 0);
@@ -56,7 +56,7 @@ namespace GeneralReservationSystem.Infrastructure.Database
                         string sql = reader.ReadToEnd();
                         using NpgsqlCommand command = new(sql, connection, transaction);
                         _ = command.ExecuteNonQuery();
-                        using NpgsqlCommand insertCommand = new("INSERT INTO \"__migrations\" (\"MigrationName\") VALUES (@MigrationName)", connection, transaction);
+                        using NpgsqlCommand insertCommand = new("INSERT INTO grsdb.\"__migrations\" (\"MigrationName\") VALUES (@MigrationName)", connection, transaction);
                         _ = insertCommand.Parameters.AddWithValue("MigrationName", migrationName);
                         _ = insertCommand.ExecuteNonQuery();
                         transaction.Commit();
@@ -91,7 +91,7 @@ namespace GeneralReservationSystem.Infrastructure.Database
             using NpgsqlTransaction transaction = connection.BeginTransaction();
             try
             {
-                string checkSql = "SELECT COUNT(*) FROM \"__migrations\" WHERE \"MigrationName\" = @MigrationName";
+                string checkSql = "SELECT COUNT(*) FROM grsdb.\"__migrations\" WHERE \"MigrationName\" = @MigrationName";
                 using NpgsqlCommand checkCommand = new(checkSql, connection, transaction);
                 _ = checkCommand.Parameters.AddWithValue("MigrationName", migrationName);
                 long count = (long)(checkCommand.ExecuteScalar() ?? 0);
@@ -113,7 +113,7 @@ namespace GeneralReservationSystem.Infrastructure.Database
                 string sql = reader.ReadToEnd();
                 using NpgsqlCommand command = new(sql, connection, transaction);
                 _ = command.ExecuteNonQuery();
-                using NpgsqlCommand insertCommand = new("INSERT INTO \"__migrations\" (\"MigrationName\") VALUES (@MigrationName)", connection, transaction);
+                using NpgsqlCommand insertCommand = new("INSERT INTO grsdb.\"__migrations\" (\"MigrationName\") VALUES (@MigrationName)", connection, transaction);
                 _ = insertCommand.Parameters.AddWithValue("MigrationName", migrationName);
                 _ = insertCommand.ExecuteNonQuery();
                 transaction.Commit();
@@ -157,7 +157,7 @@ namespace GeneralReservationSystem.Infrastructure.Database
                 string sql = reader.ReadToEnd();
                 using NpgsqlCommand command = new(sql, connection, transaction);
                 _ = command.ExecuteNonQuery();
-                using NpgsqlCommand deleteCommand = new("DELETE FROM \"__migrations\" WHERE \"MigrationName\" = @MigrationName", connection, transaction);
+                using NpgsqlCommand deleteCommand = new("DELETE FROM grsdb.\"__migrations\" WHERE \"MigrationName\" = @MigrationName", connection, transaction);
                 _ = deleteCommand.Parameters.AddWithValue("MigrationName", migrationName);
                 _ = deleteCommand.ExecuteNonQuery();
                 transaction.Commit();
@@ -184,7 +184,7 @@ namespace GeneralReservationSystem.Infrastructure.Database
             {
                 if (resourceName.Contains("Reverts") && resourceName.EndsWith(".pgsql"))
                 {
-                    string migrationName = Path.GetFileNameWithoutExtension(resourceName.Split('.').Last());
+                    string migrationName = Path.GetFileNameWithoutExtension(resourceName).Split('.').Last();
                     using NpgsqlTransaction transaction = connection.BeginTransaction();
                     try
                     {
@@ -200,7 +200,7 @@ namespace GeneralReservationSystem.Infrastructure.Database
                         string sql = reader.ReadToEnd();
                         using NpgsqlCommand command = new(sql, connection, transaction);
                         _ = command.ExecuteNonQuery();
-                        using NpgsqlCommand deleteCommand = new("DELETE FROM \"__migrations\" WHERE \"MigrationName\" = @MigrationName", connection, transaction);
+                        using NpgsqlCommand deleteCommand = new("DELETE FROM grsdb.\"__migrations\" WHERE \"MigrationName\" = @MigrationName", connection, transaction);
                         _ = deleteCommand.Parameters.AddWithValue("MigrationName", migrationName);
                         _ = deleteCommand.ExecuteNonQuery();
                         transaction.Commit();
@@ -223,14 +223,14 @@ namespace GeneralReservationSystem.Infrastructure.Database
             Console.WriteLine("Starting data seeding...");
             using NpgsqlConnection connection = new(connectionString);
             connection.Open();
-            string checkAdminSql = "SELECT COUNT(*) FROM \"ApplicationUser\" WHERE \"UserName\" = 'admin'";
+            string checkAdminSql = "SELECT COUNT(*) FROM grsdb.\"ApplicationUser\" WHERE \"UserName\" = 'admin'";
             using NpgsqlCommand checkCommand = new(checkAdminSql, connection);
             long adminCount = (long)(checkCommand.ExecuteScalar() ?? 0);
             if (adminCount == 0)
             {
                 (byte[] hash, byte[] salt) = PasswordHelper.HashPassword("admin123");
                 string insertAdminSql = "" +
-                    "INSERT INTO \"ApplicationUser\" (\"UserName\", \"Email\", \"PasswordHash\", \"PasswordSalt\", \"IsAdmin\")" +
+                    "INSERT INTO grsdb.\"ApplicationUser\" (\"UserName\", \"Email\", \"PasswordHash\", \"PasswordSalt\", \"IsAdmin\")" +
                     "VALUES (@UserName, @Email, @PasswordHash, @PasswordSalt, @IsAdmin)";
                 using NpgsqlCommand insertCommand = new(insertAdminSql, connection);
                 _ = insertCommand.Parameters.AddWithValue("UserName", "admin");

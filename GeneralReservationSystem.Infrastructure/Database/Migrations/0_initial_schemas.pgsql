@@ -1,5 +1,5 @@
 -- Create "ApplicationUser" table
-CREATE TABLE IF NOT EXISTS "ApplicationUser" (
+CREATE TABLE IF NOT EXISTS grsdb."ApplicationUser" (
     "UserId" SERIAL PRIMARY KEY,
     "UserName" VARCHAR(256) NOT NULL,
     "NormalizedUserName" VARCHAR(256) GENERATED ALWAYS AS (UPPER(TRIM("UserName"))) STORED,
@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS "ApplicationUser" (
 );
 
 -- Create "Station" table
-CREATE TABLE IF NOT EXISTS "Station" (
+CREATE TABLE IF NOT EXISTS grsdb."Station" (
     "StationId" SERIAL PRIMARY KEY,
     "StationName" VARCHAR(100) NOT NULL,
     "NormalizedStationName" VARCHAR(100) GENERATED ALWAYS AS (UPPER(TRIM("StationName"))) STORED,
@@ -27,11 +27,11 @@ CREATE TABLE IF NOT EXISTS "Station" (
 );
 
 -- Create "Trip" table
-CREATE TABLE IF NOT EXISTS "Trip" (
+CREATE TABLE IF NOT EXISTS grsdb."Trip" (
     "TripId" SERIAL PRIMARY KEY,
-    "DepartureStationId" INT NOT NULL REFERENCES "Station"("StationId"),
+    "DepartureStationId" INT NOT NULL REFERENCES grsdb."Station"("StationId"),
     "DepartureTime" TIMESTAMPTZ NOT NULL,
-    "ArrivalStationId" INT NOT NULL REFERENCES "Station"("StationId"),
+    "ArrivalStationId" INT NOT NULL REFERENCES grsdb."Station"("StationId"),
     "ArrivalTime" TIMESTAMPTZ NOT NULL,
     "AvailableSeats" INT NOT NULL CHECK ("AvailableSeats" > 0),
     CONSTRAINT "CK_Trip_Departure_Arrival" CHECK ("DepartureStationId" <> "ArrivalStationId"),
@@ -39,22 +39,21 @@ CREATE TABLE IF NOT EXISTS "Trip" (
 );
 
 -- Create "Reservation" table
-CREATE TABLE IF NOT EXISTS "Reservation" (
-    "TripId" INT NOT NULL REFERENCES "Trip"("TripId") ON DELETE CASCADE,
-    "UserId" INT NOT NULL REFERENCES "ApplicationUser"("UserId") ON DELETE CASCADE,
+CREATE TABLE IF NOT EXISTS grsdb."Reservation" (
+    "TripId" INT NOT NULL REFERENCES grsdb."Trip"("TripId") ON DELETE CASCADE,
+    "UserId" INT NOT NULL REFERENCES grsdb."ApplicationUser"("UserId") ON DELETE CASCADE,
     "Seat" INT NOT NULL,
     PRIMARY KEY ("TripId", "Seat")
 );
 
 -- Trigger for manual cascading deletes on "Trip" when "Station" is deleted
-CREATE OR REPLACE FUNCTION "delete_trips_on_station_delete"() RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION grsdb."delete_trips_on_station_delete"() RETURNS TRIGGER AS $$
 BEGIN
-    DELETE FROM "Trip" WHERE "DepartureStationId" = OLD."StationId" OR "ArrivalStationId" = OLD."StationId";
+    DELETE FROM grsdb."Trip" WHERE "DepartureStationId" = OLD."StationId" OR "ArrivalStationId" = OLD."StationId";
     RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS "tr_DeleteTripsOnStationDelete" ON "Station";
 CREATE TRIGGER "tr_DeleteTripsOnStationDelete"
-BEFORE DELETE ON "Station"
-FOR EACH ROW EXECUTE FUNCTION "delete_trips_on_station_delete"();
+BEFORE DELETE ON grsdb."Station"
+FOR EACH ROW EXECUTE FUNCTION grsdb."delete_trips_on_station_delete"();

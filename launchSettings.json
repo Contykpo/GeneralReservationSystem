@@ -6,11 +6,23 @@
       "composeLaunchAction": "LaunchBrowser",
       "composeLaunchServiceName": "generalreservationsystem.web",
       "composeLaunchUrl": "{Scheme}://localhost:{ServicePort}",
+      "composeProfile": {
+        "includes": [
+          "hosted_db"
+        ]
+      }
+    },
+    "Docker Compose Unhosted DB": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "composeLaunchAction": "LaunchBrowser",
+      "composeLaunchServiceName": "generalreservationsystem.web",
+      "composeLaunchUrl": "{Scheme}://localhost:{ServicePort}",
       "serviceActions": {
         "generalreservationsystem.api": "StartDebugging",
+        "generalreservationsystem.migrator": "DoNotStart",
         "generalreservationsystem.web": "StartDebugging",
-        "generalreservationsystem.migrator": "StartDebugging",
-        "postgres": "StartWithoutDebugging"
+        "postgres": "DoNotStart"
       }
     }
   }
