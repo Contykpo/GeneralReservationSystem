@@ -7,7 +7,6 @@ using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Exceptions.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Text;
 
 namespace GeneralReservationSystem.API.Controllers
 {
@@ -157,7 +156,7 @@ namespace GeneralReservationSystem.API.Controllers
             try
             {
                 List<ImportStationDto> importDtos = [];
-                await foreach (var dto in CsvHelper.ParseAndValidateCsvAsync(
+                await foreach (ImportStationDto? dto in CsvHelper.ParseAndValidateCsvAsync(
                     file.OpenReadStream(),
                     importStationValidator,
                     cancellationToken

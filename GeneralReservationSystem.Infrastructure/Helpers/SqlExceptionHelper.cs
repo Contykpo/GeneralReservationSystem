@@ -163,14 +163,11 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             }
 
             // 40001: PostgreSQL serialization failure error code
-            if (ex.Message.Contains("concurrency", StringComparison.OrdinalIgnoreCase) ||
+            return ex.Message.Contains("concurrency", StringComparison.OrdinalIgnoreCase) ||
                 ex.Message.Contains("serialization", StringComparison.OrdinalIgnoreCase) ||
-                ex.Message.Contains("40001", StringComparison.OrdinalIgnoreCase))
-            {
-                return new RepositoryConcurrencyException("A concurrency conflict occurred in the repository.", ex);
-            }
-
-            return new RepositoryException("The repository operation failed.", ex);
+                ex.Message.Contains("40001", StringComparison.OrdinalIgnoreCase)
+                ? new RepositoryConcurrencyException("A concurrency conflict occurred in the repository.", ex)
+                : new RepositoryException("The repository operation failed.", ex);
         }
     }
 }

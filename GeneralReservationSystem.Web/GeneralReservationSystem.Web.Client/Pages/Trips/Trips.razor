@@ -141,20 +141,10 @@
                             </MudSelect>
                         </MudItem>
                         <MudItem xs="12" sm="6" md="3">
-                            <MudDatePicker Date="_filterDepartureDate"
-                                           DateChanged="@(async (DateTime? date) => { _filterDepartureDate = date; await OnFilterChanged(); })"
-                                           Label="Fecha de salida" 
-                                           Variant="Variant.Outlined"
-                                           Clearable="true"
-                                           DateFormat="dd/MM/yyyy" />
+                            <MudDateRangePicker DateRange="_filterDepartureDateRange" DateRangeChanged="@(async (DateRange? range) => { _filterDepartureDateRange = range; await OnFilterChanged(); })" Label="Rango Fecha Salida" Variant="Variant.Outlined" Clearable="true" />
                         </MudItem>
                         <MudItem xs="12" sm="6" md="3">
-                            <MudDatePicker Date="_filterArrivalDate"
-                                           DateChanged="@(async (DateTime? date) => { _filterArrivalDate = date; await OnFilterChanged(); })"
-                                           Label="Fecha de llegada" 
-                                           Variant="Variant.Outlined"
-                                           Clearable="true"
-                                           DateFormat="dd/MM/yyyy" />
+                            <MudDateRangePicker DateRange="_filterArrivalDateRange" DateRangeChanged="@(async (DateRange? range) => { _filterArrivalDateRange = range; await OnFilterChanged(); })" Label="Rango Fecha Llegada" Variant="Variant.Outlined" Clearable="true" />
                         </MudItem>
                         <MudItem xs="12">
                             <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ClearFilters" StartIcon="@Icons.Material.Filled.Clear">Limpiar Filtros</MudButton>
@@ -321,8 +311,8 @@
     // Advanced filters
     private int? _filterDepartureStationId = null;
     private int? _filterArrivalStationId = null;
-    private DateTime? _filterDepartureDate = null;
-    private DateTime? _filterArrivalDate = null;
+    private DateRange? _filterDepartureDateRange = null;
+    private DateRange? _filterArrivalDateRange = null;
 
     private MudForm _createForm = null!;
     private static DateTime DefaultDepartureDate => DateTime.Now;
@@ -446,16 +436,14 @@
                 filters.Add(new Filter("ArrivalStationId", AppFilterOperator.Equals, _filterArrivalStationId.Value));
             }
             
-            if (_filterDepartureDate.HasValue)
+            if (_filterDepartureDateRange?.Start != null && _filterDepartureDateRange?.End != null)
             {
-                filters.Add(new Filter("DepartureTime", AppFilterOperator.GreaterThanOrEqual, _filterDepartureDate.Value.Date));
-                filters.Add(new Filter("DepartureTime", AppFilterOperator.LessThan, _filterDepartureDate.Value.Date.AddDays(1)));
+                filters.Add(new Filter("DepartureTime", AppFilterOperator.Between, new object[] { _filterDepartureDateRange.Start, _filterDepartureDateRange.End }));
             }
             
-            if (_filterArrivalDate.HasValue)
+            if (_filterArrivalDateRange?.Start != null && _filterArrivalDateRange?.End != null)
             {
-                filters.Add(new Filter("ArrivalTime", AppFilterOperator.GreaterThanOrEqual, _filterArrivalDate.Value.Date));
-                filters.Add(new Filter("ArrivalTime", AppFilterOperator.LessThan, _filterArrivalDate.Value.Date.AddDays(1)));
+                filters.Add(new Filter("ArrivalTime", AppFilterOperator.Between, new object[] { _filterArrivalDateRange.Start, _filterArrivalDateRange.End }));
             }
         }
 
@@ -466,8 +454,8 @@
     {
         _filterDepartureStationId = null;
         _filterArrivalStationId = null;
-        _filterDepartureDate = null;
-        _filterArrivalDate = null;
+        _filterDepartureDateRange = null;
+        _filterArrivalDateRange = null;
         _searchString = string.Empty;
         _table!.ReloadServerData();
     }
@@ -489,8 +477,8 @@
         {
             _filterDepartureStationId = null;
             _filterArrivalStationId = null;
-            _filterDepartureDate = null;
-            _filterArrivalDate = null;
+            _filterDepartureDateRange = null;
+            _filterArrivalDateRange = null;
         }
         await _table!.ReloadServerData();
     }

@@ -1,5 +1,4 @@
 using GeneralReservationSystem.Application.DTOs;
-using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Services.Interfaces;
 
 namespace GeneralReservationSystem.API.Services.Interfaces

@@ -115,31 +115,59 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
             return sql.ToString();
         }
 
-        protected static void AddFilterParameters(DbCommand cmd, IList<Filter> filters, string paramPrefix = "p")
+        protected static object? ConvertToPropertyType(object? value, Type propType)
+        {
+            if (value == null)
+            {
+                return null;
+            }
+
+            Type targetType = Nullable.GetUnderlyingType(propType) ?? propType;
+
+            if (targetType.IsEnum)
+            {
+                return value is string str ? Enum.Parse(targetType, str) : Enum.ToObject(targetType, value);
+            }
+            if (targetType == typeof(Guid))
+            {
+                return value is string str ? Guid.Parse(str) : value;
+            }
+            return targetType == typeof(DateTime)
+                ? value is string str ? DateTime.Parse(str) : Convert.ChangeType(value, targetType)
+                : Convert.ChangeType(value, targetType);
+        }
+
+        protected static void AddFilterParameters<TResult>(DbCommand cmd, IList<Filter> filters, string paramPrefix = "p")
         {
             if (filters == null || filters.Count == 0)
             {
                 return;
             }
 
+            PropertyInfo[] resultProperties = typeof(TResult).GetProperties();
+
             int paramIndex = 0;
             foreach (Filter filter in filters)
             {
-                PropertyInfo? prop = _properties.FirstOrDefault(p => p.Name == filter.PropertyOrField);
+                PropertyInfo? prop = resultProperties.FirstOrDefault(p => p.Name == filter.PropertyOrField);
                 if (prop == null)
                 {
                     continue;
                 }
 
                 string paramName = $"@{paramPrefix}{paramIndex}";
+                Type propType = prop.PropertyType;
                 if (filter.Operator == FilterOperator.Between && filter.Value is object[] arr && arr.Length == 2)
                 {
-                    SqlCommandHelper.AddParameter(cmd, paramName + "_start", arr[0], prop.PropertyType);
-                    SqlCommandHelper.AddParameter(cmd, paramName + "_end", arr[1], prop.PropertyType);
+                    object? startValue = ConvertToPropertyType(arr[0], propType);
+                    object? endValue = ConvertToPropertyType(arr[1], propType);
+                    SqlCommandHelper.AddParameter(cmd, paramName + "_start", startValue, propType);
+                    SqlCommandHelper.AddParameter(cmd, paramName + "_end", endValue, propType);
                 }
                 else if (filter.Operator is not FilterOperator.IsNullOrEmpty and not FilterOperator.IsNotNullOrEmpty)
                 {
-                    SqlCommandHelper.AddParameter(cmd, paramName, filter.Value, prop.PropertyType);
+                    object? value = ConvertToPropertyType(filter.Value, propType);
+                    SqlCommandHelper.AddParameter(cmd, paramName, value, propType);
                 }
                 paramIndex++;
             }

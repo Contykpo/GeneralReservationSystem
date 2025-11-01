@@ -14,6 +14,7 @@
 
 @inject IClientReservationService ClientReservationService
 @inject ISnackbar Snackbar
+@inject IClientStationService StationService
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="my-8">
     <PageTitle>Mis Reservas</PageTitle>
@@ -31,22 +32,42 @@
                 <MudExpansionPanel Text="Filtros avanzados" Icon="@Icons.Material.Filled.FilterList">
                     <MudGrid>
                         <MudItem xs="12" sm="6" md="3">
-                            <MudTextField @bind-Value="_filterDepartureStationName" Label="Estación Salida" Variant="Variant.Outlined" Clearable="true" Immediate="true" DebounceInterval="300" OnDebounceIntervalElapsed="@(() => dataGrid.ReloadServerData())" />
+                            <MudSelect T="int?" Label="Estación Salida"
+                                      Value="_filterDepartureStationId"
+                                      ValueChanged="@(async (int? value) => { _filterDepartureStationId = value; await OnFilterChanged(); })"
+                                      Variant="Variant.Outlined"
+                                      Clearable="true"
+                                      Immediate="true">
+                                <MudSelectItem T="int?" Value="null">Todas</MudSelectItem>
+                                @foreach (var station in _stations)
+                                {
+                                    <MudSelectItem T="int?" Value="@station.StationId">
+                                        @station.StationName, @station.City, @station.Province, @station.Country
+                                    </MudSelectItem>
+                                }
+                            </MudSelect>
                         </MudItem>
                         <MudItem xs="12" sm="6" md="3">
-                            <MudTextField @bind-Value="_filterArrivalStationName" Label="Estación Llegada" Variant="Variant.Outlined" Clearable="true" Immediate="true" DebounceInterval="300" OnDebounceIntervalElapsed="@(() => dataGrid.ReloadServerData())" />
-                        </MudItem>
-                        <MudItem xs="12" sm="6" md="3">
-                            <MudTextField @bind-Value="_filterDepartureCity" Label="Ciudad Salida" Variant="Variant.Outlined" Clearable="true" Immediate="true" DebounceInterval="300" OnDebounceIntervalElapsed="@(() => dataGrid.ReloadServerData())" />
-                        </MudItem>
-                        <MudItem xs="12" sm="6" md="3">
-                            <MudTextField @bind-Value="_filterArrivalCity" Label="Ciudad Llegada" Variant="Variant.Outlined" Clearable="true" Immediate="true" DebounceInterval="300" OnDebounceIntervalElapsed="@(() => dataGrid.ReloadServerData())" />
+                            <MudSelect T="int?" Label="Estación Llegada"
+                                      Value="_filterArrivalStationId"
+                                      ValueChanged="@(async (int? value) => { _filterArrivalStationId = value; await OnFilterChanged(); })"
+                                      Variant="Variant.Outlined"
+                                      Clearable="true"
+                                      Immediate="true">
+                                <MudSelectItem T="int?" Value="null">Todas</MudSelectItem>
+                                @foreach (var station in _stations)
+                                {
+                                    <MudSelectItem T="int?" Value="@station.StationId">
+                                        @station.StationName, @station.City, @station.Province, @station.Country
+                                    </MudSelectItem>
+                                }
+                            </MudSelect>
                         </MudItem>
                         <MudItem xs="12" sm="6" md="6">
-                            <MudDateRangePicker @bind-DateRange="_filterDepartureDateRange" Label="Rango Fecha Salida" Variant="Variant.Outlined" Clearable="true" />
+                            <MudDateRangePicker DateRange="_filterDepartureDateRange" DateRangeChanged="@(async (DateRange? range) => { _filterDepartureDateRange = range; await OnFilterChanged(); })" Label="Rango Fecha Salida" Variant="Variant.Outlined" Clearable="true" />
                         </MudItem>
                         <MudItem xs="12" sm="6" md="6">
-                            <MudDateRangePicker @bind-DateRange="_filterArrivalDateRange" Label="Rango Fecha Llegada" Variant="Variant.Outlined" Clearable="true" />
+                            <MudDateRangePicker DateRange="_filterArrivalDateRange" DateRangeChanged="@(async (DateRange? range) => { _filterArrivalDateRange = range; await OnFilterChanged(); })" Label="Rango Fecha Llegada" Variant="Variant.Outlined" Clearable="true" />
                         </MudItem>
                         <MudItem xs="12">
                             <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ClearFilters" StartIcon="@Icons.Material.Filled.Clear">Limpiar Filtros</MudButton>
@@ -109,14 +130,23 @@
 @code {
     private MudDataGrid<UserReservationDetailsDto> dataGrid = null!;
     private string _searchString = string.Empty;
-    private string? _filterDepartureStationName = null;
-    private string? _filterArrivalStationName = null;
-    private string? _filterDepartureCity = null;
-    private string? _filterArrivalCity = null;
-    private DateRange? _filterDepartureDateRange { get => _filterDepartureDateRangeBacking; set { _filterDepartureDateRangeBacking = value; dataGrid?.ReloadServerData(); } }
-    private DateRange? _filterArrivalDateRange { get => _filterArrivalDateRangeBacking; set { _filterArrivalDateRangeBacking = value; dataGrid?.ReloadServerData(); } }
-    private DateRange? _filterDepartureDateRangeBacking = null;
-    private DateRange? _filterArrivalDateRangeBacking = null;
+    private int? _filterDepartureStationId = null;
+    private int? _filterArrivalStationId = null;
+    private DateRange? _filterDepartureDateRange = null;
+    private DateRange? _filterArrivalDateRange = null;
+    private List<Station> _stations = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _stations = (await StationService.GetAllStationsAsync()).ToList();
+        }
+        catch
+        {
+            Snackbar.Add("Error al cargar las estaciones.", Severity.Error);
+        }
+    }
 
     private async Task<GridData<UserReservationDetailsDto>> ServerReload(GridState<UserReservationDetailsDto> state)
     {
@@ -150,19 +180,13 @@
         {
             filters.Add(new Filter("DepartureStationName", AppFilterOperator.Contains, _searchString));
             filters.Add(new Filter("ArrivalStationName", AppFilterOperator.Contains, _searchString));
-            filters.Add(new Filter("DepartureCity", AppFilterOperator.Contains, _searchString));
-            filters.Add(new Filter("ArrivalCity", AppFilterOperator.Contains, _searchString));
         }
         else
         {
-            if (!string.IsNullOrWhiteSpace(_filterDepartureStationName))
-                filters.Add(new Filter("DepartureStationName", AppFilterOperator.Contains, _filterDepartureStationName));
-            if (!string.IsNullOrWhiteSpace(_filterArrivalStationName))
-                filters.Add(new Filter("ArrivalStationName", AppFilterOperator.Contains, _filterArrivalStationName));
-            if (!string.IsNullOrWhiteSpace(_filterDepartureCity))
-                filters.Add(new Filter("DepartureCity", AppFilterOperator.Contains, _filterDepartureCity));
-            if (!string.IsNullOrWhiteSpace(_filterArrivalCity))
-                filters.Add(new Filter("ArrivalCity", AppFilterOperator.Contains, _filterArrivalCity));
+            if (_filterDepartureStationId.HasValue)
+                filters.Add(new Filter("DepartureStationId", AppFilterOperator.Equals, _filterDepartureStationId.Value));
+            if (_filterArrivalStationId.HasValue)
+                filters.Add(new Filter("ArrivalStationId", AppFilterOperator.Equals, _filterArrivalStationId.Value));
             if (_filterDepartureDateRange?.Start != null && _filterDepartureDateRange?.End != null)
                 filters.Add(new Filter("DepartureTime", AppFilterOperator.Between, new object[] { _filterDepartureDateRange.Start, _filterDepartureDateRange.End }));
             if (_filterArrivalDateRange?.Start != null && _filterArrivalDateRange?.End != null)
@@ -173,14 +197,21 @@
 
     private void ClearFilters()
     {
-        _filterDepartureStationName = null;
-        _filterArrivalStationName = null;
-        _filterDepartureCity = null;
-        _filterArrivalCity = null;
+        _filterDepartureStationId = null;
+        _filterArrivalStationId = null;
         _filterDepartureDateRange = null;
         _filterArrivalDateRange = null;
         _searchString = string.Empty;
         dataGrid!.ReloadServerData();
+    }
+
+    private async Task OnFilterChanged()
+    {
+        if (!string.IsNullOrWhiteSpace(_searchString))
+        {
+            _searchString = string.Empty;
+        }
+        await dataGrid!.ReloadServerData();
     }
 
     private async Task HandleDelete(UserReservationDetailsDto item)

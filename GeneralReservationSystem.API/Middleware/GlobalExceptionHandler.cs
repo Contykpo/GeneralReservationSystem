@@ -14,7 +14,7 @@ namespace GeneralReservationSystem.API.Middleware
             ILogger logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("GlobalExceptionHandler");
             Exception? exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
             string message = "Ha ocurrido un error inesperado.";
-            var statusCode = HttpStatusCode.InternalServerError;
+            HttpStatusCode statusCode = HttpStatusCode.InternalServerError;
 
             if (exception is ServiceNotFoundException notFoundEx)
             {

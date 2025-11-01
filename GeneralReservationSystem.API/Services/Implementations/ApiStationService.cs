@@ -1,11 +1,10 @@
-using GeneralReservationSystem.Application.Common;
+using GeneralReservationSystem.API.Services.Interfaces;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Exceptions.Repositories;
 using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Repositories.Interfaces;
 using GeneralReservationSystem.Application.Services.DefaultImplementations;
-using GeneralReservationSystem.API.Services.Interfaces;
 
 namespace GeneralReservationSystem.API.Services.Implementations
 {

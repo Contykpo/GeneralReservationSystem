@@ -41,27 +41,51 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql.Authenticatio
             {
                 using DbCommand cmd = SqlCommandHelper.CreateCommand(conn, transaction);
 
-                string filterClause = SqlCommandHelper.BuildFiltersClause<User>(searchDto.Filters);
-                string whereClause = string.IsNullOrEmpty(filterClause) ? "" : $"WHERE {filterClause}";
-                string baseQuery = $"FROM grsdb.\"{_tableName}\" {whereClause}";
-
+                string filterClause = SqlCommandHelper.BuildFiltersClause<UserInfo>(searchDto.Filters);
+                string orderByClause = SqlCommandHelper.BuildOrderByClause<UserInfo>(searchDto.Orders);
+                bool hasFilter = !string.IsNullOrEmpty(filterClause);
+                bool hasOrder = !string.IsNullOrEmpty(orderByClause);
+                bool hasFilterOrOrder = hasFilter || hasOrder;
                 int page = searchDto.Page > 0 ? searchDto.Page : 1;
                 int pageSize = searchDto.PageSize > 0 ? searchDto.PageSize : 10;
                 int offset = (page - 1) * pageSize;
                 StringBuilder sql = new();
-                _ = sql.Append($"SELECT \"UserId\", \"UserName\", \"Email\", \"IsAdmin\" {baseQuery}");
-                if (searchDto.Orders != null && searchDto.Orders.Count > 0)
+                if (hasFilterOrOrder)
                 {
-                    string orderByClause = SqlCommandHelper.BuildOrderByClause<User>(searchDto.Orders);
-                    _ = sql.Append($" ORDER BY {orderByClause}");
+                    _ = sql.Append("SELECT * FROM (");
+                }
+                _ = sql.Append($"SELECT \"UserId\", \"UserName\", \"Email\", \"IsAdmin\" FROM grsdb.\"{_tableName}\"");
+                if (hasFilterOrOrder)
+                {
+                    _ = sql.Append(") subquery");
+                    if (hasFilter)
+                    {
+                        _ = sql.Append($" WHERE {filterClause}");
+                    }
+                    if (hasOrder)
+                    {
+                        _ = sql.Append($" ORDER BY {orderByClause}");
+                    }
                 }
                 _ = sql.Append($" LIMIT {pageSize} OFFSET {offset}");
                 cmd.CommandText = sql.ToString();
-                AddFilterParameters(cmd, searchDto.Filters);
+                AddFilterParameters<UserInfo>(cmd, searchDto.Filters);
 
                 using DbCommand countCmd = SqlCommandHelper.CreateCommand(conn, transaction);
-                countCmd.CommandText = $"SELECT COUNT(*) {baseQuery}";
-                AddFilterParameters(countCmd, searchDto.Filters);
+                StringBuilder countSql = new();
+                _ = countSql.Append("SELECT COUNT(*) FROM (");
+                if (hasFilter)
+                {
+                    _ = countSql.Append("SELECT * FROM (");
+                }
+                _ = countSql.Append($"SELECT \"UserId\", \"UserName\", \"Email\", \"IsAdmin\" FROM grsdb.\"{_tableName}\"");
+                if (hasFilter)
+                {
+                    _ = countSql.Append($") WHERE {filterClause}");
+                }
+                _ = countSql.Append(")");
+                countCmd.CommandText = countSql.ToString();
+                AddFilterParameters<UserInfo>(countCmd, searchDto.Filters);
 
                 static UserInfo mapFunc(DbDataReader reader)
                 {

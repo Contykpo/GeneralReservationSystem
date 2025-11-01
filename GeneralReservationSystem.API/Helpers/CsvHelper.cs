@@ -1,10 +1,10 @@
-using GeneralReservationSystem.Application.Helpers;
-using GeneralReservationSystem.Application.Exceptions.Services;
-using GeneralReservationSystem.Infrastructure.Helpers;
 using FluentValidation;
+using GeneralReservationSystem.Application.Exceptions.Services;
+using GeneralReservationSystem.Application.Helpers;
+using GeneralReservationSystem.Infrastructure.Helpers;
 using System.Reflection;
-using System.Text;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace GeneralReservationSystem.API.Helpers
 {
@@ -23,7 +23,9 @@ namespace GeneralReservationSystem.API.Helpers
                 lineNumber++;
                 string? line = await reader.ReadLineAsync(cancellationToken);
                 if (string.IsNullOrWhiteSpace(line))
+                {
                     continue;
+                }
 
                 string[] values = line.Split(',');
                 if (values.Length != expectedColumns)
@@ -39,17 +41,22 @@ namespace GeneralReservationSystem.API.Helpers
                     properties[i].SetValue(dto, converted);
                 }
 
-                var validationResult = await validator.ValidateAsync(dto, cancellationToken);
+                FluentValidation.Results.ValidationResult validationResult = await validator.ValidateAsync(dto, cancellationToken);
                 if (!validationResult.IsValid)
                 {
-                    foreach (var ve in validationResult.Errors)
+                    foreach (FluentValidation.Results.ValidationFailure? ve in validationResult.Errors)
+                    {
                         errors.Add(new ValidationError($"Error de validación en la línea {lineNumber}: {ve.ErrorMessage}", $"csv[{lineNumber}].{ve.PropertyName}"));
+                    }
+
                     continue;
                 }
                 yield return dto;
             }
             if (errors.Count > 0)
+            {
                 throw new ServiceValidationException("Errores de validación en el archivo CSV.", [.. errors]);
+            }
         }
 
         public static byte[] ExportToCsv<T>(IEnumerable<T> items)
@@ -57,11 +64,11 @@ namespace GeneralReservationSystem.API.Helpers
             StringBuilder csv = new();
             PropertyInfo[] properties = EntityHelper.GetNonComputedProperties<T>();
             // Header
-            csv.AppendLine(string.Join(',', properties.Select(p => EscapeCsvField(EntityHelper.GetColumnName(p)))));
+            _ = csv.AppendLine(string.Join(',', properties.Select(p => EscapeCsvField(EntityHelper.GetColumnName(p)))));
             // Rows
             foreach (T item in items)
             {
-                csv.AppendLine(string.Join(',', properties.Select(p => EscapeCsvField(p.GetValue(item)?.ToString() ?? ""))));
+                _ = csv.AppendLine(string.Join(',', properties.Select(p => EscapeCsvField(p.GetValue(item)?.ToString() ?? ""))));
             }
             return Encoding.UTF8.GetBytes(csv.ToString());
         }

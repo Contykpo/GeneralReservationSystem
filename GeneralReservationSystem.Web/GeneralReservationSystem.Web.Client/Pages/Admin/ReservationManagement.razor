@@ -16,6 +16,7 @@
 
 @inject IClientReservationService ClientReservationService
 @inject ISnackbar Snackbar
+@inject IClientStationService StationService
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="my-8">
     <PageTitle>Gestión de Reservas</PageTitle>
@@ -43,16 +44,36 @@
                                              OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
                         </MudItem>
                         <MudItem xs="12" sm="6" md="4">
-                            <MudTextField @bind-Value="_filterDepartureStationName" Label="Estación Salida" Variant="Variant.Outlined" Clearable="true" Immediate="true" DebounceInterval="300" OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
+                            <MudSelect T="int?" Label="Estación Salida"
+                                      Value="_filterDepartureStationId"
+                                      ValueChanged="@(async (int? value) => { _filterDepartureStationId = value; await OnFilterChanged(); })"
+                                      Variant="Variant.Outlined"
+                                      Clearable="true"
+                                      Immediate="true">
+                                <MudSelectItem T="int?" Value="null">Todas</MudSelectItem>
+                                @foreach (var station in _stations)
+                                {
+                                    <MudSelectItem T="int?" Value="@station.StationId">
+                                        @station.StationName, @station.City, @station.Province, @station.Country
+                                    </MudSelectItem>
+                                }
+                            </MudSelect>
                         </MudItem>
                         <MudItem xs="12" sm="6" md="4">
-                            <MudTextField @bind-Value="_filterArrivalStationName" Label="Estación Llegada" Variant="Variant.Outlined" Clearable="true" Immediate="true" DebounceInterval="300" OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
-                        </MudItem>
-                        <MudItem xs="12" sm="6" md="4">
-                            <MudTextField @bind-Value="_filterDepartureCity" Label="Ciudad Salida" Variant="Variant.Outlined" Clearable="true" Immediate="true" DebounceInterval="300" OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
-                        </MudItem>
-                        <MudItem xs="12" sm="6" md="4">
-                            <MudTextField @bind-Value="_filterArrivalCity" Label="Ciudad Llegada" Variant="Variant.Outlined" Clearable="true" Immediate="true" DebounceInterval="300" OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
+                            <MudSelect T="int?" Label="Estación Llegada"
+                                      Value="_filterArrivalStationId"
+                                      ValueChanged="@(async (int? value) => { _filterArrivalStationId = value; await OnFilterChanged(); })"
+                                      Variant="Variant.Outlined"
+                                      Clearable="true"
+                                      Immediate="true">
+                                <MudSelectItem T="int?" Value="null">Todas</MudSelectItem>
+                                @foreach (var station in _stations)
+                                {
+                                    <MudSelectItem T="int?" Value="@station.StationId">
+                                        @station.StationName, @station.City, @station.Province, @station.Country
+                                    </MudSelectItem>
+                                }
+                            </MudSelect>
                         </MudItem>
                         <MudItem xs="12" sm="6" md="4">
                             <MudTextField @bind-Value="_filterUserName" Label="Usuario" Variant="Variant.Outlined" Clearable="true" Immediate="true" DebounceInterval="300" OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
@@ -61,10 +82,10 @@
                             <MudTextField @bind-Value="_filterEmail" Label="Email" Variant="Variant.Outlined" Clearable="true" Immediate="true" DebounceInterval="300" OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
                         </MudItem>
                         <MudItem xs="12" sm="6" md="6">
-                            <MudDateRangePicker @bind-DateRange="_filterDepartureDateRange" Label="Rango Fecha Salida" Variant="Variant.Outlined" Clearable="true" />
+                            <MudDateRangePicker DateRange="_filterDepartureDateRange" DateRangeChanged="@(async (DateRange? range) => { _filterDepartureDateRange = range; await OnFilterChanged(); })" Label="Rango Fecha Salida" Variant="Variant.Outlined" Clearable="true" />
                         </MudItem>
                         <MudItem xs="12" sm="6" md="6">
-                            <MudDateRangePicker @bind-DateRange="_filterArrivalDateRange" Label="Rango Fecha Llegada" Variant="Variant.Outlined" Clearable="true" />
+                            <MudDateRangePicker DateRange="_filterArrivalDateRange" DateRangeChanged="@(async (DateRange? range) => { _filterArrivalDateRange = range; await OnFilterChanged(); })" Label="Rango Fecha Llegada" Variant="Variant.Outlined" Clearable="true" />
                         </MudItem>
                         <MudItem xs="12">
                             <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ClearFilters" StartIcon="@Icons.Material.Filled.Clear">Limpiar Filtros</MudButton>
@@ -151,16 +172,25 @@
     private bool _loading = false;
     private string _searchString = string.Empty;
     private int? _filterSeat = null;
-    private string? _filterDepartureStationName = null;
-    private string? _filterArrivalStationName = null;
-    private string? _filterDepartureCity = null;
-    private string? _filterArrivalCity = null;
+    private int? _filterDepartureStationId = null;
+    private int? _filterArrivalStationId = null;
     private string? _filterUserName = null;
     private string? _filterEmail = null;
-    private DateRange? _filterDepartureDateRange { get => _filterDepartureDateRangeBacking; set { _filterDepartureDateRangeBacking = value; _table?.ReloadServerData(); } }
-    private DateRange? _filterArrivalDateRange { get => _filterArrivalDateRangeBacking; set { _filterArrivalDateRangeBacking = value; _table?.ReloadServerData(); } }
-    private DateRange? _filterDepartureDateRangeBacking = null;
-    private DateRange? _filterArrivalDateRangeBacking = null;
+    private DateRange? _filterDepartureDateRange = null;
+    private DateRange? _filterArrivalDateRange = null;
+    private List<Station> _stations = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _stations = (await StationService.GetAllStationsAsync()).ToList();
+        }
+        catch
+        {
+            Snackbar.Add("Error al cargar las estaciones.", Severity.Error);
+        }
+    }
 
     private async Task<TableData<ReservationDetailsDto>> ServerReload(TableState state, CancellationToken cancellationToken)
     {
@@ -216,8 +246,6 @@
             {
                 filters.Add(new Filter("DepartureStationName", AppFilterOperator.Contains, _searchString));
                 filters.Add(new Filter("ArrivalStationName", AppFilterOperator.Contains, _searchString));
-                filters.Add(new Filter("DepartureCity", AppFilterOperator.Contains, _searchString));
-                filters.Add(new Filter("ArrivalCity", AppFilterOperator.Contains, _searchString));
                 filters.Add(new Filter("UserName", AppFilterOperator.Contains, _searchString));
                 filters.Add(new Filter("Email", AppFilterOperator.Contains, _searchString));
             }
@@ -226,14 +254,10 @@
         {
             if (_filterSeat.HasValue)
                 filters.Add(new Filter("Seat", AppFilterOperator.Equals, _filterSeat.Value));
-            if (!string.IsNullOrWhiteSpace(_filterDepartureStationName))
-                filters.Add(new Filter("DepartureStationName", AppFilterOperator.Contains, _filterDepartureStationName));
-            if (!string.IsNullOrWhiteSpace(_filterArrivalStationName))
-                filters.Add(new Filter("ArrivalStationName", AppFilterOperator.Contains, _filterArrivalStationName));
-            if (!string.IsNullOrWhiteSpace(_filterDepartureCity))
-                filters.Add(new Filter("DepartureCity", AppFilterOperator.Contains, _filterDepartureCity));
-            if (!string.IsNullOrWhiteSpace(_filterArrivalCity))
-                filters.Add(new Filter("ArrivalCity", AppFilterOperator.Contains, _filterArrivalCity));
+            if (_filterDepartureStationId.HasValue)
+                filters.Add(new Filter("DepartureStationId", AppFilterOperator.Equals, _filterDepartureStationId.Value));
+            if (_filterArrivalStationId.HasValue)
+                filters.Add(new Filter("ArrivalStationId", AppFilterOperator.Equals, _filterArrivalStationId.Value));
             if (!string.IsNullOrWhiteSpace(_filterUserName))
                 filters.Add(new Filter("UserName", AppFilterOperator.Contains, _filterUserName));
             if (!string.IsNullOrWhiteSpace(_filterEmail))
@@ -250,16 +274,19 @@
     private void ClearFilters()
     {
         _filterSeat = null;
-        _filterDepartureStationName = null;
-        _filterArrivalStationName = null;
-        _filterDepartureCity = null;
-        _filterArrivalCity = null;
+        _filterDepartureStationId = null;
+        _filterArrivalStationId = null;
         _filterUserName = null;
         _filterEmail = null;
         _filterDepartureDateRange = null;
         _filterArrivalDateRange = null;
         _searchString = string.Empty;
         _table!.ReloadServerData();
+    }
+
+    private async Task OnFilterChanged()
+    {
+        await _table!.ReloadServerData();
     }
 
     private async Task HandleDelete(ReservationDetailsDto item)

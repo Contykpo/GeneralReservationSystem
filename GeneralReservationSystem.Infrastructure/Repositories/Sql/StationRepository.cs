@@ -39,18 +39,18 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                 int offset = (page - 1) * pageSize;
                 StringBuilder sql = new();
                 _ = sql.Append($"SELECT * {baseQuery}");
-                if (searchDto.Orders != null && searchDto.Orders.Count > 0)
+                if (searchDto.Orders.Count > 0)
                 {
                     string orderByClause = SqlCommandHelper.BuildOrderByClause<Station>(searchDto.Orders);
                     _ = sql.Append($" ORDER BY {orderByClause}");
                 }
                 _ = sql.Append($" LIMIT {pageSize} OFFSET {offset}");
                 cmd.CommandText = sql.ToString();
-                AddFilterParameters(cmd, searchDto.Filters);
+                AddFilterParameters<Station>(cmd, searchDto.Filters);
 
                 using DbCommand countCmd = SqlCommandHelper.CreateCommand(conn, transaction);
                 countCmd.CommandText = $"SELECT COUNT(*) {baseQuery}";
-                AddFilterParameters(countCmd, searchDto.Filters);
+                AddFilterParameters<Station>(countCmd, searchDto.Filters);
 
                 PagedResult<Station> result = await MapPagedResultAsync(
                     cmd,
