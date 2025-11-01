@@ -265,8 +265,8 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             bool hasOutput = computedProperties.Any();
 
             return hasOutput
-                ? $"INSERT INTO \"{tableName}\" (" + string.Join(", ", columns.Select(c => $"\"{c}\"")) + $") VALUES (" + string.Join(", ", values) + $") {BuildReturningClause(computedProperties)}"
-                : $"INSERT INTO \"{tableName}\" (" + string.Join(", ", columns.Select(c => $"\"{c}\"")) + $") VALUES (" + string.Join(", ", values) + ")";
+                ? $"INSERT INTO grsdb.\"{tableName}\" (" + string.Join(", ", columns.Select(c => $"\"{c}\"")) + $") VALUES (" + string.Join(", ", values) + $") {BuildReturningClause(computedProperties)}"
+                : $"INSERT INTO grsdb.\"{tableName}\" (" + string.Join(", ", columns.Select(c => $"\"{c}\"")) + $") VALUES (" + string.Join(", ", values) + ")";
         }
 
         public static string BuildUpdateStatement(string tableName, IEnumerable<PropertyInfo> setColumns, IEnumerable<PropertyInfo> keyProperties, IEnumerable<PropertyInfo> computedProperties, Func<PropertyInfo, int, string> setParamFactory, Func<PropertyInfo, int, string> keyParamFactory)
@@ -276,14 +276,14 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             bool hasOutput = computedProperties.Any();
 
             return hasOutput
-                ? $"UPDATE \"{tableName}\" SET " + string.Join(", ", setClauses) + " WHERE " + string.Join(" AND ", whereClauses) + $" {BuildReturningClause(computedProperties)}"
-                : $"UPDATE \"{tableName}\" SET " + string.Join(", ", setClauses) + " WHERE " + string.Join(" AND ", whereClauses);
+                ? $"UPDATE grsdb.\"{tableName}\" SET " + string.Join(", ", setClauses) + " WHERE " + string.Join(" AND ", whereClauses) + $" {BuildReturningClause(computedProperties)}"
+                : $"UPDATE grsdb.\"{tableName}\" SET " + string.Join(", ", setClauses) + " WHERE " + string.Join(" AND ", whereClauses);
         }
 
         public static string BuildDeleteStatement(string tableName, IEnumerable<PropertyInfo> keyProperties, Func<PropertyInfo, int, string> keyParamFactory)
         {
             string[] whereClauses = [.. keyProperties.Select((p, i) => $"\"{EntityHelper.GetColumnName(p)}\" = {keyParamFactory(p, i)}")];
-            return $"DELETE FROM \"{tableName}\" WHERE " + string.Join(" AND ", whereClauses);
+            return $"DELETE FROM grsdb.\"{tableName}\" WHERE " + string.Join(" AND ", whereClauses);
         }
 
         public static string BuildBulkWhereClause<T>(IList<T> entities, PropertyInfo[] keyProperties, DbCommand cmd, string paramPrefix) where T : class

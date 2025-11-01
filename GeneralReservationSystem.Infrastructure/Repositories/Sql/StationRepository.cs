@@ -16,7 +16,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
         {
             using DbConnection conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(connectionFactory, cancellationToken);
             using DbCommand cmd = SqlCommandHelper.CreateCommand(conn);
-            cmd.CommandText = $"SELECT * FROM \"{_tableName}\" WHERE \"StationId\" = @id";
+            cmd.CommandText = $"SELECT * FROM grsdb.\"{_tableName}\" WHERE \"StationId\" = @id";
             SqlCommandHelper.AddParameter(cmd, "@id", stationId, typeof(int));
             using DbDataReader reader = await SqlCommandHelper.ExecuteReaderAsync(cmd, cancellationToken);
             return await reader.ReadAsync(cancellationToken) ? DataReaderMapper.MapReaderToEntity<Station>(reader, _properties) : null;
@@ -32,7 +32,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
 
                 string filterClause = SqlCommandHelper.BuildFiltersClause<Station>(searchDto.Filters);
                 string whereClause = string.IsNullOrEmpty(filterClause) ? "" : $"WHERE {filterClause}";
-                string baseQuery = $"FROM \"{_tableName}\" {whereClause}";
+                string baseQuery = $"FROM grsdb.\"{_tableName}\" {whereClause}";
 
                 int page = searchDto.Page > 0 ? searchDto.Page : 1;
                 int pageSize = searchDto.PageSize > 0 ? searchDto.PageSize : 10;

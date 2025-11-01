@@ -7,7 +7,7 @@ services:
     environment:
       - POSTGRES_USER=${SA_USER:-postgres}
       - POSTGRES_PASSWORD=${SA_PASSWORD:-password123}
-      - POSTGRES_DB=grsdb
+      - POSTGRES_DB=${SQL_DB:-grsdb}
     volumes:
       - sql_data:/var/lib/postgresql
       - ./db_init.pgsql:/docker-entrypoint-initdb.d/init.sql
@@ -25,7 +25,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: migrate "Host=${SQL_HOST};Port=${SQL_PORT};Database=grsdb;Username=${DB_OWNER:-grs_admin_user};Password=${DB_OWNER_PASSWORD}"
+    command: migrate "Host=${SQL_HOST};Port=${SQL_PORT};Database=${SQL_DB:-grsdb};Username=${DB_OWNER:-grs_admin_user};Password=${DB_OWNER_PASSWORD};SSLMode=${DB_SSL_MODE:-Require};TrustServerCertificate=${DB_TRUST_SERVER_CERTIFICATE:-true}"
 
   generalreservationsystem.api:
     build:
@@ -38,7 +38,7 @@ services:
       generalreservationsystem.migrator:
         condition: service_completed_successfully
     environment:
-      - ConnectionStrings__DefaultConnection=Host=${SQL_HOST};Port=${SQL_PORT};Database=grsdb;Username=${DB_USER:-grs_app_user};Password=${DB_PASSWORD}
+      - ConnectionStrings__DefaultConnection=Host=${SQL_HOST};Port=${SQL_PORT};Database=${SQL_DB:-grsdb};Username=${DB_USER:-grs_app_user};Password=${DB_PASSWORD};SSLMode=${DB_SSL_MODE:-Require};TrustServerCertificate=${DB_TRUST_SERVER_CERTIFICATE:-true}
       - ASPNETCORE_HTTP_PORTS=${API_HTTP_PORT:-8080}
       - ASPNETCORE_HTTPS_PORTS=${API_HTTPS_PORT:-8081}
       - Jwt__SecretKey=${JWT_SECRET_KEY}

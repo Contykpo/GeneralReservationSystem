@@ -17,7 +17,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql.Authenticatio
         {
             using DbConnection conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(connectionFactory, cancellationToken);
             using DbCommand cmd = SqlCommandHelper.CreateCommand(conn);
-            cmd.CommandText = $"SELECT * FROM \"{_tableName}\" WHERE \"UserId\" = @id";
+            cmd.CommandText = $"SELECT * FROM grsdb.\"{_tableName}\" WHERE \"UserId\" = @id";
             SqlCommandHelper.AddParameter(cmd, "@id", userId, typeof(int));
             using DbDataReader reader = await SqlCommandHelper.ExecuteReaderAsync(cmd, cancellationToken);
             return await reader.ReadAsync(cancellationToken) ? DataReaderMapper.MapReaderToEntity<User>(reader, _properties) : null;
@@ -27,7 +27,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql.Authenticatio
         {
             using DbConnection conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(connectionFactory, cancellationToken);
             using DbCommand cmd = SqlCommandHelper.CreateCommand(conn);
-            cmd.CommandText = $"SELECT * FROM \"{_tableName}\" WHERE \"NormalizedUserName\" = @input OR \"NormalizedEmail\" = @input";
+            cmd.CommandText = $"SELECT * FROM grsdb.\"{_tableName}\" WHERE \"NormalizedUserName\" = @input OR \"NormalizedEmail\" = @input";
             SqlCommandHelper.AddParameter(cmd, "@input", normalizedInput, typeof(string));
             using DbDataReader reader = await SqlCommandHelper.ExecuteReaderAsync(cmd, cancellationToken);
             return await reader.ReadAsync(cancellationToken) ? DataReaderMapper.MapReaderToEntity<User>(reader, _properties) : null;
@@ -43,7 +43,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql.Authenticatio
 
                 string filterClause = SqlCommandHelper.BuildFiltersClause<User>(searchDto.Filters);
                 string whereClause = string.IsNullOrEmpty(filterClause) ? "" : $"WHERE {filterClause}";
-                string baseQuery = $"FROM \"{_tableName}\" {whereClause}";
+                string baseQuery = $"FROM grsdb.\"{_tableName}\" {whereClause}";
 
                 int page = searchDto.Page > 0 ? searchDto.Page : 1;
                 int pageSize = searchDto.PageSize > 0 ? searchDto.PageSize : 10;
