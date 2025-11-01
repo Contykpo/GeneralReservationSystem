@@ -69,7 +69,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
         {
             if (!context.Response.HasStarted)
             {
-                context.Response.Redirect("/forbidden");
+                context.Response.Redirect("/status/403");
             }
             return Task.CompletedTask;
         }
