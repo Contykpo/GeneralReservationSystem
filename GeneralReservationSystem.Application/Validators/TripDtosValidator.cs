@@ -45,7 +45,7 @@ namespace GeneralReservationSystem.Application.Validators
                 .GreaterThan(0).When(x => x.AvailableSeats.HasValue)
                 .WithMessage("El número de asientos disponibles debe ser un número positivo.");
             _ = RuleFor(x => x.DepartureTime)
-                .Must((dto, departureTime) => departureTime > dto.DepartureTime)
+                .Must((dto, departureTime) => dto.ArrivalTime > departureTime)
                 .When(x => x.ArrivalTime.HasValue && x.DepartureTime.HasValue)
                 .WithMessage("La fecha/hora de llegada debe ser posterior a la salida.");
         }
