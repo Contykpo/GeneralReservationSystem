@@ -10,7 +10,7 @@ namespace GeneralReservationSystem.API.Helpers
             FluentValidation.Results.ValidationResult result = await validator.ValidateAsync(dto, cancellationToken);
             return !result.IsValid
                 ? new BadRequestObjectResult(result.Errors.Select(e => new { field = e.PropertyName, error = e.ErrorMessage }))
-                : (IActionResult?)null;
+                : null;
         }
     }
 }

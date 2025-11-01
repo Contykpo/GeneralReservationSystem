@@ -1,18 +1,19 @@
 using FluentValidation;
 using GeneralReservationSystem.API.Helpers;
+using GeneralReservationSystem.API.Services.Interfaces;
 using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Exceptions.Services;
-using GeneralReservationSystem.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Text;
 
 namespace GeneralReservationSystem.API.Controllers
 {
     [Route("api/stations")]
     [ApiController]
-    public class StationsController(IStationService stationService, IValidator<PagedSearchRequestDto> pagedSearchValidator, IValidator<CreateStationDto> createStationValidator, IValidator<UpdateStationDto> updateStationValidator, IValidator<StationKeyDto> stationKeyValidator) : ControllerBase
+    public class StationsController(IApiStationService stationService, IValidator<PagedSearchRequestDto> pagedSearchValidator, IValidator<CreateStationDto> createStationValidator, IValidator<UpdateStationDto> updateStationValidator, IValidator<StationKeyDto> stationKeyValidator, IValidator<ImportStationDto> importStationValidator) : ControllerBase
     {
         [HttpGet]
         public async Task<IActionResult> GetAllStations(CancellationToken cancellationToken)
@@ -137,6 +138,64 @@ namespace GeneralReservationSystem.API.Controllers
             {
                 return NotFound(new { error = ex.Message });
             }
+        }
+
+        [HttpPost("import")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> ImportStationsFromCsv(IFormFile file, CancellationToken cancellationToken)
+        {
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest(new { error = "El archivo CSV es requerido." });
+            }
+
+            if (!file.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(new { error = "El archivo debe ser un CSV." });
+            }
+
+            try
+            {
+                List<ImportStationDto> importDtos = [];
+                await foreach (var dto in CsvHelper.ParseAndValidateCsvAsync(
+                    file.OpenReadStream(),
+                    importStationValidator,
+                    cancellationToken
+                ))
+                {
+                    importDtos.Add(dto);
+                }
+
+                if (importDtos.Count == 0)
+                {
+                    return BadRequest(new { error = "El archivo CSV no contiene estaciones válidas." });
+                }
+
+                int affected = await stationService.CreateStationsBulkAsync(importDtos, cancellationToken);
+
+                return Ok(new { message = $"Se importaron {affected} estaciones exitosamente.", count = affected });
+            }
+            catch (ServiceValidationException ex)
+            {
+                return BadRequest(ex.Errors);
+            }
+            catch (ServiceBusinessException ex)
+            {
+                return Conflict(new { error = ex.Message });
+            }
+            catch (ServiceException ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        [HttpGet("export")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> ExportStationsToCsv(CancellationToken cancellationToken)
+        {
+            IEnumerable<Station> stations = await stationService.GetAllStationsAsync(cancellationToken);
+            byte[] bytes = CsvHelper.ExportToCsv(stations);
+            return File(bytes, "text/csv;charset=utf-8", $"estaciones_{DateTime.UtcNow:yyyyMMddHHmmss}.csv");
         }
     }
 }

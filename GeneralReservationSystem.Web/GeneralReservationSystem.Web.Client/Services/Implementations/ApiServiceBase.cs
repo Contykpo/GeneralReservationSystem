@@ -14,7 +14,7 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
             PropertyNameCaseInsensitive = true
         };
 
-        private static HttpRequestMessage CreateRequestWithCredentials(HttpMethod method, string url)
+        protected static HttpRequestMessage CreateRequestWithCredentials(HttpMethod method, string url)
         {
             HttpRequestMessage request = new(method, url);
             _ = request.SetBrowserRequestCredentials(BrowserRequestCredentials.Include);
@@ -63,6 +63,16 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
             HttpRequestMessage request = CreateRequestWithCredentials(HttpMethod.Delete, url);
             HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
             await EnsureSuccessOrThrow(response);
+        }
+
+        protected async Task<T> PostMultipartAsync<T>(string url, MultipartFormDataContent content, CancellationToken cancellationToken = default)
+        {
+            HttpRequestMessage request = CreateRequestWithCredentials(HttpMethod.Post, url);
+            request.Content = content;
+            HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
+            await EnsureSuccessOrThrow(response);
+            return await response.Content.ReadFromJsonAsync<T>(jsonOptions, cancellationToken)
+                ?? throw new ServiceException("La respuesta del servidor está vacía.");
         }
 
         private static async Task EnsureSuccessOrThrow(HttpResponseMessage response)

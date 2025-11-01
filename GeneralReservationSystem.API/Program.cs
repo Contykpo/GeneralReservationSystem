@@ -1,5 +1,8 @@
 using GeneralReservationSystem.API.Middleware;
+using GeneralReservationSystem.API.Services.Implementations;
+using GeneralReservationSystem.API.Services.Interfaces;
 using GeneralReservationSystem.Application;
+using GeneralReservationSystem.Application.Services.Interfaces;
 using GeneralReservationSystem.Infrastructure;
 using GeneralReservationSystem.Infrastructure.Helpers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -17,6 +20,10 @@ builder.Services.AddOpenApi();
 builder.Services.AddInfrastructureRepositories();
 builder.Services.AddFluentValidators();
 builder.Services.AddHttpContextAccessor();
+
+// Override IStationService with API-specific implementation
+builder.Services.AddScoped<IStationService, ApiStationService>();
+builder.Services.AddScoped<IApiStationService, ApiStationService>();
 
 // Configure JWT settings
 JwtSettings jwtSettings = new()

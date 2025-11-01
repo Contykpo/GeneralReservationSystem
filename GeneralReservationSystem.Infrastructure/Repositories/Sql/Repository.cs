@@ -245,8 +245,8 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                 _ = valueRows.Append("(" + string.Join(",", valueNames) + ")");
             }
             cmd.CommandText = hasOutput
-                ? $"INSERT INTO \"{_tableName}\" (" + string.Join(", ", columns.Select(c => $"\"{c}\"")) + ") VALUES " + valueRows.ToString() + " " + SqlCommandHelper.BuildReturningClause(_computedProperties)
-                : $"INSERT INTO \"{_tableName}\" (" + string.Join(", ", columns.Select(c => $"\"{c}\"")) + ") VALUES " + valueRows.ToString();
+                ? $"INSERT INTO grsdb.\"{_tableName}\" (" + string.Join(", ", columns.Select(c => $"\"{c}\"")) + ") VALUES " + valueRows.ToString() + " " + SqlCommandHelper.BuildReturningClause(_computedProperties)
+                : $"INSERT INTO grsdb.\"{_tableName}\" (" + string.Join(", ", columns.Select(c => $"\"{c}\"")) + ") VALUES " + valueRows.ToString();
 
             return hasOutput
                 ? await ExecuteBulkWithOutputAsync(cmd, entityList, cancellationToken)
@@ -343,8 +343,8 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
             }
             string whereClause = SqlCommandHelper.BuildBulkWhereClause(entityList, _keyProperties, cmd, "wkey");
             cmd.CommandText = hasOutput
-                ? $"UPDATE \"{_tableName}\" SET " + string.Join(",", setClauses) + " WHERE " + whereClause + " " + SqlCommandHelper.BuildReturningClause(_computedProperties)
-                : $"UPDATE \"{_tableName}\" SET " + string.Join(",", setClauses) + " WHERE " + whereClause;
+                ? $"UPDATE grsdb.\"{_tableName}\" SET " + string.Join(",", setClauses) + " WHERE " + whereClause + " " + SqlCommandHelper.BuildReturningClause(_computedProperties)
+                : $"UPDATE grsdb.\"{_tableName}\" SET " + string.Join(",", setClauses) + " WHERE " + whereClause;
 
             return hasOutput
                 ? await ExecuteBulkWithOutputAsync(cmd, entityList, cancellationToken)

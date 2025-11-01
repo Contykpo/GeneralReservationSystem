@@ -1,5 +1,6 @@
 ﻿using GeneralReservationSystem.Application.Exceptions.Repositories;
 using System.Data.Common;
+using System.Text.RegularExpressions;
 
 namespace GeneralReservationSystem.Infrastructure.Helpers
 {
@@ -21,7 +22,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
                 return null;
             }
 
-            System.Text.RegularExpressions.Match match = RegexHelpers.ConstraintTypeRegex().Match(sqlErrorMessage);
+            Match match = RegexHelpers.ConstraintTypeRegex().Match(sqlErrorMessage);
             if (!match.Success)
             {
                 return null;
@@ -62,7 +63,16 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
                 return null;
             }
 
-            System.Text.RegularExpressions.Match match = RegexHelpers.ConstraintNameRegex().Match(sqlErrorMessage);
+            Match typeMatch = RegexHelpers.ConstraintTypeRegex().Match(sqlErrorMessage);
+            if (typeMatch.Success)
+            {
+                if (typeMatch.Groups["name"].Success && !string.IsNullOrEmpty(typeMatch.Groups["name"].Value))
+                {
+                    return typeMatch.Groups["name"].Value;
+                }
+            }
+
+            Match match = RegexHelpers.ConstraintNameRegex().Match(sqlErrorMessage);
             if (match.Success)
             {
                 return match.Groups["name"].Value;
@@ -78,7 +88,13 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
                 return null;
             }
 
-            System.Text.RegularExpressions.Match match = RegexHelpers.NotNullColumnRegex().Match(sqlErrorMessage);
+            Match typeMatch = RegexHelpers.ConstraintTypeRegex().Match(sqlErrorMessage);
+            if (typeMatch.Success && typeMatch.Groups["columnName"].Success)
+            {
+                return typeMatch.Groups["columnName"].Value;
+            }
+
+            Match match = RegexHelpers.NotNullColumnRegex().Match(sqlErrorMessage);
             if (match.Success)
             {
                 return match.Groups["name"].Value;
@@ -122,18 +138,39 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
                 return constraintException;
             }
 
-            if (ex.Message.Contains("timeout", StringComparison.OrdinalIgnoreCase))
+            // 57014: PostgreSQL timeout error code
+            if (ex.Message.Contains("timeout", StringComparison.OrdinalIgnoreCase) ||
+                ex.Message.Contains("57014", StringComparison.OrdinalIgnoreCase))
             {
                 return new RepositoryTimeoutException("The repository operation timed out.", ex);
             }
-            return ex.Message.Contains("deadlock", StringComparison.OrdinalIgnoreCase)
-                ? new RepositoryConcurrencyException("A concurrency conflict occurred in the repository.", ex)
-                : ex.Message.Contains("connection", StringComparison.OrdinalIgnoreCase) ||
-                ex.Message.Contains("network", StringComparison.OrdinalIgnoreCase)
-                ? new RepositoryUnavailableException("The repository is unavailable.", ex)
-                : ex.Message.Contains("concurrency", StringComparison.OrdinalIgnoreCase)
-                ? new RepositoryConcurrencyException("A concurrency conflict occurred in the repository.", ex)
-                : new RepositoryException("The repository operation failed.", ex);
+
+            // 40P01: PostgreSQL deadlock error code
+            if (ex.Message.Contains("deadlock", StringComparison.OrdinalIgnoreCase) ||
+                ex.Message.Contains("40P01", StringComparison.OrdinalIgnoreCase))
+            {
+                return new RepositoryConcurrencyException("A concurrency conflict occurred in the repository.", ex);
+            }
+
+            // 08000: Connection exception, 08003: Connection does not exist, 08006: Connection failure
+            if (ex.Message.Contains("connection", StringComparison.OrdinalIgnoreCase) ||
+                ex.Message.Contains("network", StringComparison.OrdinalIgnoreCase) ||
+                ex.Message.Contains("08000", StringComparison.OrdinalIgnoreCase) ||
+                ex.Message.Contains("08003", StringComparison.OrdinalIgnoreCase) ||
+                ex.Message.Contains("08006", StringComparison.OrdinalIgnoreCase))
+            {
+                return new RepositoryUnavailableException("The repository is unavailable.", ex);
+            }
+
+            // 40001: PostgreSQL serialization failure error code
+            if (ex.Message.Contains("concurrency", StringComparison.OrdinalIgnoreCase) ||
+                ex.Message.Contains("serialization", StringComparison.OrdinalIgnoreCase) ||
+                ex.Message.Contains("40001", StringComparison.OrdinalIgnoreCase))
+            {
+                return new RepositoryConcurrencyException("A concurrency conflict occurred in the repository.", ex);
+            }
+
+            return new RepositoryException("The repository operation failed.", ex);
         }
     }
 }

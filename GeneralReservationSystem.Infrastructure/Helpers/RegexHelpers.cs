@@ -5,14 +5,14 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
     public static partial class RegexHelpers
     {
         [GeneratedRegex(
-            @"(?<PrimaryKey>PRIMARY KEY constraint)|(?<Unique>UNIQUE KEY constraint)|(?<ForeignKey>FOREIGN KEY constraint)|(?<Check>CHECK constraint)|(?<NotNull>NOT NULL)",
+            @"(?<PrimaryKey>duplicate key value violates unique constraint ""(?<name>\w+)"".*Key \(.*\)=\(.*\) already exists)|(?<Unique>duplicate key value violates unique constraint ""(?<name>\w+)"")|(?<ForeignKey>violates foreign key constraint ""(?<name>\w+)"")|(?<Check>violates check constraint ""(?<name>\w+)"")|(?<NotNull>null value in column ""(?<columnName>\w+)"" (?:of relation ""\w+"" )?violates not-null constraint)",
             RegexOptions.IgnoreCase | RegexOptions.Compiled)]
         public static partial Regex ConstraintTypeRegex();
 
-        [GeneratedRegex(@"constraint ['\[]?(?<name>[\w\d_]+)['\]]?", RegexOptions.IgnoreCase)]
+        [GeneratedRegex(@"constraint ""(?<name>\w+)""", RegexOptions.IgnoreCase)]
         public static partial Regex ConstraintNameRegex();
 
-        [GeneratedRegex(@"Column ['\[]?(?<name>[\w\d_]+)['\]]? is defined as NOT NULL", RegexOptions.IgnoreCase)]
+        [GeneratedRegex(@"null value in column ""(?<name>\w+)""", RegexOptions.IgnoreCase)]
         public static partial Regex NotNullColumnRegex();
     }
 }

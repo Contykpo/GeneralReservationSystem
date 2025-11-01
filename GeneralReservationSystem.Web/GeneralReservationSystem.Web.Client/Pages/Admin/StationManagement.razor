@@ -13,14 +13,17 @@
 @using GeneralReservationSystem.Web.Client.Exceptions
 @using Microsoft.AspNetCore.Authorization
 @using GeneralReservationSystem.Web.Client.Helpers
+@using GeneralReservationSystem.Web.Client.Services.Interfaces
+@using Microsoft.AspNetCore.Components.Forms
 
 @using AppFilterOperator = GeneralReservationSystem.Application.Common.FilterOperator
 @using AppSortDirection = GeneralReservationSystem.Application.Common.SortDirection
 @using Severity = MudBlazor.Severity
 
-@inject IStationService StationService
+@inject IClientStationService StationService
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
+@inject IApiBaseUrlProvider ApiBaseUrlProvider
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="my-8">
     <PageTitle>Gestión de Estaciones</PageTitle>
@@ -40,6 +43,34 @@
                 <MudCardActions Class="gap-2">
                     <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="HandleCreateStation" StartIcon="@Icons.Material.Filled.Save">Guardar</MudButton>
                     <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ClearCreateForm">Limpiar</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudExpansionPanel>
+        
+        <MudExpansionPanel Text="Importar/Exportar estaciones" Icon="@Icons.Material.Filled.ImportExport">
+            <MudCard Class="pd-2">
+                <MudCardContent>
+                    <MudFileUpload T="IBrowserFile" Accept=".csv" FilesChanged="HandleFileSelected" MaximumFileCount="1">
+                        <ActivatorContent>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.CloudUpload">
+                                Seleccionar archivo CSV
+                            </MudButton>
+                        </ActivatorContent>
+                    </MudFileUpload>
+                    @if (_selectedFile != null)
+                    {
+                        <MudAlert Severity="Severity.Info" Class="mt-2" Dense="true" CloseIcon="@Icons.Material.Filled.Close" CloseIconClicked="ClearSelectedFile">
+                            <MudText>Archivo seleccionado: @_selectedFile.Name</MudText>
+                        </MudAlert>
+                    }
+                </MudCardContent>
+                <MudCardActions Class="gap-2">
+                    <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="HandleImportStations" Disabled="@(_selectedFile == null)" StartIcon="@Icons.Material.Filled.Upload">
+                        Importar
+                    </MudButton>
+                    <MudButton Component="a" Href="@(ApiBaseUrlProvider.BaseUrl + "/api/stations/export")" Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Download">
+                        Exportar
+                    </MudButton>
                 </MudCardActions>
             </MudCard>
         </MudExpansionPanel>
@@ -206,7 +237,7 @@
     private MudTable<Station> _table = null!;
     private bool _loading = false;
     private string _searchString = string.Empty;
-    
+
     // Advanced filters
     private string _filterStationName = string.Empty;
     private string _filterCity = string.Empty;
@@ -230,6 +261,8 @@
         Position = DialogPosition.Center,
         CloseOnEscapeKey = true
     };
+
+    private IBrowserFile? _selectedFile;
 
     private async Task<TableData<Station>> ServerReload(TableState state, CancellationToken cancellationToken)
     {
@@ -290,17 +323,17 @@
             {
                 filters.Add(new Filter("StationName", AppFilterOperator.Contains, _filterStationName));
             }
-            
+
             if (!string.IsNullOrWhiteSpace(_filterCity))
             {
                 filters.Add(new Filter("City", AppFilterOperator.Contains, _filterCity));
             }
-            
+
             if (!string.IsNullOrWhiteSpace(_filterProvince))
             {
                 filters.Add(new Filter("Province", AppFilterOperator.Contains, _filterProvince));
             }
-            
+
             if (!string.IsNullOrWhiteSpace(_filterCountry))
             {
                 filters.Add(new Filter("Country", AppFilterOperator.Contains, _filterCountry));
@@ -452,5 +485,52 @@
     {
         _createStationDto = new CreateStationDto();
         _createForm?.ResetValidation();
+    }
+
+    private void HandleFileSelected(IBrowserFile file)
+    {
+        _selectedFile = file;
+    }
+
+    private void ClearSelectedFile()
+    {
+        _selectedFile = null;
+    }
+
+    private async Task HandleImportStations()
+    {
+        if (_selectedFile == null)
+        {
+            Snackbar.Add("Por favor seleccione un archivo CSV.", Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            using var stream = _selectedFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024); // 10MB max
+            int count = (await StationService.ImportStationsFromCsvAsync(stream, _selectedFile.Name)).Count;
+            Snackbar.Add($"Se importaron {count} estaciones exitosamente.", Severity.Success);
+            ClearSelectedFile();
+            await _table.ReloadServerData();
+        }
+        catch (ServiceValidationException ex)
+        {
+            foreach (var error in ex.Errors)
+            {
+                Snackbar.Add(error.Error, Severity.Error);
+            }
+        }
+        catch (ServiceException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add($"Error al importar: {ex.Message}", Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error inesperado al importar estaciones: {ex.Message}", Severity.Error);
+        }
     }
 }

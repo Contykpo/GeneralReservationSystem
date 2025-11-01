@@ -21,4 +21,12 @@
     {
         public int StationId { get; set; }
     }
+
+    public class ImportStationDto
+    {
+        public string StationName { get; set; } = string.Empty;
+        public string City { get; set; } = string.Empty;
+        public string Province { get; set; } = string.Empty;
+        public string Country { get; set; } = string.Empty;
+    }
 }
