@@ -5,7 +5,7 @@ using System.Security.Claims;
 
 namespace GeneralReservationSystem.Web.Client.Authentication
 {
-    public class CustomAuthenticationStateProvider(IClientAuthenticationService clientAuthenticationService) : AuthenticationStateProvider
+    public class ClientAuthenticationStateProvider(IClientAuthenticationService clientAuthenticationService) : AuthenticationStateProvider
     {
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {

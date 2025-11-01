@@ -1,5 +1,11 @@
+using GeneralReservationSystem.Infrastructure.Helpers;
+using GeneralReservationSystem.Web.Authentication;
 using GeneralReservationSystem.Web.Client;
 using GeneralReservationSystem.Web.Components;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -12,8 +18,67 @@ builder.Services.AddRazorComponents()
 string apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "localhost";
 builder.Services.AddClientServices(apiBaseUrl);
 
-builder.Services.AddAuthentication();
+JwtSettings jwtSettings = new()
+{
+    SecretKey = builder.Configuration["Jwt:SecretKey"] ?? "YourSuperSecretKeyThatIsAtLeast32CharactersLong!",
+    Issuer = builder.Configuration["Jwt:Issuer"] ?? "GeneralReservationSystemAPI",
+    Audience = builder.Configuration["Jwt:Audience"] ?? "GeneralReservationSystemClient",
+    ExpirationDays = int.Parse(builder.Configuration["Jwt:ExpirationDays"] ?? "7")
+};
+builder.Services.AddSingleton(jwtSettings);
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = JwtHelper.GetIssuerSigningKeyFromString(jwtSettings.SecretKey),
+        ValidateIssuer = true,
+        ValidIssuer = jwtSettings.Issuer,
+        ValidateAudience = true,
+        ValidAudience = jwtSettings.Audience,
+        ValidateLifetime = true,
+        RoleClaimType = ClaimTypes.Role,
+        ClockSkew = TimeSpan.Zero
+    };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            context.Token = context.Request.Cookies[JwtHelper.CookieName];
+            return Task.CompletedTask;
+        },
+        OnAuthenticationFailed = context =>
+        {
+            context.Response.Redirect("/login?ReturnUrl=" + Uri.EscapeDataString(context.Request.Path + context.Request.QueryString));
+            return Task.CompletedTask;
+        },
+        OnChallenge = context =>
+        {
+            if (!context.Response.HasStarted)
+            {
+                context.Response.Redirect("/login?ReturnUrl=" + Uri.EscapeDataString(context.Request.Path + context.Request.QueryString));
+            }
+            context.HandleResponse();
+            return Task.CompletedTask;
+        },
+        OnForbidden = context =>
+        {
+            if (!context.Response.HasStarted)
+            {
+                context.Response.Redirect("/forbidden");
+            }
+            return Task.CompletedTask;
+        }
+    };
+});
 builder.Services.AddAuthorization();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ServerAuthenticationStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<ServerAuthenticationStateProvider>());
 
 WebApplication app = builder.Build();
 

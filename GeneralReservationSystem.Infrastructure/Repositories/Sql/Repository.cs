@@ -162,7 +162,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                 }
             }
 
-            var totalCount = (long)(await SqlCommandHelper.ExecuteScalarAsync(countCmd, cancellationToken))!;
+            long totalCount = (long)(await SqlCommandHelper.ExecuteScalarAsync(countCmd, cancellationToken))!;
             return new PagedResult<TResult>
             {
                 Items = items,

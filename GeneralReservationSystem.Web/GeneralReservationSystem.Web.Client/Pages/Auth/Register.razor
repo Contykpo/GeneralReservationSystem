@@ -59,7 +59,7 @@
         try
         {
             var user = await ClientAuthenticationService.RegisterUserAsync(_registerDto);
-            if (AuthStateProvider is CustomAuthenticationStateProvider custom)
+            if (AuthStateProvider is ClientAuthenticationStateProvider custom)
             {
                 custom.MarkUserAsAuthenticated(user);
             }

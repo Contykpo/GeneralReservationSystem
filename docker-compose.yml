@@ -51,6 +51,8 @@ services:
     ports:
       - "${HOST_WEB_HTTP_PORTS:-5000}:${WEB_HTTP_PORT:-8080}"
       - "${HOST_WEB_HTTPS_PORTS:-5001}:${WEB_HTTPS_PORT:-8081}"
+    environment:
+      - Jwt__SecretKey=${JWT_SECRET_KEY}
     depends_on:
       generalreservationsystem.api:
         condition: service_healthy

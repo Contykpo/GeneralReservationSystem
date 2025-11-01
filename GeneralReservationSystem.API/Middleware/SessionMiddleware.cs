@@ -1,9 +1,8 @@
 ﻿using GeneralReservationSystem.Infrastructure.Helpers;
-using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 using System.Text.Json;
 
-namespace GeneralReservationSystem.Infrastructure.Middleware
+namespace GeneralReservationSystem.API.Middleware
 {
     public class SessionMiddleware(RequestDelegate next)
     {

@@ -122,42 +122,18 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
                 return constraintException;
             }
 
-            // Try to use error codes if available (SQL Server)
-            int? errorCode = null;
-            if (ex.GetType().Name == "SqlException")
-            {
-                System.Reflection.PropertyInfo? numberProp = ex.GetType().GetProperty("Number");
-                if (numberProp != null)
-                {
-                    errorCode = numberProp.GetValue(ex) as int?;
-                }
-            }
-
-            // Timeout (SQL Server error code -2)
-            if (errorCode == -2 || ex.Message.Contains("timeout", StringComparison.OrdinalIgnoreCase))
+            if (ex.Message.Contains("timeout", StringComparison.OrdinalIgnoreCase))
             {
                 return new RepositoryTimeoutException("The repository operation timed out.", ex);
             }
-            // Deadlock (SQL Server error code 1205)
-            if (errorCode == 1205 || ex.Message.Contains("deadlock", StringComparison.OrdinalIgnoreCase))
-            {
-                return new RepositoryConcurrencyException("A concurrency conflict occurred in the repository.", ex);
-            }
-            // Connection failure (SQL Server error codes 53, 4060, 10054, 10060, etc.)
-            if (errorCode == 53 || errorCode == 4060 || errorCode == 10054 || errorCode == 10060 ||
-                ex.Message.Contains("connection", StringComparison.OrdinalIgnoreCase) ||
-                ex.Message.Contains("network", StringComparison.OrdinalIgnoreCase))
-            {
-                return new RepositoryUnavailableException("The repository is unavailable.", ex);
-            }
-            // Row version/concurrency violation (SQL Server error code 3960)
-            if (errorCode == 3960 || ex.Message.Contains("concurrency", StringComparison.OrdinalIgnoreCase))
-            {
-                return new RepositoryConcurrencyException("A concurrency conflict occurred in the repository.", ex);
-            }
-
-            // Fallback: generic repository error
-            return new RepositoryException("The repository operation failed.", ex);
+            return ex.Message.Contains("deadlock", StringComparison.OrdinalIgnoreCase)
+                ? new RepositoryConcurrencyException("A concurrency conflict occurred in the repository.", ex)
+                : ex.Message.Contains("connection", StringComparison.OrdinalIgnoreCase) ||
+                ex.Message.Contains("network", StringComparison.OrdinalIgnoreCase)
+                ? new RepositoryUnavailableException("The repository is unavailable.", ex)
+                : ex.Message.Contains("concurrency", StringComparison.OrdinalIgnoreCase)
+                ? new RepositoryConcurrencyException("A concurrency conflict occurred in the repository.", ex)
+                : new RepositoryException("The repository operation failed.", ex);
         }
     }
 }

@@ -24,8 +24,8 @@ namespace GeneralReservationSystem.Web.Client
 
             // Register authentication state provider for Blazor client
             _ = services.AddOptions();
-            _ = services.AddScoped<CustomAuthenticationStateProvider>();
-            _ = services.AddScoped<AuthenticationStateProvider>(provider => provider.GetRequiredService<CustomAuthenticationStateProvider>());
+            _ = services.AddScoped<ClientAuthenticationStateProvider>();
+            _ = services.AddScoped<AuthenticationStateProvider>(provider => provider.GetRequiredService<ClientAuthenticationStateProvider>());
             _ = services.AddAuthorizationCore();
 
             _ = services.AddScoped<IClientAuthenticationService, ClientAuthenticationService>();

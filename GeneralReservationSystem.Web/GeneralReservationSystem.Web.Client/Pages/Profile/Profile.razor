@@ -126,7 +126,7 @@
 
             await UserService.UpdateUserAsync(_updateUserDto);
             await ClientAuthenticationService.LogoutAsync();
-            if (AuthStateProvider is CustomAuthenticationStateProvider custom)
+            if (AuthStateProvider is ClientAuthenticationStateProvider custom)
             {
                 custom.MarkUserAsLoggedOut();
             }
