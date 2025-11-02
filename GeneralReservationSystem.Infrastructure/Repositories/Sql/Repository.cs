@@ -126,14 +126,14 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
 
             if (targetType.IsEnum)
             {
-                return value is string str ? Enum.Parse(targetType, str) : Enum.ToObject(targetType, value);
+                return value is string str1 ? Enum.Parse(targetType, str1) : Enum.ToObject(targetType, value);
             }
             if (targetType == typeof(Guid))
             {
-                return value is string str ? Guid.Parse(str) : value;
+                return value is string str2 ? Guid.Parse(str2) : value;
             }
             return targetType == typeof(DateTime)
-                ? value is string str ? DateTime.Parse(str) : Convert.ChangeType(value, targetType)
+                ? value is string str3 ? DateTime.Parse(str3) : Convert.ChangeType(value, targetType)
                 : Convert.ChangeType(value, targetType);
         }
 

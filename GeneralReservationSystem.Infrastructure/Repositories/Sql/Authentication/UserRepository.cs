@@ -83,7 +83,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql.Authenticatio
                 {
                     _ = countSql.Append($") WHERE {filterClause}");
                 }
-                _ = countSql.Append(")");
+                _ = countSql.Append(')');
                 countCmd.CommandText = countSql.ToString();
                 AddFilterParameters<UserInfo>(countCmd, searchDto.Filters);
 

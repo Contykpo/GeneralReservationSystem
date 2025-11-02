@@ -121,9 +121,9 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                 if (hasFilter)
                 {
                     _ = countSql.Append($" AND {filterClause}");
-                    _ = countSql.Append(")");
+                    _ = countSql.Append(')');
                 }
-                _ = countSql.Append(")");
+                _ = countSql.Append(')');
                 countCmd.CommandText = countSql.ToString();
                 SqlCommandHelper.AddParameter(countCmd, "@userId", userId, typeof(int));
                 AddFilterParameters<UserReservationDetailsDto>(countCmd, searchDto.Filters);
@@ -215,7 +215,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                 {
                     _ = countSql.Append($") WHERE {filterClause}");
                 }
-                _ = countSql.Append(")");
+                _ = countSql.Append(')');
                 countCmd.CommandText = countSql.ToString();
                 AddFilterParameters<ReservationDetailsDto>(countCmd, searchDto.Filters);
 
