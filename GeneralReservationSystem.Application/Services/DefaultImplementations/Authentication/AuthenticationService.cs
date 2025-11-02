@@ -1,4 +1,4 @@
-using GeneralReservationSystem.Application.DTOs.Authentication;
+ï»¿using GeneralReservationSystem.Application.DTOs.Authentication;
 using GeneralReservationSystem.Application.Entities.Authentication;
 using GeneralReservationSystem.Application.Exceptions.Repositories;
 using GeneralReservationSystem.Application.Exceptions.Services;
@@ -34,7 +34,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
             }
             catch (UniqueConstraintViolationException ex)
             {
-                throw new ServiceBusinessException("Ya existe un usuario con el mismo nombre o correo electrónico.", ex);
+                throw new ServiceBusinessException("Ya existe un usuario con el mismo nombre o correo electrï¿½nico.", ex);
             }
             catch (RepositoryException ex)
             {
@@ -47,9 +47,9 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
             try
             {
                 string normalizedInput = dto.UserNameOrEmail.Trim().ToUpperInvariant();
-                User user = await userRepository.GetByUserNameOrEmailAsync(normalizedInput, cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el usuario.");
+                User user = await userRepository.GetByUserNameOrEmailAsync(normalizedInput, cancellationToken) ?? throw new ServiceNotFoundException("No se encontrï¿½ el usuario.");
                 return !PasswordHelper.VerifyPassword(dto.Password, user.PasswordHash, user.PasswordSalt)
-                    ? throw new ServiceBusinessException("Usuario o contraseña incorrectos.")
+                    ? throw new ServiceBusinessException("Usuario o contraseï¿½a incorrectos.")
                     : new UserInfo
                     {
                         UserId = user.UserId,
@@ -72,11 +72,11 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
         {
             try
             {
-                User user = await userRepository.GetByIdAsync(dto.UserId, cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el usuario para cambiar la contraseña.");
+                User user = await userRepository.GetByIdAsync(dto.UserId, cancellationToken) ?? throw new ServiceNotFoundException("No se encontrï¿½ el usuario para cambiar la contraseï¿½a.");
 
                 if (!PasswordHelper.VerifyPassword(dto.CurrentPassword, user.PasswordHash, user.PasswordSalt))
                 {
-                    throw new ServiceBusinessException("La contraseña actual es incorrecta.");
+                    throw new ServiceBusinessException("La contraseï¿½a actual es incorrecta.");
                 }
 
                 (byte[] hash, byte[] salt) = PasswordHelper.HashPassword(dto.NewPassword);
@@ -85,12 +85,12 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
                 int affected = await userRepository.UpdateAsync(user, cancellationToken: cancellationToken);
                 if (affected == 0)
                 {
-                    throw new ServiceNotFoundException("No se pudo cambiar la contraseña.");
+                    throw new ServiceNotFoundException("No se pudo cambiar la contraseï¿½a.");
                 }
             }
             catch (RepositoryException ex)
             {
-                throw new ServiceException("Error al cambiar la contraseña.", ex);
+                throw new ServiceException("Error al cambiar la contraseï¿½a.", ex);
             }
         }
     }

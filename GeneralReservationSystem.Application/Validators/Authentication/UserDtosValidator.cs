@@ -1,4 +1,4 @@
-using FluentValidation;
+ï»¿using FluentValidation;
 using GeneralReservationSystem.Application.DTOs.Authentication;
 
 namespace GeneralReservationSystem.Application.Validators.Authentication
@@ -12,16 +12,16 @@ namespace GeneralReservationSystem.Application.Validators.Authentication
                 .Length(3, 50).WithMessage("El nombre de usuario debe tener entre 3 y 50 caracteres.");
 
             _ = RuleFor(x => x.Email)
-                .NotEmpty().WithMessage("El correo electrónico es obligatorio.")
-                .EmailAddress().WithMessage("El correo electrónico no es válido.");
+                .NotEmpty().WithMessage("El correo electrï¿½nico es obligatorio.")
+                .EmailAddress().WithMessage("El correo electrï¿½nico no es vï¿½lido.");
 
             _ = RuleFor(x => x.Password)
-                .NotEmpty().WithMessage("La contraseña es obligatoria.")
-                .Length(6, 100).WithMessage("La contraseña debe tener entre 6 y 100 caracteres.");
+                .NotEmpty().WithMessage("La contraseï¿½a es obligatoria.")
+                .Length(6, 100).WithMessage("La contraseï¿½a debe tener entre 6 y 100 caracteres.");
 
             _ = RuleFor(x => x.ConfirmPassword)
-                .NotEmpty().WithMessage("La confirmación de la contraseña es obligatoria.")
-                .Equal(x => x.Password).WithMessage("Las contraseñas no coinciden.");
+                .NotEmpty().WithMessage("La confirmaciï¿½n de la contraseï¿½a es obligatoria.")
+                .Equal(x => x.Password).WithMessage("Las contraseï¿½as no coinciden.");
         }
     }
 
@@ -30,10 +30,10 @@ namespace GeneralReservationSystem.Application.Validators.Authentication
         public LoginDtoValidator()
         {
             _ = RuleFor(x => x.UserNameOrEmail)
-                .NotEmpty().WithMessage("El nombre de usuario o correo electrónico es obligatorio.");
+                .NotEmpty().WithMessage("El nombre de usuario o correo electrï¿½nico es obligatorio.");
 
             _ = RuleFor(x => x.Password)
-                .NotEmpty().WithMessage("La contraseña es obligatoria.");
+                .NotEmpty().WithMessage("La contraseï¿½a es obligatoria.");
         }
     }
 
@@ -42,7 +42,7 @@ namespace GeneralReservationSystem.Application.Validators.Authentication
         public UpdateUserDtoValidator()
         {
             _ = RuleFor(x => x.UserId)
-                .GreaterThan(0).WithMessage("El identificador de usuario debe ser un número positivo.");
+                .GreaterThan(0).WithMessage("El identificador de usuario debe ser un nï¿½mero positivo.");
 
             _ = RuleFor(x => x.UserName)
                 .Length(3, 50).When(x => x.UserName != null)
@@ -50,7 +50,7 @@ namespace GeneralReservationSystem.Application.Validators.Authentication
 
             _ = RuleFor(x => x.Email)
                 .EmailAddress().When(x => x.Email != null)
-                .WithMessage("El correo electrónico no es válido.");
+                .WithMessage("El correo electrï¿½nico no es vï¿½lido.");
         }
     }
 
@@ -59,14 +59,14 @@ namespace GeneralReservationSystem.Application.Validators.Authentication
         public ChangePasswordDtoValidator()
         {
             _ = RuleFor(x => x.UserId)
-                .GreaterThan(0).WithMessage("El identificador de usuario debe ser un número positivo.");
+                .GreaterThan(0).WithMessage("El identificador de usuario debe ser un nï¿½mero positivo.");
 
             _ = RuleFor(x => x.CurrentPassword)
-                .NotEmpty().WithMessage("La contraseña actual es obligatoria.");
+                .NotEmpty().WithMessage("La contraseï¿½a actual es obligatoria.");
 
             _ = RuleFor(x => x.NewPassword)
-                .NotEmpty().WithMessage("La nueva contraseña es obligatoria.")
-                .Length(6, 100).WithMessage("La nueva contraseña debe tener entre 6 y 100 caracteres.");
+                .NotEmpty().WithMessage("La nueva contraseï¿½a es obligatoria.")
+                .Length(6, 100).WithMessage("La nueva contraseï¿½a debe tener entre 6 y 100 caracteres.");
         }
     }
 
@@ -75,7 +75,7 @@ namespace GeneralReservationSystem.Application.Validators.Authentication
         public UserKeyDtoValidator()
         {
             _ = RuleFor(x => x.UserId)
-                .GreaterThan(0).WithMessage("El identificador de usuario debe ser un número positivo.");
+                .GreaterThan(0).WithMessage("El identificador de usuario debe ser un nï¿½mero positivo.");
         }
     }
 }

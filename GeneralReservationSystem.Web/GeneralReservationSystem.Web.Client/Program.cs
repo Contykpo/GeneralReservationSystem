@@ -1,4 +1,4 @@
-using GeneralReservationSystem.Web.Client;
+﻿using GeneralReservationSystem.Web.Client;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 

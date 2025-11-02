@@ -1,4 +1,4 @@
-using GeneralReservationSystem.Application.Exceptions.Repositories;
+﻿using GeneralReservationSystem.Application.Exceptions.Repositories;
 using GeneralReservationSystem.Application.Exceptions.Services;
 using Microsoft.AspNetCore.Diagnostics;
 using System.Data.Common;

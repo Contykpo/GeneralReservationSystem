@@ -1,4 +1,4 @@
-using GeneralReservationSystem.Application.Exceptions.Services;
+ï»¿using GeneralReservationSystem.Application.Exceptions.Services;
 using Microsoft.AspNetCore.Components.WebAssembly.Http;
 using System.Net;
 using System.Net.Http.Json;
@@ -27,7 +27,7 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
             HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
             await EnsureSuccessOrThrow(response);
             return await response.Content.ReadFromJsonAsync<T>(jsonOptions, cancellationToken)
-                ?? throw new ServiceException("La respuesta del servidor está vacía.");
+                ?? throw new ServiceException("La respuesta del servidor estï¿½ vacï¿½a.");
         }
 
         protected async Task<T> PostAsync<T>(string url, object content, CancellationToken cancellationToken = default)
@@ -37,7 +37,7 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
             HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
             await EnsureSuccessOrThrow(response);
             return await response.Content.ReadFromJsonAsync<T>(jsonOptions, cancellationToken)
-                ?? throw new ServiceException("La respuesta del servidor está vacía.");
+                ?? throw new ServiceException("La respuesta del servidor estï¿½ vacï¿½a.");
         }
 
         protected async Task PostAsync(string url, object content, CancellationToken cancellationToken = default)
@@ -55,7 +55,7 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
             HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
             await EnsureSuccessOrThrow(response);
             return await response.Content.ReadFromJsonAsync<T>(jsonOptions, cancellationToken)
-                ?? throw new ServiceException("La respuesta del servidor está vacía.");
+                ?? throw new ServiceException("La respuesta del servidor estï¿½ vacï¿½a.");
         }
 
         protected async Task DeleteAsync(string url, CancellationToken cancellationToken = default)
@@ -72,7 +72,7 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
             HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
             await EnsureSuccessOrThrow(response);
             return await response.Content.ReadFromJsonAsync<T>(jsonOptions, cancellationToken)
-                ?? throw new ServiceException("La respuesta del servidor está vacía.");
+                ?? throw new ServiceException("La respuesta del servidor estï¿½ vacï¿½a.");
         }
 
         private static async Task EnsureSuccessOrThrow(HttpResponseMessage response)
@@ -87,9 +87,9 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
             throw response.StatusCode switch
             {
                 HttpStatusCode.BadRequest when CheckBadRequestForValidationErrors(errorContent) =>
-                    new ServiceValidationException($"La solicitud es inválida.", ParseBadRequestErrors(errorContent)),
-                HttpStatusCode.Unauthorized => new ServiceBusinessException($"No está autorizado para realizar esta acción."),
-                HttpStatusCode.Forbidden => new ServiceBusinessException($"No tiene permisos para realizar esta acción."),
+                    new ServiceValidationException($"La solicitud es invï¿½lida.", ParseBadRequestErrors(errorContent)),
+                HttpStatusCode.Unauthorized => new ServiceBusinessException($"No estï¿½ autorizado para realizar esta acciï¿½n."),
+                HttpStatusCode.Forbidden => new ServiceBusinessException($"No tiene permisos para realizar esta acciï¿½n."),
                 HttpStatusCode.NotFound => new ServiceNotFoundException(ParseErrorMessage(errorContent)),
                 HttpStatusCode.Conflict => new ServiceBusinessException(ParseErrorMessage(errorContent)),
                 _ => new ServiceException(ParseErrorMessage(errorContent))

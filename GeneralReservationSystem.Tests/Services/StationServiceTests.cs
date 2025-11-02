@@ -1,4 +1,4 @@
-using GeneralReservationSystem.Application.Common;
+ï»¿using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Exceptions.Repositories;
@@ -73,7 +73,7 @@ namespace GeneralReservationSystem.Tests.Services
             ServiceBusinessException exception = await Assert.ThrowsAsync<ServiceBusinessException>(
                 () => _stationService.CreateStationAsync(createDto));
 
-            Assert.Equal("Ya existe una estación con el mismo nombre o código.", exception.Message);
+            Assert.Equal("Ya existe una estaciï¿½n con el mismo nombre o cï¿½digo.", exception.Message);
             _ = Assert.IsType<UniqueConstraintViolationException>(exception.InnerException);
         }
 
@@ -97,7 +97,7 @@ namespace GeneralReservationSystem.Tests.Services
             ServiceException exception = await Assert.ThrowsAsync<ServiceException>(
                 () => _stationService.CreateStationAsync(createDto));
 
-            Assert.Equal("Error al crear la estación.", exception.Message);
+            Assert.Equal("Error al crear la estaciï¿½n.", exception.Message);
             _ = Assert.IsType<RepositoryException>(exception.InnerException);
         }
 
@@ -139,8 +139,8 @@ namespace GeneralReservationSystem.Tests.Services
             {
                 StationId = 1,
                 StationName = "Updated Station",
-                City = "Córdoba",
-                Province = "Córdoba",
+                City = "Cï¿½rdoba",
+                Province = "Cï¿½rdoba",
                 Country = "Argentina"
             };
 
@@ -215,7 +215,7 @@ namespace GeneralReservationSystem.Tests.Services
             ServiceNotFoundException exception = await Assert.ThrowsAsync<ServiceNotFoundException>(
                 () => _stationService.UpdateStationAsync(updateDto));
 
-            Assert.Equal("No se encontró la estación para actualizar.", exception.Message);
+            Assert.Equal("No se encontrï¿½ la estaciï¿½n para actualizar.", exception.Message);
         }
 
         [Fact]
@@ -236,7 +236,7 @@ namespace GeneralReservationSystem.Tests.Services
             ServiceBusinessException exception = await Assert.ThrowsAsync<ServiceBusinessException>(
                 () => _stationService.UpdateStationAsync(updateDto));
 
-            Assert.Equal("Ya existe una estación con el mismo nombre o código.", exception.Message);
+            Assert.Equal("Ya existe una estaciï¿½n con el mismo nombre o cï¿½digo.", exception.Message);
             _ = Assert.IsType<UniqueConstraintViolationException>(exception.InnerException);
         }
 
@@ -258,7 +258,7 @@ namespace GeneralReservationSystem.Tests.Services
             ServiceException exception = await Assert.ThrowsAsync<ServiceException>(
                 () => _stationService.UpdateStationAsync(updateDto));
 
-            Assert.Equal("Error al actualizar la estación.", exception.Message);
+            Assert.Equal("Error al actualizar la estaciï¿½n.", exception.Message);
             _ = Assert.IsType<RepositoryException>(exception.InnerException);
         }
 
@@ -301,7 +301,7 @@ namespace GeneralReservationSystem.Tests.Services
             ServiceNotFoundException exception = await Assert.ThrowsAsync<ServiceNotFoundException>(
                 () => _stationService.DeleteStationAsync(keyDto));
 
-            Assert.Equal("No se encontró la estación para eliminar.", exception.Message);
+            Assert.Equal("No se encontrï¿½ la estaciï¿½n para eliminar.", exception.Message);
         }
 
         [Fact]
@@ -318,7 +318,7 @@ namespace GeneralReservationSystem.Tests.Services
             ServiceException exception = await Assert.ThrowsAsync<ServiceException>(
                 () => _stationService.DeleteStationAsync(keyDto));
 
-            Assert.Equal("Error al eliminar la estación.", exception.Message);
+            Assert.Equal("Error al eliminar la estaciï¿½n.", exception.Message);
             _ = Assert.IsType<RepositoryException>(exception.InnerException);
         }
 
@@ -394,7 +394,7 @@ namespace GeneralReservationSystem.Tests.Services
             ServiceNotFoundException exception = await Assert.ThrowsAsync<ServiceNotFoundException>(
                 () => _stationService.GetStationAsync(keyDto));
 
-            Assert.Equal("No se encontró la estación solicitada.", exception.Message);
+            Assert.Equal("No se encontrï¿½ la estaciï¿½n solicitada.", exception.Message);
         }
 
         [Fact]
@@ -411,7 +411,7 @@ namespace GeneralReservationSystem.Tests.Services
             ServiceException exception = await Assert.ThrowsAsync<ServiceException>(
                 () => _stationService.GetStationAsync(keyDto));
 
-            Assert.Equal("Error al consultar la estación.", exception.Message);
+            Assert.Equal("Error al consultar la estaciï¿½n.", exception.Message);
             _ = Assert.IsType<RepositoryException>(exception.InnerException);
         }
 

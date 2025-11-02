@@ -1,4 +1,4 @@
-using GeneralReservationSystem.Infrastructure.Helpers;
+﻿using GeneralReservationSystem.Infrastructure.Helpers;
 using GeneralReservationSystem.Web.Authentication;
 using GeneralReservationSystem.Web.Client;
 using GeneralReservationSystem.Web.Components;

@@ -1,4 +1,4 @@
-using GeneralReservationSystem.Application.DTOs.Authentication;
+ï»¿using GeneralReservationSystem.Application.DTOs.Authentication;
 using GeneralReservationSystem.Application.Entities.Authentication;
 using GeneralReservationSystem.Application.Exceptions.Repositories;
 using GeneralReservationSystem.Application.Exceptions.Services;
@@ -84,7 +84,7 @@ namespace GeneralReservationSystem.Tests.Services.Authentication
             ServiceBusinessException exception = await Assert.ThrowsAsync<ServiceBusinessException>(
                 () => _authenticationService.RegisterUserAsync(registerDto));
 
-            Assert.Equal("Ya existe un usuario con el mismo nombre o correo electrónico.", exception.Message);
+            Assert.Equal("Ya existe un usuario con el mismo nombre o correo electrï¿½nico.", exception.Message);
             _ = Assert.IsType<UniqueConstraintViolationException>(exception.InnerException);
         }
 
@@ -272,7 +272,7 @@ namespace GeneralReservationSystem.Tests.Services.Authentication
             ServiceNotFoundException exception = await Assert.ThrowsAsync<ServiceNotFoundException>(
                 () => _authenticationService.AuthenticateAsync(loginDto));
 
-            Assert.Equal("No se encontró el usuario.", exception.Message);
+            Assert.Equal("No se encontrï¿½ el usuario.", exception.Message);
         }
 
         [Fact]
@@ -306,7 +306,7 @@ namespace GeneralReservationSystem.Tests.Services.Authentication
             ServiceBusinessException exception = await Assert.ThrowsAsync<ServiceBusinessException>(
                 () => _authenticationService.AuthenticateAsync(loginDto));
 
-            Assert.Equal("Usuario o contraseña incorrectos.", exception.Message);
+            Assert.Equal("Usuario o contraseï¿½a incorrectos.", exception.Message);
         }
 
         [Fact]
@@ -475,7 +475,7 @@ namespace GeneralReservationSystem.Tests.Services.Authentication
             ServiceNotFoundException exception = await Assert.ThrowsAsync<ServiceNotFoundException>(
                 () => _authenticationService.ChangePasswordAsync(changePasswordDto));
 
-            Assert.Equal("No se encontró el usuario para cambiar la contraseña.", exception.Message);
+            Assert.Equal("No se encontrï¿½ el usuario para cambiar la contraseï¿½a.", exception.Message);
         }
 
         [Fact]
@@ -508,7 +508,7 @@ namespace GeneralReservationSystem.Tests.Services.Authentication
             ServiceBusinessException exception = await Assert.ThrowsAsync<ServiceBusinessException>(
                 () => _authenticationService.ChangePasswordAsync(changePasswordDto));
 
-            Assert.Equal("La contraseña actual es incorrecta.", exception.Message);
+            Assert.Equal("La contraseï¿½a actual es incorrecta.", exception.Message);
         }
 
         [Fact]
@@ -545,7 +545,7 @@ namespace GeneralReservationSystem.Tests.Services.Authentication
             ServiceNotFoundException exception = await Assert.ThrowsAsync<ServiceNotFoundException>(
                 () => _authenticationService.ChangePasswordAsync(changePasswordDto));
 
-            Assert.Equal("No se pudo cambiar la contraseña.", exception.Message);
+            Assert.Equal("No se pudo cambiar la contraseï¿½a.", exception.Message);
         }
 
         [Fact]
@@ -582,7 +582,7 @@ namespace GeneralReservationSystem.Tests.Services.Authentication
             ServiceException exception = await Assert.ThrowsAsync<ServiceException>(
                 () => _authenticationService.ChangePasswordAsync(changePasswordDto));
 
-            Assert.Equal("Error al cambiar la contraseña.", exception.Message);
+            Assert.Equal("Error al cambiar la contraseï¿½a.", exception.Message);
             _ = Assert.IsType<RepositoryException>(exception.InnerException);
         }
 

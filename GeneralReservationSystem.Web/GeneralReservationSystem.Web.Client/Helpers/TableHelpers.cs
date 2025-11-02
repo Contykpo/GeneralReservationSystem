@@ -1,4 +1,4 @@
-using GeneralReservationSystem.Application.Common;
+﻿using GeneralReservationSystem.Application.Common;
 using MudBlazor;
 using SortDirection = GeneralReservationSystem.Application.Common.SortDirection;
 

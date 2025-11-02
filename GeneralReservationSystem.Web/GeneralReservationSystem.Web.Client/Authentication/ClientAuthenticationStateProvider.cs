@@ -1,4 +1,4 @@
-using GeneralReservationSystem.Application.DTOs.Authentication;
+﻿using GeneralReservationSystem.Application.DTOs.Authentication;
 using GeneralReservationSystem.Web.Client.Services.Interfaces.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
 using System.Security.Claims;

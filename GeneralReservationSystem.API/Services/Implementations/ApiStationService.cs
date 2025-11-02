@@ -1,4 +1,4 @@
-using GeneralReservationSystem.API.Services.Interfaces;
+ï»¿using GeneralReservationSystem.API.Services.Interfaces;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Exceptions.Repositories;
@@ -28,7 +28,7 @@ namespace GeneralReservationSystem.API.Services.Implementations
             }
             catch (UniqueConstraintViolationException ex)
             {
-                throw new ServiceBusinessException("Una o más estaciones tienen nombres duplicados/ya registrados.", ex);
+                throw new ServiceBusinessException("Una o mï¿½s estaciones tienen nombres duplicados/ya registrados.", ex);
             }
             catch (RepositoryException ex)
             {

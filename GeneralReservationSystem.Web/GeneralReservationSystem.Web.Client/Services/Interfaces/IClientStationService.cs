@@ -1,4 +1,4 @@
-using GeneralReservationSystem.Application.Common;
+﻿using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.Services.Interfaces;
 
 namespace GeneralReservationSystem.Web.Client.Services.Interfaces

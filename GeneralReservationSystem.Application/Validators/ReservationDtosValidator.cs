@@ -1,4 +1,4 @@
-using FluentValidation;
+ï»¿using FluentValidation;
 using GeneralReservationSystem.Application.DTOs;
 
 namespace GeneralReservationSystem.Application.Validators
@@ -8,11 +8,11 @@ namespace GeneralReservationSystem.Application.Validators
         public CreateReservationDtoValidator()
         {
             _ = RuleFor(x => x.TripId)
-                .GreaterThan(0).WithMessage("El Id de viaje debe ser un número positivo.");
+                .GreaterThan(0).WithMessage("El Id de viaje debe ser un nï¿½mero positivo.");
             _ = RuleFor(x => x.UserId)
-                .GreaterThan(0).WithMessage("El Id de usuario debe ser un número positivo.");
+                .GreaterThan(0).WithMessage("El Id de usuario debe ser un nï¿½mero positivo.");
             _ = RuleFor(x => x.Seat)
-                .GreaterThan(0).WithMessage("El número de asiento debe ser un número positivo.");
+                .GreaterThan(0).WithMessage("El nï¿½mero de asiento debe ser un nï¿½mero positivo.");
         }
     }
 
@@ -21,9 +21,9 @@ namespace GeneralReservationSystem.Application.Validators
         public ReservationKeyDtoValidator()
         {
             _ = RuleFor(x => x.TripId)
-                .GreaterThan(0).WithMessage("El Id de viaje debe ser un número positivo.");
+                .GreaterThan(0).WithMessage("El Id de viaje debe ser un nï¿½mero positivo.");
             _ = RuleFor(x => x.Seat)
-                .GreaterThan(0).WithMessage("El número de asiento debe ser un número positivo.");
+                .GreaterThan(0).WithMessage("El nï¿½mero de asiento debe ser un nï¿½mero positivo.");
         }
     }
 }

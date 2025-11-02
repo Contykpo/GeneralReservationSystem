@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 using GeneralReservationSystem.Application.DTOs;
 
 namespace GeneralReservationSystem.Application.Validators

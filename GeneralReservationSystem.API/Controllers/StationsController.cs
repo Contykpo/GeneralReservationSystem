@@ -1,4 +1,4 @@
-using FluentValidation;
+ï»¿using FluentValidation;
 using GeneralReservationSystem.API.Helpers;
 using GeneralReservationSystem.API.Services.Interfaces;
 using GeneralReservationSystem.Application.Common;
@@ -167,7 +167,7 @@ namespace GeneralReservationSystem.API.Controllers
 
                 if (importDtos.Count == 0)
                 {
-                    return BadRequest(new { error = "El archivo CSV no contiene estaciones válidas." });
+                    return BadRequest(new { error = "El archivo CSV no contiene estaciones vï¿½lidas." });
                 }
 
                 int affected = await stationService.CreateStationsBulkAsync(importDtos, cancellationToken);

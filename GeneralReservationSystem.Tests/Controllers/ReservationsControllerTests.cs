@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 using FluentValidation.Results;
 using GeneralReservationSystem.API.Controllers;
 using GeneralReservationSystem.Application.Common;

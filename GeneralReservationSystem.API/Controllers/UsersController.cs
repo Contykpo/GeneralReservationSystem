@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 using GeneralReservationSystem.API.Helpers;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.DTOs.Authentication;

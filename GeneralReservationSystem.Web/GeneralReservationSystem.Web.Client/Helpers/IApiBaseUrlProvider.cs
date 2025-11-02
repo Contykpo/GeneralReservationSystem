@@ -1,4 +1,4 @@
-namespace GeneralReservationSystem.Web.Client.Helpers
+﻿namespace GeneralReservationSystem.Web.Client.Helpers
 {
     public interface IApiBaseUrlProvider
     {

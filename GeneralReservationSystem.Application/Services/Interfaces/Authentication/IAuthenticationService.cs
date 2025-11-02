@@ -1,4 +1,4 @@
-using GeneralReservationSystem.Application.DTOs.Authentication;
+﻿using GeneralReservationSystem.Application.DTOs.Authentication;
 
 namespace GeneralReservationSystem.Application.Services.Interfaces.Authentication
 {

@@ -1,4 +1,4 @@
-using GeneralReservationSystem.Infrastructure.Helpers;
+﻿using GeneralReservationSystem.Infrastructure.Helpers;
 
 namespace GeneralReservationSystem.Tests.Integration.Helpers;
 

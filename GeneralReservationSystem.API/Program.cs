@@ -1,4 +1,4 @@
-using GeneralReservationSystem.API.Middleware;
+ï»¿using GeneralReservationSystem.API.Middleware;
 using GeneralReservationSystem.API.Services.Implementations;
 using GeneralReservationSystem.API.Services.Interfaces;
 using GeneralReservationSystem.Application;
@@ -85,13 +85,13 @@ builder.Services.AddAuthentication(options =>
             context.HandleResponse();
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             context.Response.ContentType = "application/json";
-            return context.Response.WriteAsJsonAsync(new { error = "No está autorizado para realizar esta acción." });
+            return context.Response.WriteAsJsonAsync(new { error = "No estï¿½ autorizado para realizar esta acciï¿½n." });
         },
         OnForbidden = context =>
         {
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
             context.Response.ContentType = "application/json";
-            return context.Response.WriteAsJsonAsync(new { error = "No tiene permisos para realizar esta acción." });
+            return context.Response.WriteAsJsonAsync(new { error = "No tiene permisos para realizar esta acciï¿½n." });
         }
     };
 });

@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 
 namespace GeneralReservationSystem.Tests.Integration.Controllers;
 

@@ -1,4 +1,4 @@
-using GeneralReservationSystem.API.Services.Implementations;
+ï»¿using GeneralReservationSystem.API.Services.Implementations;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Exceptions.Repositories;
@@ -185,7 +185,7 @@ namespace GeneralReservationSystem.Tests.Services.API
             ServiceBusinessException exception = await Assert.ThrowsAsync<ServiceBusinessException>(
                 () => _apiStationService.CreateStationsBulkAsync(importDtos));
 
-            Assert.Equal("Una o más estaciones tienen nombres duplicados/ya registrados.", exception.Message);
+            Assert.Equal("Una o mï¿½s estaciones tienen nombres duplicados/ya registrados.", exception.Message);
             _ = Assert.IsType<UniqueConstraintViolationException>(exception.InnerException);
         }
 
@@ -212,7 +212,7 @@ namespace GeneralReservationSystem.Tests.Services.API
             ServiceBusinessException exception = await Assert.ThrowsAsync<ServiceBusinessException>(
                 () => _apiStationService.CreateStationsBulkAsync(importDtos));
 
-            Assert.Equal("Una o más estaciones tienen nombres duplicados/ya registrados.", exception.Message);
+            Assert.Equal("Una o mï¿½s estaciones tienen nombres duplicados/ya registrados.", exception.Message);
             _ = Assert.IsType<UniqueConstraintViolationException>(exception.InnerException);
         }
 
@@ -347,9 +347,9 @@ namespace GeneralReservationSystem.Tests.Services.API
                 },
                 new ImportStationDto
                 {
-                    StationName = "Córdoba Terminal",
-                    City = "Córdoba",
-                    Province = "Córdoba",
+                    StationName = "Cï¿½rdoba Terminal",
+                    City = "Cï¿½rdoba",
+                    Province = "Cï¿½rdoba",
                     Country = "Argentina"
                 },
                 new ImportStationDto
@@ -375,7 +375,7 @@ namespace GeneralReservationSystem.Tests.Services.API
                 repo => repo.CreateBulkAsync(
                     It.Is<IEnumerable<Station>>(stations =>
                         stations.Any(s => s.StationName == "Buenos Aires Central") &&
-                        stations.Any(s => s.StationName == "Córdoba Terminal") &&
+                        stations.Any(s => s.StationName == "Cï¿½rdoba Terminal") &&
                         stations.Any(s => s.StationName == "Rosario Norte")),
                     It.IsAny<CancellationToken>()),
                 Times.Once);

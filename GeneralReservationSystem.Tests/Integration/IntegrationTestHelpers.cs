@@ -1,4 +1,4 @@
-using GeneralReservationSystem.Application.DTOs.Authentication;
+﻿using GeneralReservationSystem.Application.DTOs.Authentication;
 using GeneralReservationSystem.Tests.Integration.Helpers;
 using Npgsql;
 using System.Net.Http.Json;

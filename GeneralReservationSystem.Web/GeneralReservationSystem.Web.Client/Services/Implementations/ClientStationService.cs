@@ -1,4 +1,4 @@
-using GeneralReservationSystem.Application.Common;
+﻿using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Web.Client.Services.Interfaces;
 using System.Net.Http.Headers;
 

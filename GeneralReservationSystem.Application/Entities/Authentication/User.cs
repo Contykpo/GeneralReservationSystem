@@ -1,4 +1,4 @@
-using GeneralReservationSystem.Application.Common;
+﻿using GeneralReservationSystem.Application.Common;
 
 namespace GeneralReservationSystem.Application.Entities.Authentication
 {

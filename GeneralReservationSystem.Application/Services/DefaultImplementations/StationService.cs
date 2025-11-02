@@ -1,4 +1,4 @@
-using GeneralReservationSystem.Application.Common;
+ï»¿using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Exceptions.Repositories;
@@ -26,11 +26,11 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             }
             catch (UniqueConstraintViolationException ex)
             {
-                throw new ServiceBusinessException("Ya existe una estación con el mismo nombre o código.", ex);
+                throw new ServiceBusinessException("Ya existe una estaciï¿½n con el mismo nombre o cï¿½digo.", ex);
             }
             catch (RepositoryException ex)
             {
-                throw new ServiceException("Error al crear la estación.", ex);
+                throw new ServiceException("Error al crear la estaciï¿½n.", ex);
             }
         }
 
@@ -60,15 +60,15 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             try
             {
                 int affected = await stationRepository.UpdateAsync(station, cancellationToken: cancellationToken);
-                return affected == 0 ? throw new ServiceNotFoundException("No se encontró la estación para actualizar.") : station;
+                return affected == 0 ? throw new ServiceNotFoundException("No se encontrï¿½ la estaciï¿½n para actualizar.") : station;
             }
             catch (UniqueConstraintViolationException ex)
             {
-                throw new ServiceBusinessException("Ya existe una estación con el mismo nombre o código.", ex);
+                throw new ServiceBusinessException("Ya existe una estaciï¿½n con el mismo nombre o cï¿½digo.", ex);
             }
             catch (RepositoryException ex)
             {
-                throw new ServiceException("Error al actualizar la estación.", ex);
+                throw new ServiceException("Error al actualizar la estaciï¿½n.", ex);
             }
         }
 
@@ -80,12 +80,12 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
                 int affected = await stationRepository.DeleteAsync(station, cancellationToken);
                 if (affected == 0)
                 {
-                    throw new ServiceNotFoundException("No se encontró la estación para eliminar.");
+                    throw new ServiceNotFoundException("No se encontrï¿½ la estaciï¿½n para eliminar.");
                 }
             }
             catch (RepositoryException ex)
             {
-                throw new ServiceException("Error al eliminar la estación.", ex);
+                throw new ServiceException("Error al eliminar la estaciï¿½n.", ex);
             }
         }
 
@@ -93,11 +93,11 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                return await stationRepository.GetByIdAsync(keyDto.StationId, cancellationToken) ?? throw new ServiceNotFoundException("No se encontró la estación solicitada.");
+                return await stationRepository.GetByIdAsync(keyDto.StationId, cancellationToken) ?? throw new ServiceNotFoundException("No se encontrï¿½ la estaciï¿½n solicitada.");
             }
             catch (RepositoryException ex)
             {
-                throw new ServiceException("Error al consultar la estación.", ex);
+                throw new ServiceException("Error al consultar la estaciï¿½n.", ex);
             }
         }
 
