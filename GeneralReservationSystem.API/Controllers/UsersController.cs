@@ -2,6 +2,7 @@ using FluentValidation;
 using GeneralReservationSystem.API.Helpers;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.DTOs.Authentication;
+using GeneralReservationSystem.Application.Entities.Authentication;
 using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Services.Interfaces.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -64,7 +65,7 @@ namespace GeneralReservationSystem.API.Controllers
             try
             {
                 UserKeyDto keyDto = new() { UserId = int.Parse(userId) };
-                Application.Entities.Authentication.User user = await userService.GetUserAsync(keyDto, cancellationToken);
+                User user = await userService.GetUserAsync(keyDto, cancellationToken);
                 UserInfo userInfo = new()
                 {
                     UserId = user.UserId,
@@ -103,7 +104,7 @@ namespace GeneralReservationSystem.API.Controllers
             try
             {
                 UserKeyDto keyDto = new() { UserId = userId };
-                Application.Entities.Authentication.User user = await userService.GetUserAsync(keyDto, cancellationToken);
+                User user = await userService.GetUserAsync(keyDto, cancellationToken);
                 return Ok(user);
             }
             catch (ServiceNotFoundException ex)
@@ -130,7 +131,7 @@ namespace GeneralReservationSystem.API.Controllers
 
             try
             {
-                Application.Entities.Authentication.User user = await userService.UpdateUserAsync(dto, cancellationToken);
+                User user = await userService.UpdateUserAsync(dto, cancellationToken);
                 UserInfo userInfo = new()
                 {
                     UserId = user.UserId,
@@ -172,7 +173,7 @@ namespace GeneralReservationSystem.API.Controllers
 
             try
             {
-                Application.Entities.Authentication.User user = await userService.UpdateUserAsync(dto, cancellationToken);
+                User user = await userService.UpdateUserAsync(dto, cancellationToken);
                 UserInfo userInfo = new()
                 {
                     UserId = user.UserId,
@@ -188,7 +189,7 @@ namespace GeneralReservationSystem.API.Controllers
             }
             catch (ServiceBusinessException ex)
             {
-                return BadRequest(new { error = ex.Message });
+                return Conflict(new { error = ex.Message });
             }
         }
 

@@ -124,15 +124,11 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
 
             Type targetType = Nullable.GetUnderlyingType(propType) ?? propType;
 
-            if (targetType.IsEnum)
-            {
-                return value is string str1 ? Enum.Parse(targetType, str1) : Enum.ToObject(targetType, value);
-            }
-            if (targetType == typeof(Guid))
-            {
-                return value is string str2 ? Guid.Parse(str2) : value;
-            }
-            return targetType == typeof(DateTime)
+            return targetType.IsEnum
+                ? value is string str1 ? Enum.Parse(targetType, str1) : Enum.ToObject(targetType, value)
+                : targetType == typeof(Guid)
+                ? value is string str2 ? Guid.Parse(str2) : value
+                : targetType == typeof(DateTime)
                 ? value is string str3 ? DateTime.Parse(str3) : Convert.ChangeType(value, targetType)
                 : Convert.ChangeType(value, targetType);
         }

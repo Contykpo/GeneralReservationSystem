@@ -114,3 +114,6 @@ app.MapControllers();
 app.MapHealthChecks("/health");
 app.MapOpenApi();
 app.Run();
+
+// Make Program class accessible to tests
+public partial class Program { }
