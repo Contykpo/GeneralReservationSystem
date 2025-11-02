@@ -76,7 +76,7 @@ namespace GeneralReservationSystem.Tests.Services
             ServiceBusinessException exception = await Assert.ThrowsAsync<ServiceBusinessException>(
                 () => _tripService.CreateTripAsync(createDto));
 
-            Assert.Equal("La estaci�n de salida o llegada no existe.", exception.Message);
+            Assert.Equal("La estación de salida o llegada no existe.", exception.Message);
             _ = Assert.IsType<ForeignKeyViolationException>(exception.InnerException);
         }
 
@@ -101,7 +101,7 @@ namespace GeneralReservationSystem.Tests.Services
             ServiceBusinessException exception = await Assert.ThrowsAsync<ServiceBusinessException>(
                 () => _tripService.CreateTripAsync(createDto));
 
-            Assert.Equal("La estaci�n de salida y llegada deben ser diferentes.", exception.Message);
+            Assert.Equal("La estación de salida y llegada deben ser diferentes.", exception.Message);
             _ = Assert.IsType<CheckConstraintViolationException>(exception.InnerException);
         }
 
@@ -151,7 +151,7 @@ namespace GeneralReservationSystem.Tests.Services
             ServiceBusinessException exception = await Assert.ThrowsAsync<ServiceBusinessException>(
                 () => _tripService.CreateTripAsync(createDto));
 
-            Assert.Equal("El n�mero de asientos disponibles debe ser un n�mero positivo.", exception.Message);
+            Assert.Equal("El número de asientos disponibles debe ser un número positivo.", exception.Message);
             _ = Assert.IsType<CheckConstraintViolationException>(exception.InnerException);
         }
 
@@ -176,7 +176,7 @@ namespace GeneralReservationSystem.Tests.Services
             ServiceBusinessException exception = await Assert.ThrowsAsync<ServiceBusinessException>(
                 () => _tripService.CreateTripAsync(createDto));
 
-            Assert.Equal("Restricci�n de datos inv�lida en el viaje.", exception.Message);
+            Assert.Equal("Restricción de datos inválida en el viaje.", exception.Message);
             _ = Assert.IsType<CheckConstraintViolationException>(exception.InnerException);
         }
 
@@ -323,7 +323,7 @@ namespace GeneralReservationSystem.Tests.Services
             ServiceNotFoundException exception = await Assert.ThrowsAsync<ServiceNotFoundException>(
                 () => _tripService.UpdateTripAsync(updateDto));
 
-            Assert.Equal("No se encontr� el viaje para actualizar.", exception.Message);
+            Assert.Equal("No se encontró el viaje para actualizar.", exception.Message);
         }
 
         [Fact]
@@ -344,7 +344,7 @@ namespace GeneralReservationSystem.Tests.Services
             ServiceBusinessException exception = await Assert.ThrowsAsync<ServiceBusinessException>(
                 () => _tripService.UpdateTripAsync(updateDto));
 
-            Assert.Equal("La estaci�n de salida o llegada no existe.", exception.Message);
+            Assert.Equal("La estación de salida o llegada no existe.", exception.Message);
             _ = Assert.IsType<ForeignKeyViolationException>(exception.InnerException);
         }
 
@@ -367,7 +367,7 @@ namespace GeneralReservationSystem.Tests.Services
             ServiceBusinessException exception = await Assert.ThrowsAsync<ServiceBusinessException>(
                 () => _tripService.UpdateTripAsync(updateDto));
 
-            Assert.Equal("La estaci�n de salida y llegada deben ser diferentes.", exception.Message);
+            Assert.Equal("La estación de salida y llegada deben ser diferentes.", exception.Message);
             _ = Assert.IsType<CheckConstraintViolationException>(exception.InnerException);
         }
 
@@ -412,7 +412,7 @@ namespace GeneralReservationSystem.Tests.Services
             ServiceBusinessException exception = await Assert.ThrowsAsync<ServiceBusinessException>(
                 () => _tripService.UpdateTripAsync(updateDto));
 
-            Assert.Equal("El n�mero de asientos disponibles debe ser un n�mero positivo.", exception.Message);
+            Assert.Equal("El número de asientos disponibles debe ser un número positivo.", exception.Message);
             _ = Assert.IsType<CheckConstraintViolationException>(exception.InnerException);
         }
 
@@ -477,7 +477,7 @@ namespace GeneralReservationSystem.Tests.Services
             ServiceNotFoundException exception = await Assert.ThrowsAsync<ServiceNotFoundException>(
                 () => _tripService.DeleteTripAsync(keyDto));
 
-            Assert.Equal("No se encontr� el viaje para eliminar.", exception.Message);
+            Assert.Equal("No se encontró el viaje para eliminar.", exception.Message);
         }
 
         [Fact]
@@ -572,7 +572,7 @@ namespace GeneralReservationSystem.Tests.Services
             ServiceNotFoundException exception = await Assert.ThrowsAsync<ServiceNotFoundException>(
                 () => _tripService.GetTripAsync(keyDto));
 
-            Assert.Equal("No se encontr� el viaje solicitado.", exception.Message);
+            Assert.Equal("No se encontró el viaje solicitado.", exception.Message);
         }
 
         [Fact]
@@ -675,7 +675,7 @@ namespace GeneralReservationSystem.Tests.Services
             ServiceNotFoundException exception = await Assert.ThrowsAsync<ServiceNotFoundException>(
                 () => _tripService.GetTripWithDetailsAsync(keyDto));
 
-            Assert.Equal("No se encontr� el viaje solicitado.", exception.Message);
+            Assert.Equal("No se encontró el viaje solicitado.", exception.Message);
         }
 
         [Fact]

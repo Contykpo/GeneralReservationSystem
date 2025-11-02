@@ -85,13 +85,13 @@ builder.Services.AddAuthentication(options =>
             context.HandleResponse();
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             context.Response.ContentType = "application/json";
-            return context.Response.WriteAsJsonAsync(new { error = "No est� autorizado para realizar esta acci�n." });
+            return context.Response.WriteAsJsonAsync(new { error = "No está autorizado para realizar esta acción." });
         },
         OnForbidden = context =>
         {
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
             context.Response.ContentType = "application/json";
-            return context.Response.WriteAsJsonAsync(new { error = "No tiene permisos para realizar esta acci�n." });
+            return context.Response.WriteAsJsonAsync(new { error = "No tiene permisos para realizar esta acción." });
         }
     };
 });

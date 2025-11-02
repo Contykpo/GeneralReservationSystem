@@ -30,7 +30,7 @@ namespace GeneralReservationSystem.API.Helpers
                 string[] values = line.Split(',');
                 if (values.Length != expectedColumns)
                 {
-                    errors.Add(new ValidationError($"Formato inv�lido en la l�nea {lineNumber}. Se esperan {expectedColumns} columnas.", $"csv[{lineNumber}]"));
+                    errors.Add(new ValidationError($"Formato inválido en la línea {lineNumber}. Se esperan {expectedColumns} columnas.", $"csv[{lineNumber}]"));
                     continue;
                 }
 
@@ -46,7 +46,7 @@ namespace GeneralReservationSystem.API.Helpers
                 {
                     foreach (FluentValidation.Results.ValidationFailure? ve in validationResult.Errors)
                     {
-                        errors.Add(new ValidationError($"Error de validaci�n en la l�nea {lineNumber}: {ve.ErrorMessage}", $"csv[{lineNumber}].{ve.PropertyName}"));
+                        errors.Add(new ValidationError($"Error de validación en la línea {lineNumber}: {ve.ErrorMessage}", $"csv[{lineNumber}].{ve.PropertyName}"));
                     }
 
                     continue;
@@ -55,7 +55,7 @@ namespace GeneralReservationSystem.API.Helpers
             }
             if (errors.Count > 0)
             {
-                throw new ServiceValidationException("Errores de validaci�n en el archivo CSV.", [.. errors]);
+                throw new ServiceValidationException("Errores de validación en el archivo CSV.", [.. errors]);
             }
         }
 

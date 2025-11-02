@@ -27,7 +27,7 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
             HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
             await EnsureSuccessOrThrow(response);
             return await response.Content.ReadFromJsonAsync<T>(jsonOptions, cancellationToken)
-                ?? throw new ServiceException("La respuesta del servidor est� vac�a.");
+                ?? throw new ServiceException("La respuesta del servidor está vacía.");
         }
 
         protected async Task<T> PostAsync<T>(string url, object content, CancellationToken cancellationToken = default)
@@ -37,7 +37,7 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
             HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
             await EnsureSuccessOrThrow(response);
             return await response.Content.ReadFromJsonAsync<T>(jsonOptions, cancellationToken)
-                ?? throw new ServiceException("La respuesta del servidor est� vac�a.");
+                ?? throw new ServiceException("La respuesta del servidor está vacía.");
         }
 
         protected async Task PostAsync(string url, object content, CancellationToken cancellationToken = default)
@@ -55,7 +55,7 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
             HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
             await EnsureSuccessOrThrow(response);
             return await response.Content.ReadFromJsonAsync<T>(jsonOptions, cancellationToken)
-                ?? throw new ServiceException("La respuesta del servidor est� vac�a.");
+                ?? throw new ServiceException("La respuesta del servidor está vacía.");
         }
 
         protected async Task DeleteAsync(string url, CancellationToken cancellationToken = default)
@@ -72,7 +72,7 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
             HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
             await EnsureSuccessOrThrow(response);
             return await response.Content.ReadFromJsonAsync<T>(jsonOptions, cancellationToken)
-                ?? throw new ServiceException("La respuesta del servidor est� vac�a.");
+                ?? throw new ServiceException("La respuesta del servidor está vacía.");
         }
 
         private static async Task EnsureSuccessOrThrow(HttpResponseMessage response)
@@ -87,9 +87,9 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
             throw response.StatusCode switch
             {
                 HttpStatusCode.BadRequest when CheckBadRequestForValidationErrors(errorContent) =>
-                    new ServiceValidationException($"La solicitud es inv�lida.", ParseBadRequestErrors(errorContent)),
-                HttpStatusCode.Unauthorized => new ServiceBusinessException($"No est� autorizado para realizar esta acci�n."),
-                HttpStatusCode.Forbidden => new ServiceBusinessException($"No tiene permisos para realizar esta acci�n."),
+                    new ServiceValidationException($"La solicitud es inválida.", ParseBadRequestErrors(errorContent)),
+                HttpStatusCode.Unauthorized => new ServiceBusinessException($"No está autorizado para realizar esta acción."),
+                HttpStatusCode.Forbidden => new ServiceBusinessException($"No tiene permisos para realizar esta acción."),
                 HttpStatusCode.NotFound => new ServiceNotFoundException(ParseErrorMessage(errorContent)),
                 HttpStatusCode.Conflict => new ServiceBusinessException(ParseErrorMessage(errorContent)),
                 _ => new ServiceException(ParseErrorMessage(errorContent))

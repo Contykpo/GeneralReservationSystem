@@ -27,13 +27,13 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             }
             catch (ForeignKeyViolationException ex)
             {
-                throw new ServiceBusinessException("La estaci�n de salida o llegada no existe.", ex);
+                throw new ServiceBusinessException("La estación de salida o llegada no existe.", ex);
             }
             catch (CheckConstraintViolationException ex)
             {
                 if (ex.ConstraintName.Contains("CK_Trip_Departure_Arrival"))
                 {
-                    throw new ServiceBusinessException("La estaci�n de salida y llegada deben ser diferentes.", ex);
+                    throw new ServiceBusinessException("La estación de salida y llegada deben ser diferentes.", ex);
                 }
 
                 if (ex.ConstraintName.Contains("CK_Trip_Times"))
@@ -43,10 +43,10 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
 
                 if (ex.ConstraintName.Contains("CK_Trip_AvailableSeats"))
                 {
-                    throw new ServiceBusinessException("El n�mero de asientos disponibles debe ser un n�mero positivo.", ex);
+                    throw new ServiceBusinessException("El número de asientos disponibles debe ser un número positivo.", ex);
                 }
 
-                throw new ServiceBusinessException("Restricci�n de datos inv�lida en el viaje.", ex);
+                throw new ServiceBusinessException("Restricción de datos inválida en el viaje.", ex);
             }
             catch (RepositoryException ex)
             {
@@ -85,17 +85,17 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             try
             {
                 int affected = await tripRepository.UpdateAsync(trip, cancellationToken: cancellationToken);
-                return affected == 0 ? throw new ServiceNotFoundException("No se encontr� el viaje para actualizar.") : trip;
+                return affected == 0 ? throw new ServiceNotFoundException("No se encontró el viaje para actualizar.") : trip;
             }
             catch (ForeignKeyViolationException ex)
             {
-                throw new ServiceBusinessException("La estaci�n de salida o llegada no existe.", ex);
+                throw new ServiceBusinessException("La estación de salida o llegada no existe.", ex);
             }
             catch (CheckConstraintViolationException ex)
             {
                 if (ex.ConstraintName.Contains("CK_Trip_Departure_Arrival"))
                 {
-                    throw new ServiceBusinessException("La estaci�n de salida y llegada deben ser diferentes.", ex);
+                    throw new ServiceBusinessException("La estación de salida y llegada deben ser diferentes.", ex);
                 }
 
                 if (ex.ConstraintName.Contains("CK_Trip_Times"))
@@ -105,10 +105,10 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
 
                 if (ex.ConstraintName.Contains("CK_Trip_AvailableSeats"))
                 {
-                    throw new ServiceBusinessException("El n�mero de asientos disponibles debe ser un n�mero positivo.", ex);
+                    throw new ServiceBusinessException("El número de asientos disponibles debe ser un número positivo.", ex);
                 }
 
-                throw new ServiceBusinessException("Restricci�n de datos inv�lida en el viaje.", ex);
+                throw new ServiceBusinessException("Restricción de datos inválida en el viaje.", ex);
             }
             catch (RepositoryException ex)
             {
@@ -124,7 +124,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
                 int affected = await tripRepository.DeleteAsync(trip, cancellationToken);
                 if (affected == 0)
                 {
-                    throw new ServiceNotFoundException("No se encontr� el viaje para eliminar.");
+                    throw new ServiceNotFoundException("No se encontró el viaje para eliminar.");
                 }
             }
             catch (RepositoryException ex)
@@ -137,7 +137,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                return await tripRepository.GetByIdAsync(keyDto.TripId, cancellationToken) ?? throw new ServiceNotFoundException("No se encontr� el viaje solicitado.");
+                return await tripRepository.GetByIdAsync(keyDto.TripId, cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el viaje solicitado.");
             }
             catch (RepositoryException ex)
             {
@@ -176,7 +176,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
                         x.t.AvailableSeats,
                         ReservedSeats = unitOfWork.ReservationRepository.Query().Count(r => r.TripId == x.t.TripId)
                     })
-                    .Where(trip => trip.TripId == keyDto.TripId).FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontr� el viaje solicitado.");
+                    .Where(trip => trip.TripId == keyDto.TripId).FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el viaje solicitado.");
 
                 unitOfWork.Commit();
 
@@ -199,7 +199,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
                     ReservedSeats = item.ReservedSeats
                 };*/
 
-                return await tripRepository.GetTripWithDetailsAsync(keyDto.TripId, cancellationToken) ?? throw new ServiceNotFoundException("No se encontr� el viaje solicitado.");
+                return await tripRepository.GetTripWithDetailsAsync(keyDto.TripId, cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el viaje solicitado.");
             }
             catch (RepositoryException ex)
             {
@@ -304,7 +304,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             {
                 /*Trip trip = await tripRepository.Query()
                     .Where(t => t.TripId == keyDto.TripId)
-                    .FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontr� el viaje solicitado.");
+                    .FirstOrDefaultAsync(cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el viaje solicitado.");
 
                 List<int> reservedSeats = [.. unitOfWork.ReservationRepository.Query()
                     .Where(r => r.TripId == trip.TripId)

@@ -94,7 +94,7 @@ namespace GeneralReservationSystem.Tests.Services
             ServiceBusinessException exception = await Assert.ThrowsAsync<ServiceBusinessException>(
                 () => _reservationService.CreateReservationAsync(createDto));
 
-            Assert.Equal("El asiento ya est� reservado para este viaje.", exception.Message);
+            Assert.Equal("El asiento ya está reservado para este viaje.", exception.Message);
             _ = Assert.IsType<UniqueConstraintViolationException>(exception.InnerException);
         }
 
@@ -193,7 +193,7 @@ namespace GeneralReservationSystem.Tests.Services
             ServiceNotFoundException exception = await Assert.ThrowsAsync<ServiceNotFoundException>(
                 () => _reservationService.DeleteReservationAsync(keyDto));
 
-            Assert.Equal("No se encontr� la reserva para eliminar.", exception.Message);
+            Assert.Equal("No se encontró la reserva para eliminar.", exception.Message);
         }
 
         [Fact]
@@ -298,7 +298,7 @@ namespace GeneralReservationSystem.Tests.Services
             ServiceNotFoundException exception = await Assert.ThrowsAsync<ServiceNotFoundException>(
                 () => _reservationService.GetReservationAsync(keyDto));
 
-            Assert.Equal("No se encontr� la reserva solicitada.", exception.Message);
+            Assert.Equal("No se encontró la reserva solicitada.", exception.Message);
         }
 
         [Fact]

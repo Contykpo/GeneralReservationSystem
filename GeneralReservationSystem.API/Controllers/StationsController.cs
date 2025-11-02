@@ -167,7 +167,7 @@ namespace GeneralReservationSystem.API.Controllers
 
                 if (importDtos.Count == 0)
                 {
-                    return BadRequest(new { error = "El archivo CSV no contiene estaciones v�lidas." });
+                    return BadRequest(new { error = "El archivo CSV no contiene estaciones válidas." });
                 }
 
                 int affected = await stationService.CreateStationsBulkAsync(importDtos, cancellationToken);

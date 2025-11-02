@@ -30,7 +30,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             }
             catch (UniqueConstraintViolationException ex)
             {
-                throw new ServiceBusinessException("El asiento ya est� reservado para este viaje.", ex);
+                throw new ServiceBusinessException("El asiento ya está reservado para este viaje.", ex);
             }
             catch (RepositoryException ex)
             {
@@ -50,7 +50,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
                 int affected = await reservationRepository.DeleteAsync(reservation, cancellationToken);
                 if (affected == 0)
                 {
-                    throw new ServiceNotFoundException("No se encontr� la reserva para eliminar.");
+                    throw new ServiceNotFoundException("No se encontró la reserva para eliminar.");
                 }
             }
             catch (RepositoryException ex)
@@ -63,7 +63,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
         {
             try
             {
-                return await reservationRepository.GetByKeyAsync(keyDto.TripId, keyDto.Seat, cancellationToken) ?? throw new ServiceNotFoundException("No se encontr� la reserva solicitada.");
+                return await reservationRepository.GetByKeyAsync(keyDto.TripId, keyDto.Seat, cancellationToken) ?? throw new ServiceNotFoundException("No se encontró la reserva solicitada.");
             }
             catch (RepositoryException ex)
             {

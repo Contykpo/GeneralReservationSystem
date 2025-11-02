@@ -69,7 +69,7 @@ namespace GeneralReservationSystem.Tests.Services.Authentication
             ServiceNotFoundException exception = await Assert.ThrowsAsync<ServiceNotFoundException>(
                 () => _userService.GetUserAsync(keyDto));
 
-            Assert.Equal("No se encontr� el usuario solicitado.", exception.Message);
+            Assert.Equal("No se encontró el usuario solicitado.", exception.Message);
         }
 
         [Fact]
@@ -279,7 +279,7 @@ namespace GeneralReservationSystem.Tests.Services.Authentication
             ServiceNotFoundException exception = await Assert.ThrowsAsync<ServiceNotFoundException>(
                 () => _userService.UpdateUserAsync(updateDto));
 
-            Assert.Equal("No se encontr� el usuario para actualizar.", exception.Message);
+            Assert.Equal("No se encontró el usuario para actualizar.", exception.Message);
         }
 
         [Fact]
@@ -303,7 +303,7 @@ namespace GeneralReservationSystem.Tests.Services.Authentication
             ServiceBusinessException exception = await Assert.ThrowsAsync<ServiceBusinessException>(
                 () => _userService.UpdateUserAsync(updateDto));
 
-            Assert.Equal("Ya existe un usuario con el mismo nombre o correo electr�nico.", exception.Message);
+            Assert.Equal("Ya existe un usuario con el mismo nombre o correo electrónico.", exception.Message);
             _ = Assert.IsType<UniqueConstraintViolationException>(exception.InnerException);
         }
 
@@ -371,7 +371,7 @@ namespace GeneralReservationSystem.Tests.Services.Authentication
             ServiceNotFoundException exception = await Assert.ThrowsAsync<ServiceNotFoundException>(
                 () => _userService.DeleteUserAsync(keyDto));
 
-            Assert.Equal("No se encontr� el usuario para eliminar.", exception.Message);
+            Assert.Equal("No se encontró el usuario para eliminar.", exception.Message);
         }
 
         [Fact]
