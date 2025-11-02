@@ -34,16 +34,7 @@
             <MudExpansionPanels Class="mb-3">
                 <MudExpansionPanel Text="Filtros avanzados" Icon="@Icons.Material.Filled.FilterList">
                     <MudGrid>
-                        <MudItem xs="12" sm="6" md="4">
-                            <MudNumericField @bind-Value="_filterSeat" 
-                                             Label="Asiento" 
-                                             Variant="Variant.Outlined"
-                                             Clearable="true"
-                                             Immediate="true"
-                                             DebounceInterval="300"
-                                             OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
-                        </MudItem>
-                        <MudItem xs="12" sm="6" md="4">
+                        <MudItem xs="12" sm="6" md="3">
                             <MudSelect T="int?" Label="Estación Salida"
                                       Value="_filterDepartureStationId"
                                       ValueChanged="@(async (int? value) => { _filterDepartureStationId = value; await OnFilterChanged(); })"
@@ -59,7 +50,7 @@
                                 }
                             </MudSelect>
                         </MudItem>
-                        <MudItem xs="12" sm="6" md="4">
+                        <MudItem xs="12" sm="6" md="3">
                             <MudSelect T="int?" Label="Estación Llegada"
                                       Value="_filterArrivalStationId"
                                       ValueChanged="@(async (int? value) => { _filterArrivalStationId = value; await OnFilterChanged(); })"
@@ -75,16 +66,16 @@
                                 }
                             </MudSelect>
                         </MudItem>
-                        <MudItem xs="12" sm="6" md="4">
+                        <MudItem xs="12" sm="6" md="3">
                             <MudTextField @bind-Value="_filterUserName" Label="Usuario" Variant="Variant.Outlined" Clearable="true" Immediate="true" DebounceInterval="300" OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
                         </MudItem>
-                        <MudItem xs="12" sm="6" md="4">
+                        <MudItem xs="12" sm="6" md="3">
                             <MudTextField @bind-Value="_filterEmail" Label="Email" Variant="Variant.Outlined" Clearable="true" Immediate="true" DebounceInterval="300" OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
                         </MudItem>
-                        <MudItem xs="12" sm="6" md="6">
+                        <MudItem xs="12" sm="6" md="3">
                             <MudDateRangePicker DateRange="_filterDepartureDateRange" DateRangeChanged="@(async (DateRange? range) => { _filterDepartureDateRange = range; await OnFilterChanged(); })" Label="Rango Fecha Salida" Variant="Variant.Outlined" Clearable="true" />
                         </MudItem>
-                        <MudItem xs="12" sm="6" md="6">
+                        <MudItem xs="12" sm="6" md="3">
                             <MudDateRangePicker DateRange="_filterArrivalDateRange" DateRangeChanged="@(async (DateRange? range) => { _filterArrivalDateRange = range; await OnFilterChanged(); })" Label="Rango Fecha Llegada" Variant="Variant.Outlined" Clearable="true" />
                         </MudItem>
                         <MudItem xs="12">
@@ -171,7 +162,6 @@
     private MudTable<ReservationDetailsDto> _table = null!;
     private bool _loading = false;
     private string _searchString = string.Empty;
-    private int? _filterSeat = null;
     private int? _filterDepartureStationId = null;
     private int? _filterArrivalStationId = null;
     private string? _filterUserName = null;
@@ -240,7 +230,6 @@
         {
             if (int.TryParse(_searchString, out var numericValue))
             {
-                filters.Add(new Filter("Seat", AppFilterOperator.Equals, numericValue));
             }
             else
             {
@@ -252,8 +241,6 @@
         }
         else
         {
-            if (_filterSeat.HasValue)
-                filters.Add(new Filter("Seat", AppFilterOperator.Equals, _filterSeat.Value));
             if (_filterDepartureStationId.HasValue)
                 filters.Add(new Filter("DepartureStationId", AppFilterOperator.Equals, _filterDepartureStationId.Value));
             if (_filterArrivalStationId.HasValue)
@@ -273,7 +260,6 @@
 
     private void ClearFilters()
     {
-        _filterSeat = null;
         _filterDepartureStationId = null;
         _filterArrivalStationId = null;
         _filterUserName = null;
