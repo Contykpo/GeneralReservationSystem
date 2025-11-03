@@ -1,0 +1,27 @@
+﻿services:
+  postgres:
+    image: postgres
+    container_name: postgres_container
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=${SA_USER:-postgres}
+      - POSTGRES_PASSWORD=${SA_PASSWORD:-password123}
+      - POSTGRES_DB=${SQL_DB:-grsdb}
+    volumes:
+      - sql_data:/var/lib/postgresql
+      - ./db_init.pgsql:/docker-entrypoint-initdb.d/init.sql
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  generalreservationsystem.migrator:
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  sql_data:
