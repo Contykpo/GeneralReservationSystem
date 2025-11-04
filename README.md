@@ -26,14 +26,35 @@ Ejecuta los siguientes comandos en Bash:
 
 ```bash
 export CERT_PASSWORD="TuContraseñaSegura"
+mkdir -p "$HOME/.aspnet/https"
 dotnet dev-certs https -ep "$HOME/.aspnet/https/grs.pfx" -p $CERT_PASSWORD
-
-sudo certutil -addstore -f "Root" "$HOME/.aspnet/https/grs.pfx"
 ```
 
-En algunas distribuciones, puede ser necesario instalar `certutil` (por ejemplo, en Ubuntu: `sudo apt install libnss3-tools`).
+Esto generará el certificado en la ruta esperada por los contenedores. No es necesario instalar ni usar `certutil` ni otras librerías externas.
 
 Recuerda que la contraseña debe coincidir con la variable de entorno `CERT_PASSWORD` utilizada en los contenedores.
+
+## Ejecución desde la terminal (Bash o PowerShell)
+
+Para iniciar el sistema manualmente desde una terminal Bash o PowerShell, utilice los siguientes comandos desde la raíz del proyecto. Los comandos son idénticos para ambos entornos.
+
+### Modo Desarrollo (Debug)
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.certs.override.yml -f docker-compose.vs.debug.yml build --build-arg BUILD_CONFIGURATION=Debug
+docker compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.certs.override.yml -f docker-compose.vs.debug.yml up -d
+```
+
+### Modo Producción (Release)
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.certs.override.yml -f docker-compose.vs.release.yml build --build-arg BUILD_CONFIGURATION=Release
+docker compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.certs.override.yml -f docker-compose.vs.release.yml up -d
+```
+
+Estos comandos construirán e iniciarán los contenedores en el modo seleccionado. Asegúrese de ejecutar los comandos en el directorio raíz del proyecto y de tener configurados los certificados SSL según las instrucciones previas.
+
+---
 
 ## Ejecución y Debugging del Proyecto
 

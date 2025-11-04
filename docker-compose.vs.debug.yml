@@ -5,15 +5,13 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
     volumes:
-      - ${HOME}/.microsoft/usersecrets:/root/.microsoft/usersecrets:ro
-      - ${HOME}/.aspnet/https:/root/.aspnet/https:ro
+      - ~/.microsoft/usersecrets:/root/.microsoft/usersecrets:ro
 
   generalreservationsystem.web:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
     volumes:
-      - ${HOME}/.microsoft/usersecrets:/root/.microsoft/usersecrets:ro
-      - ${HOME}/.aspnet/https:/root/.aspnet/https:ro
+      - ~/.microsoft/usersecrets:/root/.microsoft/usersecrets:ro
 
   # VISUAL STUDIO WORKAROUND: https://stackoverflow.com/questions/77376227/docker-compose-vs-debug-command-arguments-not-passed-properly-to-the-program
   generalreservationsystem.migrator:

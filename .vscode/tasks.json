@@ -4,20 +4,12 @@
         {
             "type": "shell",
             "label": "compose-build-dev",
-            "command": "docker-compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.certs.override.yml -f docker-compose.vs.debug.yml build --build-arg BUILD_CONFIGURATION=Debug",
-            "presentation": {
-                "reveal": "always",
-                "panel": "new"
-            }
+            "command": "docker compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.certs.override.yml -f docker-compose.vs.debug.yml build --build-arg BUILD_CONFIGURATION=Debug",
         },
         {
             "type": "shell",
             "label": "compose-up-dev",
-            "command": "docker-compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.certs.override.yml -f docker-compose.vs.debug.yml up -d",
-            "presentation": {
-                "reveal": "always",
-                "panel": "new"
-            },
+            "command": "docker compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.certs.override.yml -f docker-compose.vs.debug.yml up -d",
             "dependsOn": [
                 "compose-build-dev"
             ]
@@ -25,20 +17,12 @@
         {
             "type": "shell",
             "label": "compose-build-rel",
-            "command": "docker-compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.certs.override.yml -f docker-compose.vs.release.yml build --build-arg BUILD_CONFIGURATION=Release",
-            "presentation": {
-                "reveal": "always",
-                "panel": "new"
-            }
+            "command": "docker compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.certs.override.yml -f docker-compose.vs.release.yml build --build-arg BUILD_CONFIGURATION=Release",
         },
         {
             "type": "shell",
             "label": "compose-up-rel",
-            "command": "docker-compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.certs.override.yml -f docker-compose.vs.release.yml up -d",
-            "presentation": {
-                "reveal": "always",
-                "panel": "new"
-            },
+            "command": "docker compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.certs.override.yml -f docker-compose.vs.release.yml up -d",
             "dependsOn": [
                 "compose-build-rel"
             ]
