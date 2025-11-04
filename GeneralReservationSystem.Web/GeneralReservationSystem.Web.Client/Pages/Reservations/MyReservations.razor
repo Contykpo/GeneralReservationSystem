@@ -1,4 +1,4 @@
-@page "/reservations"
+ï»¿@page "/reservations"
 
 @attribute [Authorize]
 
@@ -32,7 +32,7 @@
                 <MudExpansionPanel Text="Filtros avanzados" Icon="@Icons.Material.Filled.FilterList">
                     <MudGrid>
                         <MudItem xs="12" sm="6" md="3">
-                            <MudSelect T="int?" Label="Estación Salida"
+                            <MudSelect T="int?" Label="EstaciÃ³n Salida"
                                       Value="_filterDepartureStationId"
                                       ValueChanged="@(async (int? value) => { _filterDepartureStationId = value; await OnFilterChanged(); })"
                                       Variant="Variant.Outlined"
@@ -48,7 +48,7 @@
                             </MudSelect>
                         </MudItem>
                         <MudItem xs="12" sm="6" md="3">
-                            <MudSelect T="int?" Label="Estación Llegada"
+                            <MudSelect T="int?" Label="EstaciÃ³n Llegada"
                                       Value="_filterArrivalStationId"
                                       ValueChanged="@(async (int? value) => { _filterArrivalStationId = value; await OnFilterChanged(); })"
                                       Variant="Variant.Outlined"

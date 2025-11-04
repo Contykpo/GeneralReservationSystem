@@ -1,4 +1,4 @@
-@page "/profile"
+ï»¿@page "/profile"
 
 @attribute [Authorize]
 
@@ -25,63 +25,41 @@
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="my-8">
     <PageTitle>Perfil</PageTitle>
-    
+
     <MudPaper Class="pa-4">
         <MudText Typo="Typo.h5" Class="mb-4">
             <MudIcon Icon="@Icons.Material.Filled.Person" Class="mr-2" /> Mi Perfil
         </MudText>
-        
-        <MudForm @ref="_form" 
-                 Model="@_updateUserDto" 
-                 Validation="@(_updateUserDtoValidator.ValidateValue)" 
-                 ValidationDelay="0" 
-                 Spacing="3">
-            <MudTextField Label="Usuario" 
-                          For="@(() => _updateUserDto.UserName)" 
-                          @bind-Value="_updateUserDto.UserName" 
-                          Variant="Variant.Outlined"
-                          Immediate="true" />
-            <MudTextField Label="Correo electrónico" 
-                          For="@(() => _updateUserDto.Email)" 
-                          @bind-Value="_updateUserDto.Email" 
-                          Variant="Variant.Outlined"
-                          Immediate="true" />
-            <MudButton Variant="Variant.Filled" 
-                       Color="Color.Primary" 
-                       OnClick="Save" 
-                       StartIcon="@Icons.Material.Filled.Save">
+
+        <MudForm @ref="_form" Model="@_updateUserDto" Validation="@(_updateUserDtoValidator.ValidateValue)"
+            ValidationDelay="0" Spacing="3">
+            <MudTextField Label="Usuario" For="@(() => _updateUserDto.UserName)" @bind-Value="_updateUserDto.UserName"
+                Variant="Variant.Outlined" Immediate="true" />
+            <MudTextField Label="Correo electrÃ³nico" For="@(() => _updateUserDto.Email)"
+                @bind-Value="_updateUserDto.Email" Variant="Variant.Outlined" Immediate="true" />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save"
+                StartIcon="@Icons.Material.Filled.Save">
                 Guardar cambios
             </MudButton>
         </MudForm>
-        
+
         <MudDivider Class="my-6" />
-        
+
         <MudText Typo="Typo.h6" Class="mb-4">
-            <MudIcon Icon="@Icons.Material.Filled.Lock" Class="mr-2" /> Cambiar Contraseña
+            <MudIcon Icon="@Icons.Material.Filled.Lock" Class="mr-2" /> Cambiar ContraseÃ±a
         </MudText>
-        
-        <MudForm @ref="_pwdForm" 
-                 Model="@_changePasswordDto" 
-                 Validation="@(_changePasswordDtoValidator.ValidateValue)" 
-                 ValidationDelay="0" 
-                 Spacing="3">
-            <MudTextField Label="Contraseña actual" 
-                          For="@(() => _changePasswordDto.CurrentPassword)" 
-                          @bind-Value="_changePasswordDto.CurrentPassword" 
-                          InputType="InputType.Password" 
-                          Variant="Variant.Outlined"
-                          Immediate="true" />
-            <MudTextField Label="Nueva contraseña" 
-                          For="@(() => _changePasswordDto.NewPassword)" 
-                          @bind-Value="_changePasswordDto.NewPassword" 
-                          InputType="InputType.Password" 
-                          Variant="Variant.Outlined"
-                          Immediate="true" />
-            <MudButton Variant="Variant.Filled" 
-                       Color="Color.Secondary" 
-                       OnClick="ChangePassword" 
-                       StartIcon="@Icons.Material.Filled.VpnKey">
-                Cambiar contraseña
+
+        <MudForm @ref="_pwdForm" Model="@_changePasswordDto" Validation="@(_changePasswordDtoValidator.ValidateValue)"
+            ValidationDelay="0" Spacing="3">
+            <MudTextField Label="ContraseÃ±a actual" For="@(() => _changePasswordDto.CurrentPassword)"
+                @bind-Value="_changePasswordDto.CurrentPassword" InputType="InputType.Password"
+                Variant="Variant.Outlined" Immediate="true" />
+            <MudTextField Label="Nueva ContraseÃ±a" For="@(() => _changePasswordDto.NewPassword)"
+                @bind-Value="_changePasswordDto.NewPassword" InputType="InputType.Password" Variant="Variant.Outlined"
+                Immediate="true" />
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="ChangePassword"
+                StartIcon="@Icons.Material.Filled.VpnKey">
+                Cambiar ContraseÃ±a
             </MudButton>
         </MudForm>
     </MudPaper>
@@ -90,10 +68,10 @@
 @code {
     private MudForm _form = null!;
     private MudForm _pwdForm = null!;
-    
+
     private UpdateUserDto _updateUserDto = new();
     private UpdateUserDtoValidator _updateUserDtoValidator = new();
-    
+
     private ChangePasswordDto _changePasswordDto = new();
     private ChangePasswordDtoValidator _changePasswordDtoValidator = new();
 
@@ -130,7 +108,7 @@
             {
                 custom.MarkUserAsLoggedOut();
             }
-            Snackbar.Add("Perfil actualizado. Por favor, vuelve a iniciar sesión.", Severity.Info);
+            Snackbar.Add("Perfil actualizado. Por favor, vuelve a iniciar sesiÃ³n.", Severity.Info);
             Navigation.NavigateToLogin("/login");
         }
         catch (ServiceValidationException ex)
@@ -166,8 +144,8 @@
             }
 
             await ClientAuthenticationService.ChangePasswordAsync(_changePasswordDto);
-            Snackbar.Add("Contraseña cambiada correctamente.", Severity.Success);
-            
+            Snackbar.Add("ContraseÃ±a cambiada correctamente.", Severity.Success);
+
             // Clear password fields after successful change
             _changePasswordDto.CurrentPassword = string.Empty;
             _changePasswordDto.NewPassword = string.Empty;
@@ -190,7 +168,7 @@
         }
         catch (Exception)
         {
-            Snackbar.Add("Error inesperado al cambiar la contraseña.", Severity.Error);
+            Snackbar.Add("Error inesperado al cambiar la ContraseÃ±a.", Severity.Error);
         }
     }
 }

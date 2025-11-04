@@ -1,4 +1,4 @@
-@page "/status/{StatusCode:int}"
+ï»¿@page "/status/{StatusCode:int}"
 
 @using MudBlazor
 @using Microsoft.AspNetCore.Components
@@ -34,8 +34,8 @@
 
     private string Message => StatusCode switch
     {
-        403 => "Lo sentimos, no tienes permiso para acceder a esta página.",
-        404 => "Lo sentimos, la página que buscas no existe.",
+        403 => "Lo sentimos, no tienes permiso para acceder a esta pÃ¡gina.",
+        404 => "Lo sentimos, la pÃ¡gina que buscas no existe.",
         _ => "Ha ocurrido un error inesperado."
     };
 

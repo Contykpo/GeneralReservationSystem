@@ -1,4 +1,4 @@
-@page "/admin/users"
+锘緻page "/admin/users"
 
 @attribute [Authorize(Roles = "Admin")]
 
@@ -28,7 +28,7 @@
 @inject NavigationManager Navigation
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="my-8">
-    <PageTitle>Gesti髇 de Usuarios</PageTitle>
+    <PageTitle>Gesti贸n de Usuarios</PageTitle>
 
     <MudCard>
         <MudCardHeader>
@@ -55,7 +55,7 @@
                         </MudItem>
                         <MudItem xs="12" sm="6" md="3">
                             <MudTextField @bind-Value="_filterEmail" 
-                                          Label="Correo Electr髇ico" 
+                                          Label="Correo Electr贸nico" 
                                           Variant="Variant.Outlined"
                                           Clearable="true"
                                           OnClearButtonClick="@(() => { _filterEmail = string.Empty; _table!.ReloadServerData(); })"
@@ -137,7 +137,7 @@
                           Variant="Variant.Outlined" 
                           Margin="Margin.Dense"
                           Immediate="true" />
-            <MudTextField Label="Correo Electr髇ico"
+            <MudTextField Label="Correo Electr贸nico"
                           @bind-Value="_editUserDto.Email"
                           For="@(() => _editUserDto.Email)"
                           Variant="Variant.Outlined" 
@@ -288,7 +288,7 @@
                 {
                     custom.MarkUserAsLoggedOut();
                 }
-                Snackbar.Add("Perfil actualizado. Por favor, vuelve a iniciar sesi髇.", Severity.Info);
+                Snackbar.Add("Perfil actualizado. Por favor, vuelve a iniciar sesi贸n.", Severity.Info);
                 Navigation.NavigateToLogin("/login");
             }
             else
@@ -337,7 +337,7 @@
                 {
                     custom.MarkUserAsLoggedOut();
                 }
-                Snackbar.Add("Perfil borrado. Por favor, vuelve a iniciar sesi髇 en otra cuenta.", Severity.Info);
+                Snackbar.Add("Perfil borrado. Por favor, vuelve a iniciar sesi贸n en otra cuenta.", Severity.Info);
                 Navigation.NavigateToLogin("/login");
             }
             else

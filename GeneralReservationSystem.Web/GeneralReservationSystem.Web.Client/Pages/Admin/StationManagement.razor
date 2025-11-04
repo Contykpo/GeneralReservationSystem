@@ -1,4 +1,4 @@
-@page "/admin/stations"
+ï»¿@page "/admin/stations"
 
 @attribute [Authorize(Roles = "Admin")]
 
@@ -26,63 +26,76 @@
 @inject IApiBaseUrlProvider ApiBaseUrlProvider
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="my-8">
-    <PageTitle>Gestión de Estaciones</PageTitle>
+    <PageTitle>GestiÃ³n de Estaciones</PageTitle>
 
     <MudExpansionPanels Class="mb-4">
-        <MudExpansionPanel Text="Agregar nueva estación" Icon="@Icons.Material.Filled.Add">
+        <MudExpansionPanel Text="Agregar nueva estaciÃ³n" Icon="@Icons.Material.Filled.Add">
             <MudCard Class="pd-2">
                 <MudCardContent>
-                    <MudForm Model="@_createStationDto" @ref="_createForm" Validation="@(_createStationDtoValidator.ValidateValue)" ValidationDelay="0" Spacing="3">
+                    <MudForm Model="@_createStationDto" @ref="_createForm"
+                        Validation="@(_createStationDtoValidator.ValidateValue)" ValidationDelay="0" Spacing="3">
                         <AntiforgeryToken />
-                        <MudTextField Label="Nombre" For="@(() => _createStationDto.StationName)" @bind-Value="_createStationDto.StationName" Variant="Variant.Outlined" Immediate="true" />
-                        <MudTextField Label="Ciudad" For="@(() => _createStationDto.City)" @bind-Value="_createStationDto.City" Variant="Variant.Outlined" Immediate="true" />
-                        <MudTextField Label="Provincia" For="@(() => _createStationDto.Province)" @bind-Value="_createStationDto.Province" Variant="Variant.Outlined" Immediate="true" />
-                        <MudTextField Label="País" For="@(() => _createStationDto.Country)" @bind-Value="_createStationDto.Country" Variant="Variant.Outlined" Immediate="true" />
+                        <MudTextField Label="Nombre" For="@(() => _createStationDto.StationName)"
+                            @bind-Value="_createStationDto.StationName" Variant="Variant.Outlined" Immediate="true" />
+                        <MudTextField Label="Ciudad" For="@(() => _createStationDto.City)"
+                            @bind-Value="_createStationDto.City" Variant="Variant.Outlined" Immediate="true" />
+                        <MudTextField Label="Provincia" For="@(() => _createStationDto.Province)"
+                            @bind-Value="_createStationDto.Province" Variant="Variant.Outlined" Immediate="true" />
+                        <MudTextField Label="PaÃ­s" For="@(() => _createStationDto.Country)"
+                            @bind-Value="_createStationDto.Country" Variant="Variant.Outlined" Immediate="true" />
                     </MudForm>
                 </MudCardContent>
                 <MudCardActions Class="gap-2">
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="HandleCreateStation" StartIcon="@Icons.Material.Filled.Save">Guardar</MudButton>
-                    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ClearCreateForm">Limpiar</MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="HandleCreateStation"
+                        StartIcon="@Icons.Material.Filled.Save">Guardar</MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ClearCreateForm">Limpiar
+                    </MudButton>
                 </MudCardActions>
             </MudCard>
         </MudExpansionPanel>
-        
+
         <MudExpansionPanel Text="Importar/Exportar estaciones" Icon="@Icons.Material.Filled.ImportExport">
             <MudCard Class="pd-2">
                 <MudCardContent>
-                    <MudFileUpload T="IBrowserFile" Accept=".csv" FilesChanged="HandleFileSelected" MaximumFileCount="1">
+                    <MudFileUpload T="IBrowserFile" Accept=".csv" FilesChanged="HandleFileSelected"
+                        MaximumFileCount="1">
                         <ActivatorContent>
-                            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.CloudUpload">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                StartIcon="@Icons.Material.Filled.CloudUpload">
                                 Seleccionar archivo CSV
                             </MudButton>
                         </ActivatorContent>
                     </MudFileUpload>
                     @if (_selectedFile != null)
                     {
-                        <MudAlert Severity="Severity.Info" Class="mt-2" Dense="true" CloseIcon="@Icons.Material.Filled.Close" CloseIconClicked="ClearSelectedFile">
+                        <MudAlert Severity="Severity.Info" Class="mt-2" Dense="true"
+                            CloseIcon="@Icons.Material.Filled.Close" CloseIconClicked="ClearSelectedFile">
                             <MudText>Archivo seleccionado: @_selectedFile.Name</MudText>
                         </MudAlert>
                     }
                 </MudCardContent>
                 <MudCardActions Class="gap-2">
-                    <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="HandleImportStations" Disabled="@(_selectedFile == null)" StartIcon="@Icons.Material.Filled.Upload">
+                    <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="HandleImportStations"
+                        Disabled="@(_selectedFile == null)" StartIcon="@Icons.Material.Filled.Upload">
                         Importar
                     </MudButton>
-                    <MudButton Component="a" Href="@(ApiBaseUrlProvider.BaseUrl + "/api/stations/export")" Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Download">
+                    <MudButton Component="a" Href="@(ApiBaseUrlProvider.BaseUrl + "/api/stations/export")"
+                        Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Download">
                         Exportar
                     </MudButton>
                 </MudCardActions>
             </MudCard>
         </MudExpansionPanel>
     </MudExpansionPanels>
-    
+
     <MudCard>
         <MudCardHeader>
             <CardHeaderContent>
                 <MudText Typo="Typo.h6">Estaciones</MudText>
             </CardHeaderContent>
             <CardHeaderActions>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => _table!.ReloadServerData())" StartIcon="@Icons.Material.Filled.Refresh">Actualizar</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => _table!.ReloadServerData())"
+                    StartIcon="@Icons.Material.Filled.Refresh">Actualizar</MudButton>
             </CardHeaderActions>
         </MudCardHeader>
         <MudCardContent>
@@ -90,82 +103,68 @@
                 <MudExpansionPanel Text="Filtros avanzados" Icon="@Icons.Material.Filled.FilterList">
                     <MudGrid>
                         <MudItem xs="12" sm="6" md="3">
-                            <MudTextField @bind-Value="_filterStationName" 
-                                          Label="Nombre" 
-                                          Variant="Variant.Outlined"
-                                          Clearable="true"
-                                          OnClearButtonClick="@(() => { _filterStationName = string.Empty; _table!.ReloadServerData(); })"
-                                          Immediate="true"
-                                          DebounceInterval="300"
-                                          OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
+                            <MudTextField @bind-Value="_filterStationName" Label="Nombre" Variant="Variant.Outlined"
+                                Clearable="true"
+                                OnClearButtonClick="@(() => { _filterStationName = string.Empty; _table!.ReloadServerData(); })"
+                                Immediate="true" DebounceInterval="300"
+                                OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
                         </MudItem>
                         <MudItem xs="12" sm="6" md="3">
-                            <MudTextField @bind-Value="_filterCity" 
-                                          Label="Ciudad" 
-                                          Variant="Variant.Outlined"
-                                          Clearable="true"
-                                          OnClearButtonClick="@(() => { _filterCity = string.Empty; _table!.ReloadServerData(); })"
-                                          Immediate="true"
-                                          DebounceInterval="300"
-                                          OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
+                            <MudTextField @bind-Value="_filterCity" Label="Ciudad" Variant="Variant.Outlined"
+                                Clearable="true"
+                                OnClearButtonClick="@(() => { _filterCity = string.Empty; _table!.ReloadServerData(); })"
+                                Immediate="true" DebounceInterval="300"
+                                OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
                         </MudItem>
                         <MudItem xs="12" sm="6" md="3">
-                            <MudTextField @bind-Value="_filterProvince" 
-                                          Label="Provincia" 
-                                          Variant="Variant.Outlined"
-                                          Clearable="true"
-                                          OnClearButtonClick="@(() => { _filterProvince = string.Empty; _table!.ReloadServerData(); })"
-                                          Immediate="true"
-                                          DebounceInterval="300"
-                                          OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
+                            <MudTextField @bind-Value="_filterProvince" Label="Provincia" Variant="Variant.Outlined"
+                                Clearable="true"
+                                OnClearButtonClick="@(() => { _filterProvince = string.Empty; _table!.ReloadServerData(); })"
+                                Immediate="true" DebounceInterval="300"
+                                OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
                         </MudItem>
                         <MudItem xs="12" sm="6" md="3">
-                            <MudTextField @bind-Value="_filterCountry" 
-                                          Label="País" 
-                                          Variant="Variant.Outlined"
-                                          Clearable="true"
-                                          OnClearButtonClick="@(() => { _filterCountry = string.Empty; _table!.ReloadServerData(); })"
-                                          Immediate="true"
-                                          DebounceInterval="300"
-                                          OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
+                            <MudTextField @bind-Value="_filterCountry" Label="PaÃ­s" Variant="Variant.Outlined"
+                                Clearable="true"
+                                OnClearButtonClick="@(() => { _filterCountry = string.Empty; _table!.ReloadServerData(); })"
+                                Immediate="true" DebounceInterval="300"
+                                OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
                         </MudItem>
                         <MudItem xs="12">
-                            <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ClearFilters" StartIcon="@Icons.Material.Filled.Clear">Limpiar Filtros</MudButton>
+                            <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ClearFilters"
+                                StartIcon="@Icons.Material.Filled.Clear">Limpiar Filtros</MudButton>
                         </MudItem>
                     </MudGrid>
                 </MudExpansionPanel>
             </MudExpansionPanels>
-            
-            <MudTable @ref="_table" 
-                      T="Station" 
-                      ServerData="ServerReload"
-                      Loading="@_loading" 
-                      LoadingProgressColor="Color.Primary"
-                      Hover="true" 
-                      Breakpoint="Breakpoint.Sm"
-                      Dense="true"
-                      RowsPerPage="10"
-                      SortLabel="StationId"
-                      Elevation="0">
+
+            <MudTable @ref="_table" T="Station" ServerData="ServerReload" Loading="@_loading"
+                LoadingProgressColor="Color.Primary" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true"
+                RowsPerPage="10" SortLabel="StationId" Elevation="0">
                 <ToolBarContent>
-                    <MudTextField @bind-Value="_searchString" 
-                                  Placeholder="Buscar en todos los campos" 
-                                  Adornment="Adornment.Start" 
-                                  AdornmentIcon="@Icons.Material.Filled.Search" 
-                                  IconSize="Size.Medium" 
-                                  Class="mt-0"
-                                  Clearable="true"
-                                  OnClearButtonClick="@(() => { _searchString = string.Empty; _table!.ReloadServerData(); })"
-                                  Immediate="true"
-                                  DebounceInterval="300"
-                                  OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())"></MudTextField>
+                    <MudTextField @bind-Value="_searchString" Placeholder="Buscar en todos los campos"
+                        Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium"
+                        Class="mt-0" Clearable="true"
+                        OnClearButtonClick="@(() => { _searchString = string.Empty; _table!.ReloadServerData(); })"
+                        Immediate="true" DebounceInterval="300"
+                        OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())"></MudTextField>
                 </ToolBarContent>
                 <HeaderContent>
-                    <MudTh><MudTableSortLabel SortLabel="StationId" T="Station">ID</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortLabel="StationName" T="Station">Nombre</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortLabel="City" T="Station">Ciudad</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortLabel="Province" T="Station">Provincia</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortLabel="Country" T="Station">País</MudTableSortLabel></MudTh>
+                    <MudTh>
+                        <MudTableSortLabel SortLabel="StationId" T="Station">ID</MudTableSortLabel>
+                    </MudTh>
+                    <MudTh>
+                        <MudTableSortLabel SortLabel="StationName" T="Station">Nombre</MudTableSortLabel>
+                    </MudTh>
+                    <MudTh>
+                        <MudTableSortLabel SortLabel="City" T="Station">Ciudad</MudTableSortLabel>
+                    </MudTh>
+                    <MudTh>
+                        <MudTableSortLabel SortLabel="Province" T="Station">Provincia</MudTableSortLabel>
+                    </MudTh>
+                    <MudTh>
+                        <MudTableSortLabel SortLabel="Country" T="Station">PaÃ­s</MudTableSortLabel>
+                    </MudTh>
                     <MudTh Style="text-align: right">Acciones</MudTh>
                 </HeaderContent>
                 <RowTemplate>
@@ -173,10 +172,12 @@
                     <MudTd DataLabel="Nombre">@context.StationName</MudTd>
                     <MudTd DataLabel="Ciudad">@context.City</MudTd>
                     <MudTd DataLabel="Provincia">@context.Province</MudTd>
-                    <MudTd DataLabel="País">@context.Country</MudTd>
+                    <MudTd DataLabel="PaÃ­s">@context.Country</MudTd>
                     <MudTd DataLabel="Acciones" Style="text-align: right">
-                        <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Filled.Edit" OnClick="@(() => OpenEditDialog(context))" />
-                        <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => HandleDeleteStation(context))" />
+                        <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Filled.Edit"
+                            OnClick="@(() => OpenEditDialog(context))" />
+                        <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                            OnClick="@(() => HandleDeleteStation(context))" />
                     </MudTd>
                 </RowTemplate>
                 <NoRecordsContent>
@@ -196,35 +197,22 @@
 <MudDialog @bind-Visible="_editDialogVisible" Options="_editDialogOptions">
     <TitleContent>
         <MudText Typo="Typo.h6">
-            <MudIcon Icon="@Icons.Material.Filled.Edit" Class="mr-3" /> Editar Estación
+            <MudIcon Icon="@Icons.Material.Filled.Edit" Class="mr-3" /> Editar EstaciÃ³n
         </MudText>
     </TitleContent>
     <DialogContent>
-        <MudForm Model="@_editStationDto" @ref="_updateForm" Validation="@(_updateStationDtoValidator.ValidateValue)" ValidationDelay="0">
-            <MudTextField Label="Nombre"
-                          @bind-Value="_editStationDto.StationName" 
-                          For="@(() => _editStationDto.StationName)"
-                          Variant="Variant.Outlined" 
-                          Margin="Margin.Dense"
-                          Immediate="true" />
-            <MudTextField Label="Ciudad"
-                          @bind-Value="_editStationDto.City"
-                          For="@(() => _editStationDto.City)"
-                          Variant="Variant.Outlined" 
-                          Margin="Margin.Dense" 
-                          Immediate="true" />
-            <MudTextField Label="Provincia"
-                          @bind-Value="_editStationDto.Province" 
-                          For="@(() => _editStationDto.Province)"
-                          Variant="Variant.Outlined" 
-                          Margin="Margin.Dense" 
-                          Immediate="true" />
-            <MudTextField Label="País"
-                          @bind-Value="_editStationDto.Country" 
-                          For="@(() => _editStationDto.Country)"
-                          Variant="Variant.Outlined" 
-                          Margin="Margin.Dense" 
-                          Immediate="true" />
+        <MudForm Model="@_editStationDto" @ref="_updateForm" Validation="@(_updateStationDtoValidator.ValidateValue)"
+            ValidationDelay="0">
+            <MudTextField Label="Nombre" @bind-Value="_editStationDto.StationName"
+                For="@(() => _editStationDto.StationName)" Variant="Variant.Outlined" Margin="Margin.Dense"
+                Immediate="true" />
+            <MudTextField Label="Ciudad" @bind-Value="_editStationDto.City" For="@(() => _editStationDto.City)"
+                Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" />
+            <MudTextField Label="Provincia" @bind-Value="_editStationDto.Province"
+                For="@(() => _editStationDto.Province)" Variant="Variant.Outlined" Margin="Margin.Dense"
+                Immediate="true" />
+            <MudTextField Label="PaÃ­s" @bind-Value="_editStationDto.Country" For="@(() => _editStationDto.Country)"
+                Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" />
         </MudForm>
     </DialogContent>
     <DialogActions>
@@ -294,7 +282,7 @@
         }
         catch (Exception)
         {
-            Snackbar.Add("Ocurrió un error inesperado al cargar las estaciones.", Severity.Error);
+            Snackbar.Add("OcurriÃ³ un error inesperado al cargar las estaciones.", Severity.Error);
         }
         finally
         {
@@ -365,7 +353,7 @@
             }
 
             await StationService.CreateStationAsync(_createStationDto);
-            Snackbar.Add("Estación creada correctamente.", Severity.Success);
+            Snackbar.Add("EstaciÃ³n creada correctamente.", Severity.Success);
             ClearCreateForm();
             await _table.ReloadServerData();
         }
@@ -386,7 +374,7 @@
         }
         catch (Exception)
         {
-            Snackbar.Add("Ocurrió un error inesperado al crear la estación.", Severity.Error);
+            Snackbar.Add("OcurriÃ³ un error inesperado al crear la estaciÃ³n.", Severity.Error);
         }
     }
 
@@ -423,7 +411,7 @@
             }
 
             await StationService.UpdateStationAsync(_editStationDto);
-            Snackbar.Add("Estación actualizada correctamente.", Severity.Success);
+            Snackbar.Add("EstaciÃ³n actualizada correctamente.", Severity.Success);
             CloseEditDialog();
             await _table.ReloadServerData();
         }
@@ -450,7 +438,7 @@
         }
         catch (Exception)
         {
-            Snackbar.Add("Ocurrió un error inesperado al actualizar la estación.", Severity.Error);
+            Snackbar.Add("OcurriÃ³ un error inesperado al actualizar la estaciÃ³n.", Severity.Error);
         }
     }
 
@@ -459,7 +447,7 @@
         try
         {
             await StationService.DeleteStationAsync(new StationKeyDto { StationId = item.StationId });
-            Snackbar.Add("Estación eliminada correctamente.", Severity.Success);
+            Snackbar.Add("EstaciÃ³n eliminada correctamente.", Severity.Success);
             await _table.ReloadServerData();
         }
         catch (ServiceNotFoundException ex)
@@ -477,7 +465,7 @@
         }
         catch (Exception)
         {
-            Snackbar.Add("Ocurrió un error inesperado al eliminar la estación.", Severity.Error);
+            Snackbar.Add("OcurriÃ³ un error inesperado al eliminar la estaciÃ³n.", Severity.Error);
         }
     }
 

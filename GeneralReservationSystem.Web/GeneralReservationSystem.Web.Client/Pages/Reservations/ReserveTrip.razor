@@ -1,4 +1,4 @@
-@page "/trips/reserve/{TripId:int}"
+ï»¿@page "/trips/reserve/{TripId:int}"
 
 @attribute [Authorize]
 
@@ -34,7 +34,7 @@ else
         }
         else if (_tripDetails is null)
         {
-            <MudAlert Severity="Severity.Warning">No se encontró el viaje.</MudAlert>
+            <MudAlert Severity="Severity.Warning">No se encontrÃ³ el viaje.</MudAlert>
         }
         else
         {
@@ -57,7 +57,7 @@ else
 
                 @if (tripStarted)
                 {
-                    <MudAlert Severity="Severity.Warning">No se pueden reservar asientos porque el viaje ya comenzó.</MudAlert>
+                    <MudAlert Severity="Severity.Warning">No se pueden reservar asientos porque el viaje ya comenzÃ³.</MudAlert>
                 }
                 else if (_freeSeats != null && _freeSeats.Any())
                 {
@@ -114,7 +114,7 @@ else
         }
         catch
         {
-            _error = "Ocurrió un error al cargar la información del viaje.";
+            _error = "OcurriÃ³ un error al cargar la informaciÃ³n del viaje.";
         }
         finally
         {
@@ -133,7 +133,7 @@ else
         if (_selectedSeat == null) return;
         if (_tripDetails != null && DateTime.Now >= _tripDetails.DepartureTime)
         {
-            Snackbar.Add("No se pueden reservar asientos porque el viaje ya comenzó.", Severity.Error);
+            Snackbar.Add("No se pueden reservar asientos porque el viaje ya comenzÃ³.", Severity.Error);
             return;
         }
         try

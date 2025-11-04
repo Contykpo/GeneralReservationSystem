@@ -1,4 +1,4 @@
-@page "/login"
+ï»¿@page "/login"
 
 @using GeneralReservationSystem.Application.DTOs.Authentication
 @using GeneralReservationSystem.Application.Exceptions.Services
@@ -17,14 +17,18 @@
     </Authorized>
     <NotAuthorized>
         @* TODO: Find a better way to center it. The calculation is BAD. *@
-        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="centered-form-gradient-bg d-flex flex-column flex-fill" Style="min-height: calc(100vh - 64px);">
+        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center"
+            Class="centered-form-gradient-bg d-flex flex-column flex-fill" Style="min-height: calc(100vh - 64px);">
             <MudPaper Class="pa-4" MaxWidth="300px" Width="100%" Elevation="6">
-                <MudText Typo="Typo.h5" Class="mb-4">Iniciar sesión</MudText>
+                <MudText Typo="Typo.h5" Class="mb-4">Iniciar sesiÃ³n</MudText>
                 <MudForm @ref="_form" Spacing="3">
                     <AntiforgeryToken />
-                    <MudTextField Label="Usuario o Correo electrónico" For="@(() => _loginDto.UserNameOrEmail)" @bind-Value="_loginDto.UserNameOrEmail" />
-                    <MudTextField Label="Contraseña" For="@(() => _loginDto.Password)" @bind-Value="_loginDto.Password" InputType="InputType.Password" />
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="w-100" OnClick="HandleLogin">Iniciar sesión</MudButton>
+                    <MudTextField Label="Usuario o Correo electrÃ³nico" For="@(() => _loginDto.UserNameOrEmail)"
+                        @bind-Value="_loginDto.UserNameOrEmail" />
+                    <MudTextField Label="ContraseÃ±a" For="@(() => _loginDto.Password)" @bind-Value="_loginDto.Password"
+                        InputType="InputType.Password" />
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="w-100" OnClick="HandleLogin">
+                        Iniciar sesiÃ³n</MudButton>
                     @if (!string.IsNullOrEmpty(_error))
                     {
                         <MudAlert Severity="Severity.Error" Class="mt-3">@_error</MudAlert>
