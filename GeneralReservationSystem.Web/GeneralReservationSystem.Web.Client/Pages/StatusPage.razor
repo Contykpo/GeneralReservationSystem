@@ -1,0 +1,63 @@
+﻿@page "/status/{StatusCode:int}"
+
+@using MudBlazor
+@using Microsoft.AspNetCore.Components
+
+<PageTitle>@Title</PageTitle>
+
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+    <MudCard Class="p-4" Style="max-width: 400px; width: 100%; text-align: center;">
+        <MudCardHeader>
+            <MudIcon Icon="@Icon" Size="Size.Large" Color="@IconColor" />
+        </MudCardHeader>
+        <MudCardContent>
+            <MudText Typo="Typo.h3" class="@HeadingClass">@StatusCode - @Title</MudText>
+            <MudText class="mb-4">@Message</MudText>
+        </MudCardContent>
+        <MudCardActions>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/">
+                <MudIcon Icon="@Icons.Material.Filled.Home" Class="me-2" /> Ir al inicio
+            </MudButton>
+        </MudCardActions>
+    </MudCard>
+</div>
+
+@code {
+    [Parameter]
+    public int StatusCode { get; set; }
+
+    private string Title => StatusCode switch
+    {
+        403 => "Prohibido",
+        404 => "No encontrado",
+        _ => "Error"
+    };
+
+    private string Message => StatusCode switch
+    {
+        403 => "Lo sentimos, no tienes permiso para acceder a esta página.",
+        404 => "Lo sentimos, la página que buscas no existe.",
+        _ => "Ha ocurrido un error inesperado."
+    };
+
+    private string Icon => StatusCode switch
+    {
+        403 => Icons.Material.Filled.Block,
+        404 => Icons.Material.Filled.SearchOff,
+        _ => Icons.Material.Filled.Error
+    };
+
+    private Color IconColor => StatusCode switch
+    {
+        403 => Color.Error,
+        404 => Color.Warning,
+        _ => Color.Error
+    };
+
+    private string HeadingClass => StatusCode switch
+    {
+        403 => "text-danger mb-3",
+        404 => "text-warning mb-3",
+        _ => "text-danger mb-3"
+    };
+}

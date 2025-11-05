@@ -1,4 +1,4 @@
-name: CI/CD
+﻿name: CI/CD
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
 
 jobs:
   #Builder proyecto, correr tests y buildear imagen
-  build-test:                                                 
+  build-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -21,7 +21,7 @@ jobs:
           dotnet-version: '9.0.x'
       
       #Instalar dependencias
-      - name: Restore                                         
+      - name: Restore
         run: dotnet restore GeneralReservationSystem.sln
 
       #Buildear
@@ -33,11 +33,11 @@ jobs:
         run: dotnet test GeneralReservationSystem.sln --no-build -c Release
 
       #Builder imagen
-      - name: Build Docker image
+      - name: Build Docker images
         run: docker compose -f docker-compose.yml build
 
   #Subir imagen a docker hub solo si pusheamos a main o cambio la version semantica
-  push-image:
+  push-images:
     runs-on: ubuntu-latest
     needs: build-test
     if: ${{github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') }}
@@ -50,40 +50,50 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-      - name: Build and Push Staging
-        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+      - name: Build and Push Images
         run: |
           docker compose -f docker-compose.yml build
-          docker tag generalreservationsystemweb ${{ secrets.DOCKER_HUB_USER }}/general-reservation-system:${{ github.sha }}
-          docker push ${{ secrets.DOCKER_HUB_USER }}/general-reservation-system:${{ github.sha }}
-
-      - name: Build and Push Production
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          docker compose -f docker-compose.yml build
-          SEM_TAG=${GITHUB_REF#refs/tags/}
-          docker tag generalreservationsystemweb ${{ secrets.DOCKER_HUB_USER }}/general-reservation-system:$SEM_TAG
-          docker push ${{ secrets.DOCKER_HUB_USER }}/general-reservation-system:$SEM_TAG
-    
+          
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            TAG="${{ github.sha }}"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
+          
+          docker tag generalreservationsystem-generalreservationsystem.migrator ${{ secrets.DOCKER_HUB_USER }}/grs-migrator:$TAG
+          docker tag generalreservationsystem-generalreservationsystem.api ${{ secrets.DOCKER_HUB_USER }}/grs-api:$TAG
+          docker tag generalreservationsystem-generalreservationsystem.web ${{ secrets.DOCKER_HUB_USER }}/grs-web:$TAG
+          
+          docker push ${{ secrets.DOCKER_HUB_USER }}/grs-migrator:$TAG
+          docker push ${{ secrets.DOCKER_HUB_USER }}/grs-api:$TAG
+          docker push ${{ secrets.DOCKER_HUB_USER }}/grs-web:$TAG
+          
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            docker tag ${{ secrets.DOCKER_HUB_USER }}/grs-migrator:$TAG ${{ secrets.DOCKER_HUB_USER }}/grs-migrator:latest
+            docker tag ${{ secrets.DOCKER_HUB_USER }}/grs-api:$TAG ${{ secrets.DOCKER_HUB_USER }}/grs-api:latest
+            docker tag ${{ secrets.DOCKER_HUB_USER }}/grs-web:$TAG ${{ secrets.DOCKER_HUB_USER }}/grs-web:latest
+            
+            docker push ${{ secrets.DOCKER_HUB_USER }}/grs-migrator:latest
+            docker push ${{ secrets.DOCKER_HUB_USER }}/grs-api:latest
+            docker push ${{ secrets.DOCKER_HUB_USER }}/grs-web:latest
+          fi
 
   deploy-staging:
     runs-on: ubuntu-latest
-    needs: push-image
+    needs: push-images
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v3
 
       - name: Deploy to Staging
-        run: |
-          docker compose -f docker-compose.yml up -d --remove-orphans
+        run: echo "Deployment to staging not yet implemented"
 
   deploy-prod:
     runs-on: ubuntu-latest
-    needs: push-image
+    needs: push-images
     if: startsWith(github.ref, 'refs/tags/')
     steps:
       - uses: actions/checkout@v3
 
       - name: Deploy to Production
-        run: |
-          docker compose -f docker-compose.yml up -d --remove-orphans
+        run: echo "Deployment to production not yet implemented"

@@ -1,19 +1,18 @@
-using GeneralReservationSystem.Application.Common;
+﻿using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.Entities;
-using GeneralReservationSystem.Application.Repositories.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace GeneralReservationSystem.Application.Services.Interfaces
 {
     public interface ITripService
     {
-        Task<OptionalResult<PagedResult<TripDetailsDto>>> SearchPagedAsync(int pageIndex, int pageSize, string? departureName = null, string? departureCity = null, string? destinationName = null, string? destinationCity = null, DateTime? startDate = null, DateTime? endDate = null, bool onlyWithAvailableSeats = true, TripSearchSortBy? sortBy = null, bool descending = false);
-        Task<OptionalResult<Trip>> GetByIdAsync(int id);
-        Task<OperationResult> AddAsync(CreateTripDto tripDto);
-        Task<OperationResult> UpdateAsync(UpdateTripDto tripDto);
-        Task<OperationResult> DeleteAsync(int id);
+        Task<Trip> GetTripAsync(TripKeyDto keyDto, CancellationToken cancellationToken = default);
+        Task<TripWithDetailsDto> GetTripWithDetailsAsync(TripKeyDto keyDto, CancellationToken cancellationToken = default);
+        Task<IEnumerable<Trip>> GetAllTripsAsync(CancellationToken cancellationToken = default);
+        Task<PagedResult<TripWithDetailsDto>> SearchTripsAsync(PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default);
+        Task<Trip> CreateTripAsync(CreateTripDto dto, CancellationToken cancellationToken = default);
+        Task<Trip> UpdateTripAsync(UpdateTripDto dto, CancellationToken cancellationToken = default);
+        Task DeleteTripAsync(TripKeyDto keyDto, CancellationToken cancellationToken = default);
+        Task<IEnumerable<int>> GetFreeSeatsAsync(TripKeyDto keyDto, CancellationToken cancellationToken = default);
     }
 }

@@ -1,0 +1,14 @@
+﻿services:
+  generalreservationsystem.api:
+    environment:
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/grs.pfx
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=${CERT_PASSWORD}
+    volumes:
+      - ~/.aspnet/https:/https:ro
+
+  generalreservationsystem.web:
+    environment:
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/grs.pfx
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=${CERT_PASSWORD}
+    volumes:
+      - ~/.aspnet/https:/https:ro

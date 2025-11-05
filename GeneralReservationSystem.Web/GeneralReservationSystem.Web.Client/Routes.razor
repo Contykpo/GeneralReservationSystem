@@ -1,0 +1,28 @@
+﻿@using GeneralReservationSystem.Web.Client.Components
+@using GeneralReservationSystem.Web.Client.Pages
+
+<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(Program).Assembly">
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+                <NotAuthorized>
+                    @if (context.User.Identity?.IsAuthenticated != true)
+                    {
+                        <RedirectToLogin />
+                    }
+                    else
+                    {
+                        <StatusRedirect StatusCode="403" />
+                    }
+                </NotAuthorized>
+                <Authorizing>
+                    <CenteredLoader Text="Autorizando..." />
+                </Authorizing>
+            </AuthorizeRouteView>
+            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        </Found>
+        <NotFound>
+            <StatusRedirect StatusCode="404" />
+        </NotFound>
+    </Router>
+</CascadingAuthenticationState>

@@ -1,16 +1,14 @@
 ﻿using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.Entities;
-using GeneralReservationSystem.Application.Entities.Authentication;
 
 namespace GeneralReservationSystem.Application.Repositories.Interfaces
 {
-    public interface IReservationRepository
+    public interface IReservationRepository : IRepository<Reservation>
     {
-        Task<OptionalResult<PagedResult<AvailableSeatDto>>> GetAvailablePagedAsync(int pageIndex, int pageSize, int tripId);
-        Task<OptionalResult<PagedResult<SeatReservationDto>>> GetReservedSeatsForTripPagedAsync(int pageIndex, int pageSize, int tripId);
-        Task<OptionalResult<PagedResult<SeatReservationDto>>> GetReservedSeatsForUserPagedAsync(int pageIndex, int pageSize, Guid userId, int? tripId);
-        Task<OperationResult> AddAsync(Reservation reservation);
-        Task<OperationResult> DeleteAsync(Reservation reservation);
+        Task<Reservation?> GetByKeyAsync(int tripId, int seat, CancellationToken cancellationToken);
+        Task<IEnumerable<UserReservationDetailsDto>> GetByUserIdWithDetailsAsync(int userId, CancellationToken cancellationToken);
+        Task<PagedResult<UserReservationDetailsDto>> SearchForUserIdWithDetailsAsync(int userId, PagedSearchRequestDto searchDto, CancellationToken cancellationToken);
+        Task<PagedResult<ReservationDetailsDto>> SearchWithDetailsAsync(PagedSearchRequestDto searchDto, CancellationToken cancellationToken);
     }
 }

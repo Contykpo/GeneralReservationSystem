@@ -1,0 +1,64 @@
+﻿@inherits LayoutComponentBase
+
+<MudThemeProvider />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout Class="d-flex flex-column flex-fill">
+    <MudAppBar Elevation="1">
+        <MudLink Href="/" Underline="Underline.None" Typo="Typo.h5" Class="white-text">GRS</MudLink>
+        <MudSpacer/>
+        <AuthorizeView>
+            <Authorized>
+                <MudText Class="mr-2">@context.User.Identity?.Name</MudText>
+            </Authorized>
+            <NotAuthorized>
+                <MudText Class="mr-2">Anónimo</MudText>
+            </NotAuthorized>
+        </AuthorizeView>
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" OnClick="ToggleDrawer" />
+    </MudAppBar>
+
+    <MudDrawer @bind-Open="@_drawerOpen" Anchor="Anchor.End" Elevation="1" Variant="@DrawerVariant.Temporary">
+        <NavMenu />
+    </MudDrawer>
+
+    <MudMainContent Class="d-flex flex-fill">
+        @Body
+    </MudMainContent>
+
+    <MudPaper Elevation="6" Class="footer pa-4" Square="true" Style="background: #212121; color: #fff;">
+        <MudGrid>
+            <MudItem xs="12" md="4" Class="d-flex flex-column justify-center align-center">
+                <MudText Typo="Typo.h5" Class="mb-1">GRS</MudText>
+                <MudText Typo="Typo.body2" Class="mb-1">General Reservation System</MudText>
+                <MudText Typo="Typo.caption">Tu plataforma para reservar boletos de autobús de larga distancia de forma fácil y segura.</MudText>
+            </MudItem>
+            <MudItem xs="12" md="3" Class="d-flex flex-column justify-center align-center">
+                <MudText Typo="Typo.body2" Class="mb-1">Contacto</MudText>
+                <MudLink Href="mailto:contacto@grs.com" Class="footer-link">contacto@grs.com</MudLink>
+            </MudItem>
+            <MudItem xs="12" md="5" Class="d-flex flex-column align-center justify-center">
+                <MudText Typo="Typo.body2" Class="mb-1">Síguenos</MudText>
+                <div>
+                    <MudIconButton Icon="@Icons.Custom.Brands.Facebook" Href="https://facebook.com" Target="_blank" Class="footer-social mx-1" Style="color: #fff;" />
+                    <MudIconButton Icon="@Icons.Custom.Brands.Instagram" Href="https://instagram.com" Target="_blank" Class="footer-social mx-1" Style="color: #fff;" />
+                    <MudIconButton Icon="@Icons.Material.Filled.MailOutline" Href="mailto:contacto@grs.com" Class="footer-social mx-1" Style="color: #fff;" />
+                </div>
+            </MudItem>
+        </MudGrid>
+        <MudDivider Class="my-3" />
+        <MudText Typo="Typo.caption" Align="Align.Center">© @DateTime.Now.Year GRS. Todos los derechos reservados.</MudText>
+    </MudPaper>
+</MudLayout>
+
+@code
+{
+    private bool _drawerOpen = false;
+
+    private void ToggleDrawer()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+}

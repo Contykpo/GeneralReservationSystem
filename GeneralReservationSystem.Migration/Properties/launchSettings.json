@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "GeneralReservationSystem.Migration": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}

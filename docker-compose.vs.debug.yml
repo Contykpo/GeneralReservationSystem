@@ -1,0 +1,21 @@
+#See https://aka.ms/overrideVSDockerComposeConfiguration to understand how Visual Studio uses this override file.
+
+services:
+  generalreservationsystem.api:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    volumes:
+      - ~/.microsoft/usersecrets:/root/.microsoft/usersecrets:ro
+
+  generalreservationsystem.web:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    volumes:
+      - ~/.microsoft/usersecrets:/root/.microsoft/usersecrets:ro
+
+  # VISUAL STUDIO WORKAROUND: https://stackoverflow.com/questions/77376227/docker-compose-vs-debug-command-arguments-not-passed-properly-to-the-program
+  generalreservationsystem.migrator:
+    #command: [] # this to void the command line parameters from docker-compose.yml
+    labels:
+      com.microsoft.visualstudio.debuggee.arguments: --additionalProbingPath /root/.nuget/fallbackpackages2 --additionalProbingPath /root/.nuget/fallbackpackages /app/bin/Debug/net9.0/GeneralReservationSystem.Migration.dll migrate "Host=${SQL_HOST};Port=${SQL_PORT};Database=${SQL_DB:-grsdb};Username=${DB_OWNER:-grs_admin_user};Password=${DB_OWNER_PASSWORD};SSLMode=${DB_SSL_MODE:-Require};TrustServerCertificate=${DB_TRUST_SERVER_CERTIFICATE:-true}"
+      com.microsoft.visualstudio.debuggee.program: "/usr/bin/dotnet"

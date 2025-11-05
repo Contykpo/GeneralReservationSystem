@@ -1,2 +1,1 @@
-./apply-migrations.sh text eol=lf
-./docker-compose.yml text eol=lf
+﻿
