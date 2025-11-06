@@ -87,23 +87,19 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                 $"FROM grsdb.\"{_tableName}\" r " +
                 $"JOIN grsdb.\"Trip\" t ON r.\"TripId\" = t.\"TripId\" " +
                 $"JOIN grsdb.\"Station\" dst ON t.\"DepartureStationId\" = dst.\"StationId\" " +
-                $"JOIN grsdb.\"Station\" ast ON t.\"ArrivalStationId\" = ast.\"StationId\"");
+                $"JOIN grsdb.\"Station\" ast ON t.\"ArrivalStationId\" = ast.\"StationId\" " +
+                $"WHERE r.\"UserId\" = @userId");
                 if (hasFilterOrOrder)
                 {
-                    _ = sql.Append(") subquery");
-                    _ = sql.Append($" WHERE r.\"UserId\" = @userId");
+                    _ = sql.Append($") subquery");
                     if (hasFilter)
                     {
-                        _ = sql.Append($" AND {filterClause}");
+                        _ = sql.Append($" WHERE {filterClause}");
                     }
                     if (hasOrder)
                     {
                         _ = sql.Append($" ORDER BY {orderByClause}");
                     }
-                }
-                else
-                {
-                    _ = sql.Append($" WHERE r.\"UserId\" = @userId");
                 }
                 _ = sql.Append($" LIMIT {pageSize} OFFSET {offset}");
                 cmd.CommandText = sql.ToString();
@@ -120,8 +116,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                 _ = countSql.Append($"SELECT r.\"TripId\", t.\"DepartureStationId\", dst.\"StationName\" AS \"DepartureStationName\", dst.\"City\" AS \"DepartureCity\", dst.\"Province\" AS \"DepartureProvince\", dst.\"Country\" AS \"DepartureCountry\", t.\"DepartureTime\", t.\"ArrivalStationId\", ast.\"StationName\" AS \"ArrivalStationName\", ast.\"City\" AS \"ArrivalCity\", ast.\"Province\" AS \"ArrivalProvince\", ast.\"Country\" AS \"ArrivalCountry\", t.\"ArrivalTime\", r.\"Seat\" FROM grsdb.\"{_tableName}\" r JOIN grsdb.\"Trip\" t ON r.\"TripId\" = t.\"TripId\" JOIN grsdb.\"Station\" dst ON t.\"DepartureStationId\" = dst.\"StationId\" JOIN grsdb.\"Station\" ast ON t.\"ArrivalStationId\" = ast.\"StationId\" WHERE r.\"UserId\" = @userId");
                 if (hasFilter)
                 {
-                    _ = countSql.Append($" AND {filterClause}");
-                    _ = countSql.Append(')');
+                    _ = countSql.Append($") subquery WHERE {filterClause}");
                 }
                 _ = countSql.Append(')');
                 countCmd.CommandText = countSql.ToString();
@@ -213,7 +208,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                 _ = countSql.Append($"SELECT r.\"TripId\", t.\"DepartureStationId\", dst.\"StationName\" AS \"DepartureStationName\", dst.\"City\" AS \"ArrivalCity\", dst.\"Province\" AS \"ArrivalProvince\", dst.\"Country\" AS \"ArrivalCountry\", t.\"DepartureTime\", t.\"ArrivalStationId\", ast.\"StationName\" AS \"ArrivalStationName\", ast.\"City\" AS \"ArrivalCity\", ast.\"Province\" AS \"ArrivalProvince\", ast.\"Country\" AS \"ArrivalCountry\", t.\"ArrivalTime\", u.\"UserId\", u.\"UserName\", u.\"Email\", r.\"Seat\" FROM grsdb.\"{_tableName}\" r JOIN grsdb.\"ApplicationUser\" u ON r.\"UserId\" = u.\"UserId\" JOIN grsdb.\"Trip\" t ON r.\"TripId\" = t.\"TripId\" JOIN grsdb.\"Station\" dst ON t.\"DepartureStationId\" = dst.\"StationId\" JOIN grsdb.\"Station\" ast ON t.\"ArrivalStationId\" = ast.\"StationId\"");
                 if (hasFilter)
                 {
-                    _ = countSql.Append($") WHERE {filterClause}");
+                    _ = countSql.Append($") subquery WHERE {filterClause}");
                 }
                 _ = countSql.Append(')');
                 countCmd.CommandText = countSql.ToString();
