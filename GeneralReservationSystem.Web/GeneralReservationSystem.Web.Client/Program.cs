@@ -1,13 +1,23 @@
-﻿using GeneralReservationSystem.Web.Client;
-using Microsoft.AspNetCore.Components.Web;
+﻿using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using System.Net.Http.Json;
 
-WebAssemblyHostBuilder builder = WebAssemblyHostBuilder.CreateDefault(args);
-builder.RootComponents.Add<HeadOutlet>("head::after");
+namespace GeneralReservationSystem.Web.Client
+{
+    internal sealed record class ConfigData(string ApiBaseUrl);
 
-// IMPORTANT NOTE: This CANNOT be supplied via environment variables, as Blazor WebAssembly runs in the browser. So
-// it has to be supplied via appsettings.json or overridden in code here. It is baked into the client at build time.
-string apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? builder.HostEnvironment.BaseAddress;
-builder.Services.AddClientServices(apiBaseUrl);
+    internal class Program
+    {
+        public static async Task Main(string[] args)
+        {
+            WebAssemblyHostBuilder builder = WebAssemblyHostBuilder.CreateDefault(args);
+            builder.RootComponents.Add<HeadOutlet>("head::after");
 
-await builder.Build().RunAsync();
+            using HttpClient serverHttp = new() { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) };
+            ConfigData config = await serverHttp.GetFromJsonAsync<ConfigData>("config.json") ?? new ConfigData(builder.HostEnvironment.BaseAddress);
+            _ = builder.Services.AddClientServices(config.ApiBaseUrl);
+
+            await builder.Build().RunAsync();
+        }
+    }
+}

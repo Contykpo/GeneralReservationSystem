@@ -1,0 +1,8 @@
+﻿@page "/{*Route:nonfile}"
+
+<StatusRedirect StatusCode="404" />
+
+@code {
+    [Parameter]
+    public string? Route { get; set; }
+}
