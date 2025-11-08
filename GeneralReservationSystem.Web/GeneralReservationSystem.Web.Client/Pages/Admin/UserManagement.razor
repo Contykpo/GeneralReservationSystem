@@ -1,6 +1,6 @@
 ﻿@page "/admin/users"
 
-@attribute [Authorize(Roles = "Admin")]
+@attribute [Authorize(Roles = AdminRoleName)]
 
 @using FluentValidation
 @using GeneralReservationSystem.Web.Client.Authentication
@@ -31,14 +31,20 @@
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="my-8">
     <MudCard>
+
         <MudCardHeader>
+
             <CardHeaderContent>
                 <MudText Typo="Typo.h6">Usuarios</MudText>
             </CardHeaderContent>
+
             <CardHeaderActions>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" Href="/admin/create-admin"> Agregar Administrador </MudButton>
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => _table!.ReloadServerData())" StartIcon="@Icons.Material.Filled.Refresh">Actualizar</MudButton>
             </CardHeaderActions>
+
         </MudCardHeader>
+
         <MudCardContent>
             <MudExpansionPanels Class="mb-3">
                 <MudExpansionPanel Text="Filtros avanzados" Icon="@Icons.Material.Filled.FilterList">
@@ -98,12 +104,23 @@
                     <MudTh><MudTableSortLabel SortLabel="UserId" T="UserInfo">ID</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel SortLabel="UserName" T="UserInfo">Usuario</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel SortLabel="Email" T="UserInfo">Correo</MudTableSortLabel></MudTh>
+                    <MudTh>Admin</MudTh>
                     <MudTh Style="text-align: right">Acciones</MudTh>
                 </HeaderContent>
                 <RowTemplate>
                     <MudTd DataLabel="ID">@context.UserId</MudTd>
                     <MudTd DataLabel="Usuario">@context.UserName</MudTd>
                     <MudTd DataLabel="Correo">@context.Email</MudTd>
+                    <MudTd DataLabel="Admin">
+                        @if (context.IsAdmin)
+                        {
+                            <MudText>Si</MudText>
+                        }
+                        else
+                        {
+                            <MudText>No</MudText>
+                        }
+                    </MudTd>
                     <MudTd DataLabel="Acciones" Style="text-align: right">
                         <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Filled.Edit" OnClick="@(() => OpenEditDialog(context))" />
                         <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => HandleDelete(context))" />
@@ -116,7 +133,9 @@
                     <MudText>Cargando...</MudText>
                 </LoadingContent>
                 <PagerContent>
-                    <MudTablePager PageSizeOptions="new int[] { 10, 25, 50, 100 }" />
+                    <MudTablePager 
+                        RowsPerPageString="Filas por pagina"
+                        PageSizeOptions="new int[] { 10, 25, 50, 100 }" />
                 </PagerContent>
             </MudTable>
         </MudCardContent>
