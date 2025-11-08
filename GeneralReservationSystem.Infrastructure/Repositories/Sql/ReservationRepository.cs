@@ -70,7 +70,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
             {
                 using DbCommand cmd = SqlCommandHelper.CreateCommand(conn, transaction);
 
-                string filterClause = SqlCommandHelper.BuildFiltersClause<UserReservationDetailsDto>(searchDto.Filters);
+                string filterClause = SqlCommandHelper.BuildFiltersClauses<UserReservationDetailsDto>(searchDto.FilterClauses);
                 string orderByClause = SqlCommandHelper.BuildOrderByClause<UserReservationDetailsDto>(searchDto.Orders);
                 bool hasFilter = !string.IsNullOrEmpty(filterClause);
                 bool hasOrder = !string.IsNullOrEmpty(orderByClause);
@@ -104,7 +104,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                 _ = sql.Append($" LIMIT {pageSize} OFFSET {offset}");
                 cmd.CommandText = sql.ToString();
                 SqlCommandHelper.AddParameter(cmd, "@userId", userId, typeof(int));
-                AddFilterParameters<UserReservationDetailsDto>(cmd, searchDto.Filters);
+                SqlCommandHelper.AddFilterParameters<UserReservationDetailsDto>(cmd, searchDto.FilterClauses);
 
                 using DbCommand countCmd = SqlCommandHelper.CreateCommand(conn, transaction);
                 StringBuilder countSql = new();
@@ -121,7 +121,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                 _ = countSql.Append(')');
                 countCmd.CommandText = countSql.ToString();
                 SqlCommandHelper.AddParameter(countCmd, "@userId", userId, typeof(int));
-                AddFilterParameters<UserReservationDetailsDto>(countCmd, searchDto.Filters);
+                SqlCommandHelper.AddFilterParameters<UserReservationDetailsDto>(countCmd, searchDto.FilterClauses);
 
                 static UserReservationDetailsDto mapFunc(DbDataReader reader)
                 {
@@ -144,7 +144,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                     };
                 }
 
-                PagedResult<UserReservationDetailsDto> result = await MapPagedResultAsync(cmd, countCmd, mapFunc, page, pageSize, cancellationToken);
+                PagedResult<UserReservationDetailsDto> result = await SqlCommandHelper.MapPagedResultAsync(cmd, countCmd, mapFunc, page, pageSize, cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
                 return result;
             }
@@ -163,7 +163,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
             {
                 using DbCommand cmd = SqlCommandHelper.CreateCommand(conn, transaction);
 
-                string filterClause = SqlCommandHelper.BuildFiltersClause<ReservationDetailsDto>(searchDto.Filters);
+                string filterClause = SqlCommandHelper.BuildFiltersClauses<ReservationDetailsDto>(searchDto.FilterClauses);
                 string orderByClause = SqlCommandHelper.BuildOrderByClause<ReservationDetailsDto>(searchDto.Orders);
                 bool hasFilter = !string.IsNullOrEmpty(filterClause);
                 bool hasOrder = !string.IsNullOrEmpty(orderByClause);
@@ -196,7 +196,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                 }
                 _ = sql.Append($" LIMIT {pageSize} OFFSET {offset}");
                 cmd.CommandText = sql.ToString();
-                AddFilterParameters<ReservationDetailsDto>(cmd, searchDto.Filters);
+                SqlCommandHelper.AddFilterParameters<ReservationDetailsDto>(cmd, searchDto.FilterClauses);
 
                 using DbCommand countCmd = SqlCommandHelper.CreateCommand(conn, transaction);
                 StringBuilder countSql = new();
@@ -212,7 +212,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                 }
                 _ = countSql.Append(')');
                 countCmd.CommandText = countSql.ToString();
-                AddFilterParameters<ReservationDetailsDto>(countCmd, searchDto.Filters);
+                SqlCommandHelper.AddFilterParameters<ReservationDetailsDto>(countCmd, searchDto.FilterClauses);
 
                 static ReservationDetailsDto mapFunc(DbDataReader reader)
                 {
@@ -238,7 +238,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                     };
                 }
 
-                PagedResult<ReservationDetailsDto> result = await MapPagedResultAsync(cmd, countCmd, mapFunc, page, pageSize, cancellationToken);
+                PagedResult<ReservationDetailsDto> result = await SqlCommandHelper.MapPagedResultAsync(cmd, countCmd, mapFunc, page, pageSize, cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
                 return result;
             }

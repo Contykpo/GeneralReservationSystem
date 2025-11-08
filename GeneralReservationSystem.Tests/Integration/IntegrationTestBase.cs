@@ -1,4 +1,4 @@
-﻿using Testcontainers.PostgreSql;
+using Testcontainers.PostgreSql;
 
 namespace GeneralReservationSystem.Tests.Integration;
 

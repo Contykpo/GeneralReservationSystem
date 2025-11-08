@@ -83,7 +83,7 @@
                       Elevation="0">
                 <ToolBarContent>
                     <MudTextField @bind-Value="_searchString" 
-                                  Placeholder="Buscar en todos los campos" 
+                                  Placeholder="Buscar en todos los campos - omite filtros avanzados" 
                                   Adornment="Adornment.Start" 
                                   AdornmentIcon="@Icons.Material.Filled.Search" 
                                   IconSize="Size.Medium" 
@@ -183,7 +183,7 @@
             {
                 Page = state.Page + 1,
                 PageSize = state.PageSize,
-                Filters = BuildFilters(state),
+                FilterClauses = BuildFilterClauses(state),
                 Orders = TableHelpers.BuildOrders(state)
             };
 
@@ -214,31 +214,37 @@
         return new TableData<UserInfo> { Items = [], TotalItems = 0 };
     }
 
-    private IList<Filter> BuildFilters(TableState state)
+    private IEnumerable<FilterClause> BuildFilterClauses(TableState state)
     {
-        List<Filter> filters = [];
+        var filterClauses = new List<FilterClause>();
 
-        // Global search filter
         if (!string.IsNullOrWhiteSpace(_searchString))
         {
-            filters.Add(new Filter("UserName", AppFilterOperator.Contains, _searchString));
-            filters.Add(new Filter("Email", AppFilterOperator.Contains, _searchString));
+            var searchFilters = new List<Filter>
+            {
+                new Filter("UserName", AppFilterOperator.Contains, _searchString),
+                new Filter("Email", AppFilterOperator.Contains, _searchString)
+            };
+            filterClauses.Add(new FilterClause(searchFilters));
         }
-        // Advanced filters
         else
         {
             if (!string.IsNullOrWhiteSpace(_filterUserName))
             {
-                filters.Add(new Filter("UserName", AppFilterOperator.Contains, _filterUserName));
+                filterClauses.Add(new FilterClause([
+                    new Filter("UserName", AppFilterOperator.Contains, _filterUserName)
+                ]));
             }
 
             if (!string.IsNullOrWhiteSpace(_filterEmail))
             {
-                filters.Add(new Filter("Email", AppFilterOperator.Contains, _filterEmail));
+                filterClauses.Add(new FilterClause([
+                    new Filter("Email", AppFilterOperator.Contains, _filterEmail)
+                ]));
             }
         }
 
-        return filters;
+        return filterClauses;
     }
 
     private void ClearFilters()

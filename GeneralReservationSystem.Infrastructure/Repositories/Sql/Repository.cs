@@ -1,5 +1,4 @@
-﻿using GeneralReservationSystem.Application.Common;
-using GeneralReservationSystem.Application.Helpers;
+﻿using GeneralReservationSystem.Application.Helpers;
 using GeneralReservationSystem.Application.Repositories.Interfaces;
 using GeneralReservationSystem.Infrastructure.Helpers;
 using System.Data;
@@ -39,7 +38,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
             }
         }
 
-        protected async Task<int> ExecuteWithOutputAsync(DbCommand cmd, T entity, CancellationToken cancellationToken = default)
+        protected static async Task<int> ExecuteWithOutputAsync(DbCommand cmd, T entity, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -56,7 +55,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
             }
         }
 
-        protected async Task<int> ExecuteBulkWithOutputAsync(DbCommand cmd, IList<T> entities, CancellationToken cancellationToken = default)
+        protected static async Task<int> ExecuteBulkWithOutputAsync(DbCommand cmd, IList<T> entities, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -73,127 +72,6 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
             {
                 throw SqlExceptionHelper.ToRepositoryException(ex);
             }
-        }
-
-        protected static string BuildPagedSql(IList<Filter> filters, IList<SortOption> orders, int page, int pageSize)
-        {
-            string whereClause = filters != null && filters.Count > 0
-                ? SqlCommandHelper.BuildFiltersClause<T>(filters)
-                : string.Empty;
-            string orderByClause = orders != null && orders.Count > 0
-                ? SqlCommandHelper.BuildOrderByClause<T>(orders)
-                : string.Empty;
-            int offset = (page - 1) * pageSize;
-            StringBuilder sql = new();
-            _ = sql.Append($"SELECT * FROM grsdb.\"{_tableName}\"");
-            if (!string.IsNullOrEmpty(whereClause))
-            {
-                _ = sql.Append($" WHERE {whereClause}");
-            }
-
-            if (!string.IsNullOrEmpty(orderByClause))
-            {
-                _ = sql.Append($" ORDER BY {orderByClause}");
-            }
-
-            _ = sql.Append($" LIMIT {pageSize} OFFSET {offset}");
-            return sql.ToString();
-        }
-
-        protected static string BuildCountSql(IList<Filter> filters)
-        {
-            string whereClause = filters != null && filters.Count > 0
-                ? SqlCommandHelper.BuildFiltersClause<T>(filters)
-                : string.Empty;
-            StringBuilder sql = new();
-            _ = sql.Append($"SELECT COUNT(*) FROM grsdb.\"{_tableName}\"");
-            if (!string.IsNullOrEmpty(whereClause))
-            {
-                _ = sql.Append($" WHERE {whereClause}");
-            }
-
-            return sql.ToString();
-        }
-
-        protected static object? ConvertToPropertyType(object? value, Type propType)
-        {
-            if (value == null)
-            {
-                return null;
-            }
-
-            Type targetType = Nullable.GetUnderlyingType(propType) ?? propType;
-
-            return targetType.IsEnum
-                ? value is string str1 ? Enum.Parse(targetType, str1) : Enum.ToObject(targetType, value)
-                : targetType == typeof(Guid)
-                ? value is string str2 ? Guid.Parse(str2) : value
-                : targetType == typeof(DateTime)
-                ? value is string str3 ? DateTime.Parse(str3) : Convert.ChangeType(value, targetType)
-                : Convert.ChangeType(value, targetType);
-        }
-
-        protected static void AddFilterParameters<TResult>(DbCommand cmd, IList<Filter> filters, string paramPrefix = "p")
-        {
-            if (filters == null || filters.Count == 0)
-            {
-                return;
-            }
-
-            PropertyInfo[] resultProperties = typeof(TResult).GetProperties();
-
-            int paramIndex = 0;
-            foreach (Filter filter in filters)
-            {
-                PropertyInfo? prop = resultProperties.FirstOrDefault(p => p.Name == filter.PropertyOrField);
-                if (prop == null)
-                {
-                    continue;
-                }
-
-                string paramName = $"@{paramPrefix}{paramIndex}";
-                Type propType = prop.PropertyType;
-                if (filter.Operator == FilterOperator.Between && filter.Value is object[] arr && arr.Length == 2)
-                {
-                    object? startValue = ConvertToPropertyType(arr[0], propType);
-                    object? endValue = ConvertToPropertyType(arr[1], propType);
-                    SqlCommandHelper.AddParameter(cmd, paramName + "_start", startValue, propType);
-                    SqlCommandHelper.AddParameter(cmd, paramName + "_end", endValue, propType);
-                }
-                else if (filter.Operator is not FilterOperator.IsNullOrEmpty and not FilterOperator.IsNotNullOrEmpty)
-                {
-                    object? value = ConvertToPropertyType(filter.Value, propType);
-                    SqlCommandHelper.AddParameter(cmd, paramName, value, propType);
-                }
-                paramIndex++;
-            }
-        }
-
-        protected async Task<PagedResult<TResult>> MapPagedResultAsync<TResult>(
-            DbCommand cmd,
-            DbCommand countCmd,
-            Func<DbDataReader, TResult> mapFunc,
-            int page,
-            int pageSize,
-            CancellationToken cancellationToken)
-        {
-            List<TResult> items = [];
-            using (DbDataReader reader = await SqlCommandHelper.ExecuteReaderAsync(cmd, cancellationToken))
-            {
-                while (await reader.ReadAsync(cancellationToken))
-                {
-                    items.Add(mapFunc(reader));
-                }
-            }
-
-            long totalCount = (long)(await SqlCommandHelper.ExecuteScalarAsync(countCmd, cancellationToken))!;
-            return new PagedResult<TResult>
-            {
-                Items = items,
-                TotalCount = (int)totalCount,
-                Page = page,
-                PageSize = pageSize
-            };
         }
 
         #endregion

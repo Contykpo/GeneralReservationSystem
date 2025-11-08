@@ -92,7 +92,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
             {
                 using DbCommand cmd = SqlCommandHelper.CreateCommand(conn, transaction);
 
-                string filterClause = SqlCommandHelper.BuildFiltersClause<TripWithDetailsDto>(searchDto.Filters);
+                string filterClause = SqlCommandHelper.BuildFiltersClauses<TripWithDetailsDto>(searchDto.FilterClauses);
                 string orderByClause = SqlCommandHelper.BuildOrderByClause<TripWithDetailsDto>(searchDto.Orders);
                 bool hasFilter = !string.IsNullOrEmpty(filterClause);
                 bool hasOrder = !string.IsNullOrEmpty(orderByClause);
@@ -126,7 +126,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                 }
                 _ = sql.Append($" LIMIT {pageSize} OFFSET {offset}");
                 cmd.CommandText = sql.ToString();
-                AddFilterParameters<TripWithDetailsDto>(cmd, searchDto.Filters);
+                SqlCommandHelper.AddFilterParameters<TripWithDetailsDto>(cmd, searchDto.FilterClauses);
 
                 using DbCommand countCmd = SqlCommandHelper.CreateCommand(conn, transaction);
                 StringBuilder countSql = new();
@@ -142,7 +142,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                 }
                 _ = countSql.Append(')');
                 countCmd.CommandText = countSql.ToString();
-                AddFilterParameters<TripWithDetailsDto>(countCmd, searchDto.Filters);
+                SqlCommandHelper.AddFilterParameters<TripWithDetailsDto>(countCmd, searchDto.FilterClauses);
 
                 static TripWithDetailsDto mapFunc(DbDataReader reader)
                 {
@@ -166,7 +166,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                     };
                 }
 
-                PagedResult<TripWithDetailsDto> result = await MapPagedResultAsync(cmd, countCmd, mapFunc, page, pageSize, cancellationToken);
+                PagedResult<TripWithDetailsDto> result = await SqlCommandHelper.MapPagedResultAsync(cmd, countCmd, mapFunc, page, pageSize, cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
                 return result;
             }

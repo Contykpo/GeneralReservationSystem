@@ -41,7 +41,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql.Authenticatio
             {
                 using DbCommand cmd = SqlCommandHelper.CreateCommand(conn, transaction);
 
-                string filterClause = SqlCommandHelper.BuildFiltersClause<UserInfo>(searchDto.Filters);
+                string filterClause = SqlCommandHelper.BuildFiltersClauses<UserInfo>(searchDto.FilterClauses);
                 string orderByClause = SqlCommandHelper.BuildOrderByClause<UserInfo>(searchDto.Orders);
                 bool hasFilter = !string.IsNullOrEmpty(filterClause);
                 bool hasOrder = !string.IsNullOrEmpty(orderByClause);
@@ -69,7 +69,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql.Authenticatio
                 }
                 _ = sql.Append($" LIMIT {pageSize} OFFSET {offset}");
                 cmd.CommandText = sql.ToString();
-                AddFilterParameters<UserInfo>(cmd, searchDto.Filters);
+                SqlCommandHelper.AddFilterParameters<UserInfo>(cmd, searchDto.FilterClauses);
 
                 using DbCommand countCmd = SqlCommandHelper.CreateCommand(conn, transaction);
                 StringBuilder countSql = new();
@@ -85,7 +85,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql.Authenticatio
                 }
                 _ = countSql.Append(')');
                 countCmd.CommandText = countSql.ToString();
-                AddFilterParameters<UserInfo>(countCmd, searchDto.Filters);
+                SqlCommandHelper.AddFilterParameters<UserInfo>(countCmd, searchDto.FilterClauses);
 
                 static UserInfo mapFunc(DbDataReader reader)
                 {
@@ -98,7 +98,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql.Authenticatio
                     };
                 }
 
-                PagedResult<UserInfo> result = await MapPagedResultAsync(cmd, countCmd, mapFunc, page, pageSize, cancellationToken);
+                PagedResult<UserInfo> result = await SqlCommandHelper.MapPagedResultAsync(cmd, countCmd, mapFunc, page, pageSize, cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
                 return result;
             }
