@@ -1,6 +1,6 @@
 ﻿@page "/admin/users"
 
-@attribute [Authorize(Roles = "Admin")]
+@attribute [Authorize(Roles = AdminRoleName)]
 
 @using FluentValidation
 @using GeneralReservationSystem.Web.Client.Authentication
@@ -133,7 +133,9 @@
                     <MudText>Cargando...</MudText>
                 </LoadingContent>
                 <PagerContent>
-                    <MudTablePager PageSizeOptions="new int[] { 10, 25, 50, 100 }" />
+                    <MudTablePager 
+                        RowsPerPageString="Filas por pagina"
+                        PageSizeOptions="new int[] { 10, 25, 50, 100 }" />
                 </PagerContent>
             </MudTable>
         </MudCardContent>

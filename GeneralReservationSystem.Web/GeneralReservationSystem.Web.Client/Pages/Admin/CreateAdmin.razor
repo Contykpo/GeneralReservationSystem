@@ -1,7 +1,14 @@
 ﻿@page "/admin/create-admin"
-@attribute [Authorize(Roles = "Admin")]
+@attribute [Authorize(Roles = AdminRoleName)]
 
 @using Microsoft.AspNetCore.Authorization
+
+@using GeneralReservationSystem.Application.Validators.Authentication
+@using GeneralReservationSystem.Application.Exceptions.Services
+
+<PageTitle>
+    Creación de Administrador
+</PageTitle>
 
 <MudContainer Class="my-8">
 
@@ -10,30 +17,37 @@
 
         @*Titulo*@
         <MudCardHeader>
-            <MudText Typo="Typo.h5">Crear nuevo administrador</MudText>
+            <MudText Typo="Typo.h5">Registrar nuevo administrador</MudText>
         </MudCardHeader>
 
         @*Form de registro*@
         <MudCardContent>
-            <MudForm @ref="_createAdminForm" Model="_newAdmin">
+            <MudForm 
+                @ref="_createAdminForm" 
+                Model="_newAdmin"
+                Validation="@(_registerUserDtoValidator.ValidateValue)">
 
                 <MudStack Spacing="4">
 
                     <MudTextField @bind-Value="_newAdmin.UserName"
+                                  For="@(() => _newAdmin.UserName)"
                                   Placeholder="Nombre">
                     </MudTextField>
 
                     <MudTextField @bind-Value="_newAdmin.Email"
+                                  For="@(() => _newAdmin.Email)"
                                   Placeholder="Email"
                                   InputType="InputType.Email">
                     </MudTextField>
 
                     <MudTextField @bind-Value="_newAdmin.Password"
+                                  For="@(() => _newAdmin.Password)"
                                   Placeholder="Contraseña"
                                   InputType="InputType.Password">
                     </MudTextField>
 
                     <MudTextField @bind-Value="_newAdmin.ConfirmPassword"
+                                  For="@(() => _newAdmin.ConfirmPassword)"
                                   Placeholder="Confirmar Contraseña"
                                   InputType="InputType.Password">
                     </MudTextField>
@@ -63,11 +77,34 @@
 
     private RegisterUserDto _newAdmin = new();
 
+    private RegisterUserDtoValidator _registerUserDtoValidator = new();
+
     [Inject] private IClientAuthenticationService _authenticationService { get; set; }
+    [Inject] private ISnackbar _snackbar { get; set; }
+    [Inject] private NavigationManager _navManager { get; set; }
 
     private async Task CreateAdminAsync()
     {
-        //await _authenticationService.RegisterAdminAsync(_newAdmin);
-    }
+        await _createAdminForm.Validate();
 
+        if(!_createAdminForm.IsValid)
+            return;
+
+        try
+        {
+            await _authenticationService.RegisterAdminAsync(_newAdmin);
+
+            _snackbar.Add("Administrador registrado exitosamente.", Severity.Success);
+
+            _navManager.NavigateTo("/admin/users");
+        }
+        catch(ServiceBusinessException ex)
+        {
+            _snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch(Exception ex)
+        {
+            _snackbar.Add("Ocurrio un error al procesar la solicitud.", Severity.Error);
+        }
+    }
 }
