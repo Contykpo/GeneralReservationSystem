@@ -18,6 +18,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
     public static class JwtHelper
     {
         public const string CookieName = "jwt_token";
+        public const string CookiePath = "/";
 
         public static SymmetricSecurityKey GetIssuerSigningKeyFromString(string secretKey)
         {
@@ -59,6 +60,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
                 Secure = true,
 
                 SameSite = SameSiteMode.None,
+                Path = CookiePath,
 
                 Expires = DateTimeOffset.UtcNow.AddDays(settings.ExpirationDays)
             };
@@ -76,7 +78,15 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
 
         public static void ClearJwtCookie(HttpContext context)
         {
-            context.Response.Cookies.Delete(CookieName);
+            context.Response.Cookies.Delete(CookieName, new()
+            {
+				HttpOnly = true,
+				Secure = true,
+
+				SameSite = SameSiteMode.None,
+
+				Path = CookiePath,
+			});
         }
     }
 }
