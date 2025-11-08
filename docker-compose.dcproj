@@ -9,10 +9,12 @@
     <DockerServiceUrl>{Scheme}://localhost:{ServicePort}</DockerServiceUrl>
     <DockerServiceName>generalreservationsystem.web</DockerServiceName>
     <DependencyAwareStart>true</DependencyAwareStart>
-	<AdditionalComposeFiles>docker-compose.override.yml</AdditionalComposeFiles>
+    <AdditionalComposeFiles>docker-compose.override.yml</AdditionalComposeFiles>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'" />
   <ItemGroup>
+    <None Include=".env" />
     <None Include="docker-compose.yml" />
     <None Include="docker-compose.override.yml">
       <DependentUpon>docker-compose.yml</DependentUpon>
