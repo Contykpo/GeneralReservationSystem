@@ -5,7 +5,7 @@ using MimeKit.Text;
 using System;
 using System.Threading.Tasks;
 
-namespace GeneralReservationSystem.Web.Client.Helpers
+namespace GeneralReservationSystem.Application.Helpers
 {
     /// <summary>
     /// Helper estatico para enviar correos electronicos utilizando MailKit.
@@ -18,14 +18,14 @@ namespace GeneralReservationSystem.Web.Client.Helpers
         // TO-DO: Deberiamos usar una variable de entorno o un gestor de secretos para la clave real.
 
         // Podriamos usar Postmark SMTP u otro servicio de emails gratuito.
-        private static readonly string SmtpServer = "smtp.postmarkapp.com";
+        private static readonly string SmtpServer = "smtp.gmail.com";
         private static readonly int SmtpPort = 587;
         // El nombre de usuario real para Postmark.
-        private static readonly string SmtpUsername = "apikey";
+        private static readonly string SmtpUsername = "generalreservationsystem8@gmail.com";
         // Reemplazar "POSTMARK_API_KEY" con la clave real en produccion.
-        private static readonly string SmtpPassword = "POSTMARK_API_KEY";
+        private static readonly string SmtpPassword = "GeneralReservationSystemPassword69";
 
-        private static readonly string SenderEmail = "realreservationsystem@realgrs.com";
+        private static readonly string SenderEmail = "generalreservationsystem8@gmail.com";
         private static readonly string SenderName = "General Reservation System";
 
         #endregion

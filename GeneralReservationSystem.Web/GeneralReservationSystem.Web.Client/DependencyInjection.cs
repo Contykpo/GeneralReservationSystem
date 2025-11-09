@@ -38,6 +38,7 @@ namespace GeneralReservationSystem.Web.Client
             _ = services.AddScoped<IClientStationService, ClientStationService>();
             _ = services.AddScoped<ITripService, TripService>();
             _ = services.AddScoped<IClientReservationService, ClientReservationService>();
+            _ = services.AddScoped<IEmailService, EmailService>();
 
             // Register fluent validators
             _ = services.AddFluentValidators();

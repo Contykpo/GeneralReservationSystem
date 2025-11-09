@@ -17,6 +17,7 @@
 @inject IStationService StationService
 @inject IClientReservationService ClientReservationService
 @inject IClientAuthenticationService ClientAuthenticationService
+@inject IEmailService EmailService
 @inject ISnackbar Snackbar
 @inject NavigationManager Navigation
 
@@ -147,14 +148,18 @@ else
 
             var currentUser = await ClientAuthenticationService.GetCurrentUserAsync();
 
-            await EmailManager.SendReservationConfirmationAsync(
-                recipientEmail: currentUser.Email,
-                userName: currentUser.UserName,
-                departureStation: _tripDetails!.DepartureStationName,
-                arrivalStation: _tripDetails!.ArrivalStationName,
-                departureTime: _tripDetails!.DepartureTime.ToString(),
-                seatNumber: keyDto.Seat
-            );
+            var emailDto = new ReservationConfirmationEmailDto
+            {
+                Email             = currentUser.Email,
+                UserName          = currentUser.UserName,
+                DepartureStation  = _tripDetails!.DepartureStationName,
+                ArrivalStation    = _tripDetails!.ArrivalStationName,
+                DepartureTime     = _tripDetails!.DepartureTime.ToString(),
+                SeatNumber        = keyDto.Seat
+			};
+
+			// TODO: Habilitar el envío de correos cuando EmailManager esté configurado correctamente con credenciales reales de un servidor SMTP.
+			// await EmailService.SendReservationConfirmationAsync(emailDto);
 
             Navigation.NavigateTo("/trips");
         }
@@ -171,9 +176,9 @@ else
                 Snackbar.Add(err.Error, Severity.Error);
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            Snackbar.Add("Error inesperado al crear la reserva.", Severity.Error);
+            Snackbar.Add($"Error inesperado al crear la reserva. {ex.Message}", Severity.Error);
         }
     }
 }
