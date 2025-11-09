@@ -11,13 +11,14 @@
 @using GeneralReservationSystem.Application.Validators
 @using GeneralReservationSystem.Web.Client.Helpers
 @using GeneralReservationSystem.Web.Client.Exceptions
+@using GeneralReservationSystem.Web.Client.Services.Interfaces
 @using Microsoft.AspNetCore.Authorization
 
 @using AppFilterOperator = GeneralReservationSystem.Application.Common.FilterOperator
 @using Severity = MudBlazor.Severity
 
 @inject ITripService TripService
-@inject IReservationService ReservationService
+@inject IClientReservationService ReservationService
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 @inject IStationService StationService
