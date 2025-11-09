@@ -77,3 +77,51 @@ jobs:
             docker push ${{ secrets.DOCKER_HUB_USER }}/grs-api:latest
             docker push ${{ secrets.DOCKER_HUB_USER }}/grs-web:latest
           fi
+
+  # Ejecutar migraciones en la base de datos de Supabase solo en main
+  run-migrations:
+    runs-on: ubuntu-latest
+    needs: push-images
+    if: ${{ github.ref == 'refs/heads/main' }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0.x'
+
+      # Restaurar dependencias
+      - name: Restore
+        run: dotnet restore GeneralReservationSystem.sln
+
+      # Compilar el proyecto de migraciones
+      - name: Build Migration Tool
+        run: dotnet build GeneralReservationSystem.Migration/GeneralReservationSystem.Migration.csproj --no-restore -c Release
+
+      # Ejecutar migraciones en Supabase
+      - name: Run Migrations on Supabase
+        env:
+          SUPABASE_CONNECTION_STRING: ${{ secrets.SUPABASE_CONNECTION_STRING }}
+        run: |
+          dotnet run --project GeneralReservationSystem.Migration/GeneralReservationSystem.Migration.csproj --no-build -- migrate "$SUPABASE_CONNECTION_STRING"
+
+  # Despliegue manual a Render solo en main
+  manual-render-deploy:
+    runs-on: ubuntu-latest
+    needs: run-migrations
+    if: ${{ github.ref == 'refs/heads/main' }}
+    steps:
+      # Desplegar API
+      - name: Deploy API server on Render
+        env:
+          deploy_url_api: ${{ secrets.RENDER_DEPLOY_HOOK_URL_API }}
+        run: |
+          curl "$deploy_url_api"
+
+      # Desplegar Web
+      - name: Deploy Web server on Render
+        env:
+          deploy_url_web: ${{ secrets.RENDER_DEPLOY_HOOK_URL_WEB }}
+        run: |
+          curl "$deploy_url_web"
