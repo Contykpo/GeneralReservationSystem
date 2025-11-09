@@ -74,6 +74,12 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
             }
         }
 
+        protected static string BuildDefaultOrderByClause()
+        {
+            string firstColumnName = EntityHelper.GetColumnName(_properties[0]);
+            return $"ORDER BY \"{firstColumnName}\" ASC";
+        }
+
         #endregion
 
         // TODO/FIX: "using" cierra la conexión y reader, pero puede ocurrir que tales deban ser administrados externamente al
@@ -84,7 +90,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
             using DbConnection conn = await SqlCommandHelper.CreateAndOpenConnectionAsync(connectionFactory, cancellationToken);
             using DbCommand cmd = SqlCommandHelper.CreateCommand(conn);
 
-            cmd.CommandText = $"SELECT * FROM grsdb.\"{_tableName}\"";
+            cmd.CommandText = $"SELECT * FROM grsdb.\"{_tableName}\" {BuildDefaultOrderByClause()}";
             using DbDataReader reader = await SqlCommandHelper.ExecuteReaderAsync(cmd, cancellationToken);
             List<T> result = [];
             while (await reader.ReadAsync(cancellationToken))

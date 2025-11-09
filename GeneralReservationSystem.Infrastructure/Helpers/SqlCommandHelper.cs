@@ -380,6 +380,23 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             return clauses.Count > 0 ? string.Join(", ", clauses) : "";
         }
 
+        public static string BuildOrderByClauseWithDefault<T>(IEnumerable<SortOption> sortOptions)
+        {
+            string orderByClause = BuildOrderByClause<T>(sortOptions);
+            
+            if (!string.IsNullOrEmpty(orderByClause))
+            {
+                return orderByClause;
+            }
+
+            // No explicit order provided, use first property as default
+            Type type = typeof(T);
+            PropertyInfo[] properties = ReflectionHelpers.GetProperties(type);
+
+            string firstColumnName = EntityHelper.GetColumnName(properties[0]);
+            return $"\"{firstColumnName}\" ASC";
+        }
+
         public static object? ConvertToPropertyType(object? value, Type propType)
         {
             if (value == null)

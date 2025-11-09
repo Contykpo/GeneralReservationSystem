@@ -39,11 +39,10 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                 int offset = (page - 1) * pageSize;
                 StringBuilder sql = new();
                 _ = sql.Append($"SELECT * {baseQuery}");
-                if (searchDto.Orders.Any())
-                {
-                    string orderByClause = SqlCommandHelper.BuildOrderByClause<Station>(searchDto.Orders);
-                    _ = sql.Append($" ORDER BY {orderByClause}");
-                }
+
+                string orderByClause = SqlCommandHelper.BuildOrderByClauseWithDefault<Station>(searchDto.Orders);
+                _ = sql.Append($" ORDER BY {orderByClause}");
+
                 _ = sql.Append($" LIMIT {pageSize} OFFSET {offset}");
                 cmd.CommandText = sql.ToString();
                 SqlCommandHelper.AddFilterParameters<Station>(cmd, searchDto.FilterClauses);
