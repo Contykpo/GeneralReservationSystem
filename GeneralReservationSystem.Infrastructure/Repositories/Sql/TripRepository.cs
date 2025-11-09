@@ -92,19 +92,15 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
             {
                 using DbCommand cmd = SqlCommandHelper.CreateCommand(conn, transaction);
 
-                string filterClause = SqlCommandHelper.BuildFiltersClause<TripWithDetailsDto>(searchDto.Filters);
-                string orderByClause = SqlCommandHelper.BuildOrderByClause<TripWithDetailsDto>(searchDto.Orders);
+                string filterClause = SqlCommandHelper.BuildFiltersClauses<TripWithDetailsDto>(searchDto.FilterClauses);
+                string orderByClause = SqlCommandHelper.BuildOrderByClauseWithDefault<TripWithDetailsDto>(searchDto.Orders);
                 bool hasFilter = !string.IsNullOrEmpty(filterClause);
-                bool hasOrder = !string.IsNullOrEmpty(orderByClause);
-                bool hasFilterOrOrder = hasFilter || hasOrder;
                 int page = searchDto.Page > 0 ? searchDto.Page : 1;
                 int pageSize = searchDto.PageSize > 0 ? searchDto.PageSize : 10;
                 int offset = (page - 1) * pageSize;
+                
                 StringBuilder sql = new();
-                if (hasFilterOrOrder)
-                {
-                    _ = sql.Append("SELECT * FROM (");
-                }
+                _ = sql.Append("SELECT * FROM (");
                 _ = sql.Append($"SELECT t.\"TripId\", t.\"DepartureStationId\", dst.\"StationName\" AS \"DepartureStationName\", dst.\"City\" AS \"DepartureCity\", dst.\"Province\" AS \"DepartureProvince\", dst.\"Country\" AS \"DepartureCountry\", t.\"DepartureTime\", t.\"ArrivalStationId\", ast.\"StationName\" AS \"ArrivalStationName\", ast.\"City\" AS \"ArrivalCity\", ast.\"Province\" AS \"ArrivalProvince\", ast.\"Country\" AS \"ArrivalCountry\", t.\"ArrivalTime\", t.\"AvailableSeats\", COALESCE(r.reserved, 0) AS \"ReservedSeats\" " +
                 $"FROM grsdb.\"{_tableName}\" t " +
                 $"JOIN grsdb.\"Station\" dst ON t.\"DepartureStationId\" = dst.\"StationId\" " +
@@ -112,21 +108,18 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                 $"LEFT JOIN (" +
                 $"SELECT \"TripId\", COUNT(*) AS reserved FROM grsdb.\"Reservation\" GROUP BY \"TripId\"" +
                 ") r ON t.\"TripId\" = r.\"TripId\"");
-                if (hasFilterOrOrder)
+                _ = sql.Append(") subquery");
+                
+                if (hasFilter)
                 {
-                    _ = sql.Append($") subquery");
-                    if (hasFilter)
-                    {
-                        _ = sql.Append($" WHERE {filterClause}");
-                    }
-                    if (hasOrder)
-                    {
-                        _ = sql.Append($" ORDER BY {orderByClause}");
-                    }
+                    _ = sql.Append($" WHERE {filterClause}");
                 }
+                
+                _ = sql.Append($" ORDER BY {orderByClause}");
                 _ = sql.Append($" LIMIT {pageSize} OFFSET {offset}");
+                
                 cmd.CommandText = sql.ToString();
-                AddFilterParameters<TripWithDetailsDto>(cmd, searchDto.Filters);
+                SqlCommandHelper.AddFilterParameters<TripWithDetailsDto>(cmd, searchDto.FilterClauses);
 
                 using DbCommand countCmd = SqlCommandHelper.CreateCommand(conn, transaction);
                 StringBuilder countSql = new();
@@ -138,11 +131,11 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                 _ = countSql.Append($"SELECT t.\"TripId\", t.\"DepartureStationId\", dst.\"StationName\" AS \"DepartureStationName\", dst.\"City\" AS \"DepartureCity\", dst.\"Province\" AS \"DepartureProvince\", dst.\"Country\" AS \"DepartureCountry\", t.\"DepartureTime\", t.\"ArrivalStationId\", ast.\"StationName\" AS \"ArrivalStationName\", ast.\"City\" AS \"ArrivalCity\", ast.\"Province\" AS \"ArrivalProvince\", ast.\"Country\" AS \"ArrivalCountry\", t.\"ArrivalTime\", t.\"AvailableSeats\", COALESCE(r.reserved, 0) AS \"ReservedSeats\" FROM grsdb.\"{_tableName}\" t JOIN grsdb.\"Station\" dst ON t.\"DepartureStationId\" = dst.\"StationId\" JOIN grsdb.\"Station\" ast ON t.\"ArrivalStationId\" = ast.\"StationId\" LEFT JOIN (SELECT \"TripId\", COUNT(*) AS reserved FROM grsdb.\"Reservation\" GROUP BY \"TripId\") r ON t.\"TripId\" = r.\"TripId\"");
                 if (hasFilter)
                 {
-                    _ = countSql.Append($") WHERE {filterClause}");
+                    _ = countSql.Append($") subquery WHERE {filterClause}");
                 }
                 _ = countSql.Append(')');
                 countCmd.CommandText = countSql.ToString();
-                AddFilterParameters<TripWithDetailsDto>(countCmd, searchDto.Filters);
+                SqlCommandHelper.AddFilterParameters<TripWithDetailsDto>(countCmd, searchDto.FilterClauses);
 
                 static TripWithDetailsDto mapFunc(DbDataReader reader)
                 {
@@ -166,7 +159,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                     };
                 }
 
-                PagedResult<TripWithDetailsDto> result = await MapPagedResultAsync(cmd, countCmd, mapFunc, page, pageSize, cancellationToken);
+                PagedResult<TripWithDetailsDto> result = await SqlCommandHelper.MapPagedResultAsync(cmd, countCmd, mapFunc, page, pageSize, cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
                 return result;
             }

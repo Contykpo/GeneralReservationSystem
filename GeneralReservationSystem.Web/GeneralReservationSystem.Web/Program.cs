@@ -13,8 +13,6 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
 
-// IMPORTANT NOTE: This CANNOT be supplied via environment variables, as Blazor WebAssembly runs in the browser. So
-// it has to be supplied via appsettings.json or overridden in code here. It is baked into the client at build time.
 string apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "localhost";
 builder.Services.AddClientServices(apiBaseUrl);
 
@@ -96,8 +94,10 @@ else
 
 app.UseHttpsRedirection();
 
-
 app.UseAntiforgery();
+
+// Map the config endpoint to provide the API base URL to the Blazor WebAssembly client. Seems hacky, but it works.
+app.MapGet("/config.json", () => new { ApiBaseUrl = apiBaseUrl });
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()

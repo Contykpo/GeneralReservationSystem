@@ -2,6 +2,7 @@
 
 @attribute [Authorize]
 
+@using GeneralReservationSystem.Web.Client.Helpers
 @using GeneralReservationSystem.Web.Client.Services.Interfaces
 @using Microsoft.AspNetCore.Authorization
 @using GeneralReservationSystem.Application.Common
@@ -11,6 +12,7 @@
 @using GeneralReservationSystem.Application.Services.Interfaces
 
 @using AppFilterOperator = GeneralReservationSystem.Application.Common.FilterOperator
+@using Severity = MudBlazor.Severity
 
 @inject IClientReservationService ClientReservationService
 @inject ISnackbar Snackbar
@@ -25,7 +27,8 @@
                 <MudText Typo="Typo.h6">Mis Reservas</MudText>
             </CardHeaderContent>
             <CardHeaderActions>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => dataGrid.ReloadServerData())" StartIcon="@Icons.Material.Filled.Refresh">Actualizar</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => _table!.ReloadServerData())"
+                    StartIcon="@Icons.Material.Filled.Refresh">Actualizar</MudButton>
             </CardHeaderActions>
         </MudCardHeader>
         <MudCardContent>
@@ -33,12 +36,9 @@
                 <MudExpansionPanel Text="Filtros avanzados" Icon="@Icons.Material.Filled.FilterList">
                     <MudGrid>
                         <MudItem xs="12" sm="6" md="3">
-                            <MudSelect T="int?" Label="Estación Salida"
-                                      Value="_filterDepartureStationId"
-                                      ValueChanged="@(async (int? value) => { _filterDepartureStationId = value; await OnFilterChanged(); })"
-                                      Variant="Variant.Outlined"
-                                      Clearable="true"
-                                      Immediate="true">
+                            <MudSelect T="int?" Label="Estación Salida" Value="_filterDepartureStationId"
+                                       ValueChanged="@(async (int? value) => { _filterDepartureStationId = value; await _table!.ReloadServerData(); })"
+                                Variant="Variant.Outlined" Clearable="true" Immediate="true">
                                 <MudSelectItem T="int?" Value="null">Todas</MudSelectItem>
                                 @foreach (var station in _stations)
                                 {
@@ -49,12 +49,9 @@
                             </MudSelect>
                         </MudItem>
                         <MudItem xs="12" sm="6" md="3">
-                            <MudSelect T="int?" Label="Estación Llegada"
-                                      Value="_filterArrivalStationId"
-                                      ValueChanged="@(async (int? value) => { _filterArrivalStationId = value; await OnFilterChanged(); })"
-                                      Variant="Variant.Outlined"
-                                      Clearable="true"
-                                      Immediate="true">
+                            <MudSelect T="int?" Label="Estación Llegada" Value="_filterArrivalStationId"
+                                       ValueChanged="@(async (int? value) => { _filterArrivalStationId = value; await _table!.ReloadServerData(); })"
+                                Variant="Variant.Outlined" Clearable="true" Immediate="true">
                                 <MudSelectItem T="int?" Value="null">Todas</MudSelectItem>
                                 @foreach (var station in _stations)
                                 {
@@ -65,71 +62,84 @@
                             </MudSelect>
                         </MudItem>
                         <MudItem xs="12" sm="6" md="3">
-                            <MudDateRangePicker DateRange="_filterDepartureDateRange" DateRangeChanged="@(async (DateRange? range) => { _filterDepartureDateRange = range; await OnFilterChanged(); })" Label="Rango Fecha Salida" Variant="Variant.Outlined" Clearable="true" />
+                            <MudDateRangePicker DateRange="_filterDepartureDateRange"
+                                                DateRangeChanged="@(async (DateRange? range) => { _filterDepartureDateRange = range; await _table!.ReloadServerData(); })"
+                                Label="Rango Fecha Salida" Variant="Variant.Outlined" Clearable="true" />
                         </MudItem>
                         <MudItem xs="12" sm="6" md="3">
-                            <MudDateRangePicker DateRange="_filterArrivalDateRange" DateRangeChanged="@(async (DateRange? range) => { _filterArrivalDateRange = range; await OnFilterChanged(); })" Label="Rango Fecha Llegada" Variant="Variant.Outlined" Clearable="true" />
+                            <MudDateRangePicker DateRange="_filterArrivalDateRange"
+                                                DateRangeChanged="@(async (DateRange? range) => { _filterArrivalDateRange = range; await _table!.ReloadServerData(); })"
+                                Label="Rango Fecha Llegada" Variant="Variant.Outlined" Clearable="true" />
                         </MudItem>
                         <MudItem xs="12">
-                            <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ClearFilters" StartIcon="@Icons.Material.Filled.Clear">Limpiar Filtros</MudButton>
+                            <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ClearFilters"
+                                StartIcon="@Icons.Material.Filled.Clear">Limpiar Filtros</MudButton>
                         </MudItem>
                     </MudGrid>
                 </MudExpansionPanel>
             </MudExpansionPanels>
-            <MudDataGrid @ref="dataGrid"
-                         T="UserReservationDetailsDto"
-                         ServerData="ServerReload"
-                         RowsPerPage="10">
+
+            <MudTable @ref="_table" T="UserReservationDetailsDto" ServerData="ServerReload" Loading="@_loading"
+                LoadingProgressColor="Color.Primary" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true"
+                RowsPerPage="10" SortLabel="TripId" Elevation="0">
                 <ToolBarContent>
-                    <MudTextField @bind-Value="_searchString"
-                                  Placeholder="Buscar en todos los campos"
-                                  Adornment="Adornment.Start"
-                                  AdornmentIcon="@Icons.Material.Filled.Search"
-                                  IconSize="Size.Medium"
-                                  Class="mt-0"
-                                  Clearable="true"
-                                  OnClearButtonClick="@(() => { _searchString = string.Empty; dataGrid.ReloadServerData(); })"
-                                  Immediate="true"
-                                  DebounceInterval="300"
-                                  OnDebounceIntervalElapsed="@(() => dataGrid.ReloadServerData())" />
+                    <MudTextField @bind-Value="_searchString" Placeholder="Buscar en todos los campos - omite filtros avanzados"
+                        Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium"
+                        Class="mt-0" Clearable="true"
+                        OnClearButtonClick="@(() => { _searchString = string.Empty; _table!.ReloadServerData(); })"
+                        Immediate="true" DebounceInterval="300"
+                        OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())"></MudTextField>
                 </ToolBarContent>
-                <Columns>
-                    <PropertyColumn Property="x => x.TripId" Title="Viaje" />
-                    <TemplateColumn Title="Salida">
-                        <CellTemplate>
-                            <div>
-                                <b>@context.Item.DepartureStationName</b><br />
-                                @context.Item.DepartureCity, @context.Item.DepartureProvince, @context.Item.DepartureCountry<br />
-                                <span>@context.Item.DepartureTime.ToString("g")</span>
-                            </div>
-                        </CellTemplate>
-                    </TemplateColumn>
-                    <TemplateColumn Title="Llegada">
-                        <CellTemplate>
-                            <div>
-                                <b>@context.Item.ArrivalStationName</b><br />
-                                @context.Item.ArrivalCity, @context.Item.ArrivalProvince, @context.Item.ArrivalCountry<br />
-                                <span>@context.Item.ArrivalTime.ToString("g")</span>
-                            </div>
-                        </CellTemplate>
-                    </TemplateColumn>
-                    <PropertyColumn Property="x => x.Seat" Title="Asiento" />
-                    <TemplateColumn>
-                        <CellTemplate>
-                            <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => HandleDelete(context.Item))" />
-                        </CellTemplate>
-                    </TemplateColumn>
-                </Columns>
+                <HeaderContent>
+                    <MudTh>
+                        <MudTableSortLabel SortLabel="TripId" T="UserReservationDetailsDto">ID Viaje</MudTableSortLabel>
+                    </MudTh>
+                    <MudTh>Salida</MudTh>
+                    <MudTh>Llegada</MudTh>
+                    <MudTh>
+                        <MudTableSortLabel SortLabel="Seat" T="UserReservationDetailsDto">Asiento</MudTableSortLabel>
+                    </MudTh>
+                    <MudTh Style="text-align: right">Acciones</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="ID Viaje">@context.TripId</MudTd>
+                    <MudTd DataLabel="Salida">
+                        <div>
+                            <b>@context.DepartureStationName</b><br />
+                            @context.DepartureCity, @context.DepartureProvince, @context.DepartureCountry<br />
+                            <span>@context.DepartureTime.ToString("g")</span>
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="Llegada">
+                        <div>
+                            <b>@context.ArrivalStationName</b><br />
+                            @context.ArrivalCity, @context.ArrivalProvince, @context.ArrivalCountry<br />
+                            <span>@context.ArrivalTime.ToString("g")</span>
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="Asiento">@context.Seat</MudTd>
+                    <MudTd DataLabel="Acciones" Style="text-align: right">
+                        <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                            OnClick="@(() => HandleDelete(context))" />
+                    </MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText>No se encontraron reservas.</MudText>
+                </NoRecordsContent>
+                <LoadingContent>
+                    <MudText>Cargando...</MudText>
+                </LoadingContent>
                 <PagerContent>
-                    <MudDataGridPager T="UserReservationDetailsDto" />
+                    <MudTablePager PageSizeOptions="new int[] { 10, 25, 50, 100 }" />
                 </PagerContent>
-            </MudDataGrid>
+            </MudTable>
         </MudCardContent>
     </MudCard>
 </MudContainer>
 
 @code {
-    private MudDataGrid<UserReservationDetailsDto> dataGrid = null!;
+    private MudTable<UserReservationDetailsDto> _table = null!;
+    private bool _loading = false;
     private string _searchString = string.Empty;
     private int? _filterDepartureStationId = null;
     private int? _filterArrivalStationId = null;
@@ -149,84 +159,30 @@
         }
     }
 
-    private async Task<GridData<UserReservationDetailsDto>> ServerReload(GridState<UserReservationDetailsDto> state)
+    private async Task<TableData<UserReservationDetailsDto>> ServerReload(TableState state, CancellationToken
+        cancellationToken)
     {
+        _loading = true;
         try
         {
             var searchRequest = new PagedSearchRequestDto
             {
                 Page = state.Page + 1,
                 PageSize = state.PageSize,
-                Filters = BuildFilters(),
-                Orders = []
+                FilterClauses = BuildFilterClauses(state),
+                Orders = TableHelpers.BuildOrders(state)
             };
-            var result = await ClientReservationService.SearchCurrentUserReservationsAsync(searchRequest);
-            return new GridData<UserReservationDetailsDto> { Items = result.Items, TotalItems = result.TotalCount };
-        }
-        catch (ServiceException ex)
-        {
-            Snackbar.Add(ex.Message, Severity.Error);
-        }
-        catch
-        {
-            Snackbar.Add("Error al cargar reservas.", Severity.Error);
-        }
-        return new GridData<UserReservationDetailsDto> { Items = Array.Empty<UserReservationDetailsDto>(), TotalItems = 0 };
-    }
 
-    private IList<Filter> BuildFilters()
-    {
-        List<Filter> filters = [];
-        if (!string.IsNullOrWhiteSpace(_searchString))
-        {
-            filters.Add(new Filter("DepartureStationName", AppFilterOperator.Contains, _searchString));
-            filters.Add(new Filter("ArrivalStationName", AppFilterOperator.Contains, _searchString));
+            var result = await ClientReservationService.SearchCurrentUserReservationsAsync(searchRequest, cancellationToken);
+            return new TableData<UserReservationDetailsDto>
+            {
+                Items = result.Items,
+                TotalItems = result.TotalCount
+            };
         }
-        else
+        catch (OperationCanceledException)
         {
-            if (_filterDepartureStationId.HasValue)
-                filters.Add(new Filter("DepartureStationId", AppFilterOperator.Equals, _filterDepartureStationId.Value));
-            if (_filterArrivalStationId.HasValue)
-                filters.Add(new Filter("ArrivalStationId", AppFilterOperator.Equals, _filterArrivalStationId.Value));
-            if (_filterDepartureDateRange?.Start != null && _filterDepartureDateRange?.End != null)
-                filters.Add(new Filter("DepartureTime", AppFilterOperator.Between, new object[] { _filterDepartureDateRange.Start, _filterDepartureDateRange.End }));
-            if (_filterArrivalDateRange?.Start != null && _filterArrivalDateRange?.End != null)
-                filters.Add(new Filter("ArrivalTime", AppFilterOperator.Between, new object[] { _filterArrivalDateRange.Start, _filterArrivalDateRange.End }));
-        }
-        return filters;
-    }
-
-    private void ClearFilters()
-    {
-        _filterDepartureStationId = null;
-        _filterArrivalStationId = null;
-        _filterDepartureDateRange = null;
-        _filterArrivalDateRange = null;
-        _searchString = string.Empty;
-        dataGrid!.ReloadServerData();
-    }
-
-    private async Task OnFilterChanged()
-    {
-        if (!string.IsNullOrWhiteSpace(_searchString))
-        {
-            _searchString = string.Empty;
-        }
-        await dataGrid!.ReloadServerData();
-    }
-
-    private async Task HandleDelete(UserReservationDetailsDto item)
-    {
-        try
-        {
-            await ClientReservationService.DeleteReservationAsync(new ReservationKeyDto { TripId = item.TripId, Seat = item.Seat });
-            Snackbar.Add("Reserva eliminada.", Severity.Success);
-            await dataGrid.ReloadServerData();
-        }
-        catch (ServiceNotFoundException ex)
-        {
-            Snackbar.Add(ex.Message, Severity.Warning);
-            await dataGrid.ReloadServerData();
+            // Ignore cancellation
         }
         catch (ServiceBusinessException ex)
         {
@@ -236,7 +192,110 @@
         {
             Snackbar.Add(ex.Message, Severity.Error);
         }
-        catch
+        catch (Exception)
+        {
+            Snackbar.Add("Error al cargar reservas.", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+
+        return new TableData<UserReservationDetailsDto> { Items = [], TotalItems = 0 };
+    }
+
+    private IEnumerable<FilterClause> BuildFilterClauses(TableState state)
+    {
+        var filterClauses = new List<FilterClause>();
+
+        if (!string.IsNullOrWhiteSpace(_searchString))
+        {
+            var searchFilters = new List<Filter>
+            {
+                new Filter("DepartureStationName", AppFilterOperator.Contains, _searchString),
+                new Filter("ArrivalStationName", AppFilterOperator.Contains, _searchString),
+                new Filter("DepartureCity", AppFilterOperator.Contains, _searchString),
+                new Filter("ArrivalCity", AppFilterOperator.Contains, _searchString),
+                new Filter("DepartureProvince", AppFilterOperator.Contains, _searchString),
+                new Filter("ArrivalProvince", AppFilterOperator.Contains, _searchString),
+                new Filter("DepartureCountry", AppFilterOperator.Contains, _searchString),
+                new Filter("ArrivalCountry", AppFilterOperator.Contains, _searchString)
+            };
+            filterClauses.Add(new FilterClause(searchFilters));
+        }
+        else
+        {
+            if (_filterDepartureStationId.HasValue)
+            {
+                filterClauses.Add(new FilterClause([
+                    new Filter("DepartureStationId", AppFilterOperator.Equals, _filterDepartureStationId.Value)
+                ]));
+            }
+            
+            if (_filterArrivalStationId.HasValue)
+            {
+                filterClauses.Add(new FilterClause([
+                    new Filter("ArrivalStationId", AppFilterOperator.Equals, _filterArrivalStationId.Value)
+                ]));
+            }
+            
+            if (_filterDepartureDateRange?.Start != null && _filterDepartureDateRange?.End != null)
+            {
+                filterClauses.Add(new FilterClause([
+                    new Filter("DepartureTime", AppFilterOperator.Between, 
+                        new object[] { _filterDepartureDateRange.Start.Value, _filterDepartureDateRange.End.Value })
+                ]));
+            }
+            
+            if (_filterArrivalDateRange?.Start != null && _filterArrivalDateRange?.End != null)
+            {
+                filterClauses.Add(new FilterClause([
+                    new Filter("ArrivalTime", AppFilterOperator.Between, 
+                        new object[] { _filterArrivalDateRange.Start.Value, _filterArrivalDateRange.End.Value })
+                ]));
+            }
+        }
+
+        return filterClauses;
+    }
+
+    private void ClearFilters()
+    {
+        _filterDepartureStationId = null;
+        _filterArrivalStationId = null;
+        _filterDepartureDateRange = null;
+        _filterArrivalDateRange = null;
+        _searchString = string.Empty;
+        _table!.ReloadServerData();
+    }
+
+    private async Task HandleDelete(UserReservationDetailsDto item)
+    {
+        try
+        {
+            await ClientReservationService.DeleteReservationAsync(new ReservationKeyDto
+            {
+                TripId =
+            item.TripId,
+                Seat = item.Seat
+            });
+            Snackbar.Add("Reserva eliminada.", Severity.Success);
+            await _table.ReloadServerData();
+        }
+        catch (ServiceNotFoundException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Warning);
+            await _table.ReloadServerData();
+        }
+        catch (ServiceBusinessException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (ServiceException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (Exception)
         {
             Snackbar.Add("Error inesperado.", Severity.Error);
         }

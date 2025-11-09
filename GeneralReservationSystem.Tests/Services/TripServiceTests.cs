@@ -1,4 +1,4 @@
-﻿using GeneralReservationSystem.Application.Common;
+using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Exceptions.Repositories;
@@ -832,7 +832,7 @@ namespace GeneralReservationSystem.Tests.Services
             {
                 Page = 1,
                 PageSize = 10,
-                Filters = [],
+                FilterClauses = [],
                 Orders = []
             };
 
@@ -884,7 +884,7 @@ namespace GeneralReservationSystem.Tests.Services
             {
                 Page = 1,
                 PageSize = 10,
-                Filters = [],
+                FilterClauses = [],
                 Orders = []
             };
 
@@ -921,7 +921,7 @@ namespace GeneralReservationSystem.Tests.Services
             {
                 Page = 1,
                 PageSize = 10,
-                Filters = [],
+                FilterClauses = [],
                 Orders = []
             };
 
@@ -945,7 +945,7 @@ namespace GeneralReservationSystem.Tests.Services
             {
                 Page = 1,
                 PageSize = 10,
-                Filters = [],
+                FilterClauses = [],
                 Orders = []
             };
             CancellationToken cancellationToken = new();

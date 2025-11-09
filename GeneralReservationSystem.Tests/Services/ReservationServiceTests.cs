@@ -1,4 +1,4 @@
-﻿using GeneralReservationSystem.Application.Common;
+using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.DTOs.Authentication;
 using GeneralReservationSystem.Application.Entities;
@@ -488,7 +488,7 @@ namespace GeneralReservationSystem.Tests.Services
             {
                 Page = 1,
                 PageSize = 10,
-                Filters = [],
+                FilterClauses = [],
                 Orders = []
             };
 
@@ -551,7 +551,7 @@ namespace GeneralReservationSystem.Tests.Services
             {
                 Page = 1,
                 PageSize = 10,
-                Filters = [],
+                FilterClauses = [],
                 Orders = []
             };
 
@@ -588,7 +588,7 @@ namespace GeneralReservationSystem.Tests.Services
             {
                 Page = 1,
                 PageSize = 10,
-                Filters = [],
+                FilterClauses = [],
                 Orders = []
             };
 
@@ -612,7 +612,7 @@ namespace GeneralReservationSystem.Tests.Services
             {
                 Page = 1,
                 PageSize = 10,
-                Filters = [],
+                FilterClauses = [],
                 Orders = []
             };
             CancellationToken cancellationToken = new();
@@ -650,7 +650,7 @@ namespace GeneralReservationSystem.Tests.Services
             {
                 Page = 1,
                 PageSize = 10,
-                Filters = [],
+                FilterClauses = [],
                 Orders = []
             };
 
@@ -711,7 +711,7 @@ namespace GeneralReservationSystem.Tests.Services
             {
                 Page = 1,
                 PageSize = 10,
-                Filters = [],
+                FilterClauses = [],
                 Orders = []
             };
 
@@ -749,7 +749,7 @@ namespace GeneralReservationSystem.Tests.Services
             {
                 Page = 1,
                 PageSize = 5,
-                Filters = [],
+                FilterClauses = [],
                 Orders = []
             };
 
@@ -792,7 +792,7 @@ namespace GeneralReservationSystem.Tests.Services
             {
                 Page = 1,
                 PageSize = 10,
-                Filters = [],
+                FilterClauses = [],
                 Orders = []
             };
 
@@ -817,7 +817,7 @@ namespace GeneralReservationSystem.Tests.Services
             {
                 Page = 1,
                 PageSize = 10,
-                Filters = [],
+                FilterClauses = [],
                 Orders = []
             };
             CancellationToken cancellationToken = new();

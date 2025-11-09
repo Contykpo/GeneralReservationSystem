@@ -1,4 +1,4 @@
--- Create "ApplicationUser" table
+﻿-- Create "ApplicationUser" table
 CREATE TABLE IF NOT EXISTS grsdb."ApplicationUser" (
     "UserId" SERIAL PRIMARY KEY,
     "UserName" VARCHAR(256) NOT NULL,

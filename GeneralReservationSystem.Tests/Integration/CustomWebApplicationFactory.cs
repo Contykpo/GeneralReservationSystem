@@ -1,4 +1,4 @@
-﻿using GeneralReservationSystem.Infrastructure.Database;
+using GeneralReservationSystem.Infrastructure.Database;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;

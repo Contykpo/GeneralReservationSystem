@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using FluentValidation.Results;
 using GeneralReservationSystem.API.Controllers;
 using GeneralReservationSystem.Application.Common;
@@ -133,7 +133,7 @@ namespace GeneralReservationSystem.Tests.Controllers
             {
                 Page = 1,
                 PageSize = 10,
-                Filters = [],
+                FilterClauses = [],
                 Orders = []
             };
 

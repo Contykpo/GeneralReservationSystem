@@ -1,4 +1,4 @@
-﻿using GeneralReservationSystem.Application.DTOs;
+using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.DTOs.Authentication;
 using System.Net;
 using System.Net.Http.Json;
