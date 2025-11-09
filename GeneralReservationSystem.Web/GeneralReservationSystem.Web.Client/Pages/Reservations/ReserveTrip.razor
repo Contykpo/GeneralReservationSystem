@@ -8,6 +8,7 @@
 @using GeneralReservationSystem.Application.Exceptions.Services
 @using GeneralReservationSystem.Web.Client.Components
 @using GeneralReservationSystem.Web.Client.Services.Interfaces
+@using GeneralReservationSystem.Web.Client.Helpers
 @using Microsoft.AspNetCore.Authorization
 @using MudBlazor
 @using Severity = MudBlazor.Severity
@@ -15,6 +16,7 @@
 @inject ITripService TripService
 @inject IStationService StationService
 @inject IClientReservationService ClientReservationService
+@inject IClientAuthenticationService ClientAuthenticationService
 @inject ISnackbar Snackbar
 @inject NavigationManager Navigation
 
@@ -82,7 +84,8 @@ else
     </MudContainer>
 }
 
-@code {
+@code
+{
     [Parameter]
     public int TripId { get; set; }
 
@@ -141,6 +144,18 @@ else
             var keyDto = new ReservationKeyDto { TripId = TripId, Seat = _selectedSeat.Value };
             await ClientReservationService.CreateCurrentUserReservationAsync(keyDto);
             Snackbar.Add("Reserva creada correctamente.", Severity.Success);
+
+            var currentUser = await ClientAuthenticationService.GetCurrentUserAsync();
+
+            await EmailManager.SendReservationConfirmationAsync(
+                recipientEmail: currentUser.Email,
+                userName: currentUser.UserName,
+                departureStation: _tripDetails!.DepartureStationName,
+                arrivalStation: _tripDetails!.ArrivalStationName,
+                departureTime: _tripDetails!.DepartureTime.ToString(),
+                seatNumber: keyDto.Seat
+            );
+
             Navigation.NavigateTo("/trips");
         }
         catch (ServiceBusinessException ex)
