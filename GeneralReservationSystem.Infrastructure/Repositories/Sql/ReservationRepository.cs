@@ -33,7 +33,8 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                 $"JOIN grsdb.\"Trip\" t ON r.\"TripId\" = t.\"TripId\" " +
                 $"JOIN grsdb.\"Station\" dst ON t.\"DepartureStationId\" = dst.\"StationId\" " +
                 $"JOIN grsdb.\"Station\" ast ON t.\"ArrivalStationId\" = ast.\"StationId\" " +
-                $"WHERE r.\"UserId\" = @userId";
+                $"WHERE r.\"UserId\" = @userId " +
+                $"ORDER BY r.\"TripId\" ASC";
             SqlCommandHelper.AddParameter(cmd, "@userId", userId, typeof(int));
             List<UserReservationDetailsDto> items = [];
             using (DbDataReader reader = await SqlCommandHelper.ExecuteReaderAsync(cmd, cancellationToken))
@@ -70,45 +71,34 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
             {
                 using DbCommand cmd = SqlCommandHelper.CreateCommand(conn, transaction);
 
-                string filterClause = SqlCommandHelper.BuildFiltersClause<UserReservationDetailsDto>(searchDto.Filters);
-                string orderByClause = SqlCommandHelper.BuildOrderByClause<UserReservationDetailsDto>(searchDto.Orders);
+                string filterClause = SqlCommandHelper.BuildFiltersClauses<UserReservationDetailsDto>(searchDto.FilterClauses);
+                string orderByClause = SqlCommandHelper.BuildOrderByClauseWithDefault<UserReservationDetailsDto>(searchDto.Orders);
                 bool hasFilter = !string.IsNullOrEmpty(filterClause);
-                bool hasOrder = !string.IsNullOrEmpty(orderByClause);
-                bool hasFilterOrOrder = hasFilter || hasOrder;
                 int page = searchDto.Page > 0 ? searchDto.Page : 1;
                 int pageSize = searchDto.PageSize > 0 ? searchDto.PageSize : 10;
                 int offset = (page - 1) * pageSize;
+                
                 StringBuilder sql = new();
-                if (hasFilterOrOrder)
-                {
-                    _ = sql.Append("SELECT * FROM (");
-                }
+                _ = sql.Append("SELECT * FROM (");
                 _ = sql.Append($"SELECT r.\"TripId\", t.\"DepartureStationId\", dst.\"StationName\" AS \"DepartureStationName\", dst.\"City\" AS \"DepartureCity\", dst.\"Province\" AS \"DepartureProvince\", dst.\"Country\" AS \"DepartureCountry\", t.\"DepartureTime\", t.\"ArrivalStationId\", ast.\"StationName\" AS \"ArrivalStationName\", ast.\"City\" AS \"ArrivalCity\", ast.\"Province\" AS \"ArrivalProvince\", ast.\"Country\" AS \"ArrivalCountry\", t.\"ArrivalTime\", r.\"Seat\" " +
                 $"FROM grsdb.\"{_tableName}\" r " +
                 $"JOIN grsdb.\"Trip\" t ON r.\"TripId\" = t.\"TripId\" " +
                 $"JOIN grsdb.\"Station\" dst ON t.\"DepartureStationId\" = dst.\"StationId\" " +
-                $"JOIN grsdb.\"Station\" ast ON t.\"ArrivalStationId\" = ast.\"StationId\"");
-                if (hasFilterOrOrder)
+                $"JOIN grsdb.\"Station\" ast ON t.\"ArrivalStationId\" = ast.\"StationId\" " +
+                $"WHERE r.\"UserId\" = @userId");
+                _ = sql.Append(") subquery");
+                
+                if (hasFilter)
                 {
-                    _ = sql.Append(") subquery");
-                    _ = sql.Append($" WHERE r.\"UserId\" = @userId");
-                    if (hasFilter)
-                    {
-                        _ = sql.Append($" AND {filterClause}");
-                    }
-                    if (hasOrder)
-                    {
-                        _ = sql.Append($" ORDER BY {orderByClause}");
-                    }
+                    _ = sql.Append($" WHERE {filterClause}");
                 }
-                else
-                {
-                    _ = sql.Append($" WHERE r.\"UserId\" = @userId");
-                }
+                
+                _ = sql.Append($" ORDER BY {orderByClause}");
                 _ = sql.Append($" LIMIT {pageSize} OFFSET {offset}");
+                
                 cmd.CommandText = sql.ToString();
                 SqlCommandHelper.AddParameter(cmd, "@userId", userId, typeof(int));
-                AddFilterParameters<UserReservationDetailsDto>(cmd, searchDto.Filters);
+                SqlCommandHelper.AddFilterParameters<UserReservationDetailsDto>(cmd, searchDto.FilterClauses);
 
                 using DbCommand countCmd = SqlCommandHelper.CreateCommand(conn, transaction);
                 StringBuilder countSql = new();
@@ -117,16 +107,15 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                 {
                     _ = countSql.Append("SELECT * FROM (");
                 }
-                _ = countSql.Append($"SELECT r.\"TripId\", t.\"DepartureStationId\", dst.\"StationName\" AS \"DepartureStationName\", dst.\"City\" AS \"DepartureCity\", dst.\"Province\" AS \"DepartureProvince\", dst.\"Country\" AS \"DepartureCountry\", t.\"DepartureTime\", t.\"ArrivalStationId\", ast.\"StationName\" AS \"ArrivalStationName\", ast.\"City\" AS \"ArrivalCity\", ast.\"Province\" AS \"ArrivalProvince\", ast.\"Country\" AS \"ArrivalCountry\", t.\"ArrivalTime\", r.\"Seat\" FROM grsdb.\"{_tableName}\" r JOIN grsdb.\"Trip\" t ON r.\"TripId\" = t.\"TripId\" JOIN grsdb.\"Station\" dst ON t.\"DepartureStationId\" = dst.\"StationId\" JOIN grsdb.\"Station\" ast ON t.\"ArrivalStationId\" = ast.\"StationId\" WHERE r.\"UserId\" = @userId");
+                _ = countSql.Append($"SELECT r.\"TripId\", t.\"DepartureStationId\", dst.\"StationName\" AS \"DepartureStationName\", dst.\"City\" AS \"DepartureCity\", dst.\"Province\" AS \"DepartureProvince\", dst.\"Country\" AS \"ArrivalCountry\", t.\"DepartureTime\", t.\"ArrivalStationId\", ast.\"StationName\" AS \"ArrivalStationName\", ast.\"City\" AS \"ArrivalCity\", ast.\"Province\" AS \"ArrivalProvince\", ast.\"Country\" AS \"ArrivalCountry\", t.\"ArrivalTime\", r.\"Seat\" FROM grsdb.\"{_tableName}\" r JOIN grsdb.\"Trip\" t ON r.\"TripId\" = t.\"TripId\" JOIN grsdb.\"Station\" dst ON t.\"DepartureStationId\" = dst.\"StationId\" JOIN grsdb.\"Station\" ast ON t.\"ArrivalStationId\" = ast.\"StationId\" WHERE r.\"UserId\" = @userId");
                 if (hasFilter)
                 {
-                    _ = countSql.Append($" AND {filterClause}");
-                    _ = countSql.Append(')');
+                    _ = countSql.Append($") subquery WHERE {filterClause}");
                 }
                 _ = countSql.Append(')');
                 countCmd.CommandText = countSql.ToString();
                 SqlCommandHelper.AddParameter(countCmd, "@userId", userId, typeof(int));
-                AddFilterParameters<UserReservationDetailsDto>(countCmd, searchDto.Filters);
+                SqlCommandHelper.AddFilterParameters<UserReservationDetailsDto>(countCmd, searchDto.FilterClauses);
 
                 static UserReservationDetailsDto mapFunc(DbDataReader reader)
                 {
@@ -149,7 +138,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                     };
                 }
 
-                PagedResult<UserReservationDetailsDto> result = await MapPagedResultAsync(cmd, countCmd, mapFunc, page, pageSize, cancellationToken);
+                PagedResult<UserReservationDetailsDto> result = await SqlCommandHelper.MapPagedResultAsync(cmd, countCmd, mapFunc, page, pageSize, cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
                 return result;
             }
@@ -168,40 +157,33 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
             {
                 using DbCommand cmd = SqlCommandHelper.CreateCommand(conn, transaction);
 
-                string filterClause = SqlCommandHelper.BuildFiltersClause<ReservationDetailsDto>(searchDto.Filters);
-                string orderByClause = SqlCommandHelper.BuildOrderByClause<ReservationDetailsDto>(searchDto.Orders);
+                string filterClause = SqlCommandHelper.BuildFiltersClauses<ReservationDetailsDto>(searchDto.FilterClauses);
+                string orderByClause = SqlCommandHelper.BuildOrderByClauseWithDefault<ReservationDetailsDto>(searchDto.Orders);
                 bool hasFilter = !string.IsNullOrEmpty(filterClause);
-                bool hasOrder = !string.IsNullOrEmpty(orderByClause);
-                bool hasFilterOrOrder = hasFilter || hasOrder;
                 int page = searchDto.Page > 0 ? searchDto.Page : 1;
                 int pageSize = searchDto.PageSize > 0 ? searchDto.PageSize : 10;
                 int offset = (page - 1) * pageSize;
+                
                 StringBuilder sql = new();
-                if (hasFilterOrOrder)
-                {
-                    _ = sql.Append("SELECT * FROM (");
-                }
+                _ = sql.Append("SELECT * FROM (");
                 _ = sql.Append($"SELECT r.\"TripId\", t.\"DepartureStationId\", dst.\"StationName\" AS \"DepartureStationName\", dst.\"City\" AS \"DepartureCity\", dst.\"Province\" AS \"DepartureProvince\", dst.\"Country\" AS \"DepartureCountry\", t.\"DepartureTime\", t.\"ArrivalStationId\", ast.\"StationName\" AS \"ArrivalStationName\", ast.\"City\" AS \"ArrivalCity\", ast.\"Province\" AS \"ArrivalProvince\", ast.\"Country\" AS \"ArrivalCountry\", t.\"ArrivalTime\", u.\"UserId\", u.\"UserName\", u.\"Email\", r.\"Seat\" " +
                 $"FROM grsdb.\"{_tableName}\" r " +
                 $"JOIN grsdb.\"ApplicationUser\" u ON r.\"UserId\" = u.\"UserId\" " +
                 $"JOIN grsdb.\"Trip\" t ON r.\"TripId\" = t.\"TripId\" " +
                 $"JOIN grsdb.\"Station\" dst ON t.\"DepartureStationId\" = dst.\"StationId\" " +
                 $"JOIN grsdb.\"Station\" ast ON t.\"ArrivalStationId\" = ast.\"StationId\"");
-                if (hasFilterOrOrder)
+                _ = sql.Append(") subquery");
+                
+                if (hasFilter)
                 {
-                    _ = sql.Append(") subquery");
-                    if (hasFilter)
-                    {
-                        _ = sql.Append($" WHERE {filterClause}");
-                    }
-                    if (hasOrder)
-                    {
-                        _ = sql.Append($" ORDER BY {orderByClause}");
-                    }
+                    _ = sql.Append($" WHERE {filterClause}");
                 }
+                
+                _ = sql.Append($" ORDER BY {orderByClause}");
                 _ = sql.Append($" LIMIT {pageSize} OFFSET {offset}");
+                
                 cmd.CommandText = sql.ToString();
-                AddFilterParameters<ReservationDetailsDto>(cmd, searchDto.Filters);
+                SqlCommandHelper.AddFilterParameters<ReservationDetailsDto>(cmd, searchDto.FilterClauses);
 
                 using DbCommand countCmd = SqlCommandHelper.CreateCommand(conn, transaction);
                 StringBuilder countSql = new();
@@ -213,11 +195,11 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                 _ = countSql.Append($"SELECT r.\"TripId\", t.\"DepartureStationId\", dst.\"StationName\" AS \"DepartureStationName\", dst.\"City\" AS \"ArrivalCity\", dst.\"Province\" AS \"ArrivalProvince\", dst.\"Country\" AS \"ArrivalCountry\", t.\"DepartureTime\", t.\"ArrivalStationId\", ast.\"StationName\" AS \"ArrivalStationName\", ast.\"City\" AS \"ArrivalCity\", ast.\"Province\" AS \"ArrivalProvince\", ast.\"Country\" AS \"ArrivalCountry\", t.\"ArrivalTime\", u.\"UserId\", u.\"UserName\", u.\"Email\", r.\"Seat\" FROM grsdb.\"{_tableName}\" r JOIN grsdb.\"ApplicationUser\" u ON r.\"UserId\" = u.\"UserId\" JOIN grsdb.\"Trip\" t ON r.\"TripId\" = t.\"TripId\" JOIN grsdb.\"Station\" dst ON t.\"DepartureStationId\" = dst.\"StationId\" JOIN grsdb.\"Station\" ast ON t.\"ArrivalStationId\" = ast.\"StationId\"");
                 if (hasFilter)
                 {
-                    _ = countSql.Append($") WHERE {filterClause}");
+                    _ = countSql.Append($") subquery WHERE {filterClause}");
                 }
                 _ = countSql.Append(')');
                 countCmd.CommandText = countSql.ToString();
-                AddFilterParameters<ReservationDetailsDto>(countCmd, searchDto.Filters);
+                SqlCommandHelper.AddFilterParameters<ReservationDetailsDto>(countCmd, searchDto.FilterClauses);
 
                 static ReservationDetailsDto mapFunc(DbDataReader reader)
                 {
@@ -243,7 +225,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                     };
                 }
 
-                PagedResult<ReservationDetailsDto> result = await MapPagedResultAsync(cmd, countCmd, mapFunc, page, pageSize, cancellationToken);
+                PagedResult<ReservationDetailsDto> result = await SqlCommandHelper.MapPagedResultAsync(cmd, countCmd, mapFunc, page, pageSize, cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
                 return result;
             }

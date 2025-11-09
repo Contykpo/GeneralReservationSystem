@@ -306,48 +306,58 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             return string.Join(" OR ", whereClauses);
         }
 
-        public static string BuildFiltersClause<T>(IEnumerable<Filter> filters, string paramPrefix = "p")
+        public static string BuildFiltersClauses<T>(IEnumerable<FilterClause> filterClauses, string paramPrefix = "p")
         {
             Type type = typeof(T);
             PropertyInfo[] properties = ReflectionHelpers.GetProperties(type);
             HashSet<string> validNames = [.. properties.Select(p => p.Name)];
             List<string> clauses = [];
             int paramIndex = 0;
-            foreach (Filter filter in filters)
+            foreach (FilterClause filterClause in filterClauses)
             {
-                PropertyInfo? prop = properties.FirstOrDefault(p => p.Name == filter.PropertyOrField);
-                if (prop == null)
+                List<string> propositions = [];
+                foreach (Filter filter in filterClause.Filters)
                 {
-                    continue; // skip invalid
+                    PropertyInfo? prop = properties.FirstOrDefault(p => p.Name == filter.PropertyOrField);
+                    if (prop == null)
+                    {
+                        continue; // skip invalid
+                    }
+
+                    string colName = EntityHelper.GetColumnName(prop);
+                    string paramName = $"@{paramPrefix}{paramIndex}";
+                    string? proposition = filter.Operator switch
+                    {
+                        FilterOperator.Equals => $"\"{colName}\" = {paramName}",
+                        FilterOperator.NotEquals => $"\"{colName}\" <> {paramName}",
+                        FilterOperator.GreaterThan => $"\"{colName}\" > {paramName}",
+                        FilterOperator.GreaterThanOrEqual => $"\"{colName}\" >= {paramName}",
+                        FilterOperator.LessThan => $"\"{colName}\" < {paramName}",
+                        FilterOperator.LessThanOrEqual => $"\"{colName}\" <= {paramName}",
+                        FilterOperator.Contains => $"\"{colName}\" ILIKE '%' || {paramName} || '%'",
+                        FilterOperator.NotContains => $"\"{colName}\" NOT ILIKE '%' || {paramName} || '%'",
+                        FilterOperator.StartsWith => $"\"{colName}\" ILIKE {paramName} || '%'",
+                        FilterOperator.EndsWith => $"\"{colName}\" ILIKE '%' || {paramName}",
+                        FilterOperator.IsNullOrEmpty => $"(\"{colName}\" IS NULL OR \"{colName}\" = '')",
+                        FilterOperator.IsNotNullOrEmpty => $"(\"{colName}\" IS NOT NULL AND \"{colName}\" <> '')",
+                        FilterOperator.Between => $"\"{colName}\" BETWEEN {paramName}_start AND {paramName}_end",
+                        _ => null
+                    };
+
+                    if (proposition != null)
+                    {
+                        propositions.Add(proposition);
+                        paramIndex++;
+                    }
                 }
 
-                string colName = EntityHelper.GetColumnName(prop);
-                string paramName = $"@{paramPrefix}{paramIndex}";
-                string? clause = filter.Operator switch
+                if (propositions.Count > 0)
                 {
-                    FilterOperator.Equals => $"\"{colName}\" = {paramName}",
-                    FilterOperator.NotEquals => $"\"{colName}\" <> {paramName}",
-                    FilterOperator.GreaterThan => $"\"{colName}\" > {paramName}",
-                    FilterOperator.GreaterThanOrEqual => $"\"{colName}\" >= {paramName}",
-                    FilterOperator.LessThan => $"\"{colName}\" < {paramName}",
-                    FilterOperator.LessThanOrEqual => $"\"{colName}\" <= {paramName}",
-                    FilterOperator.Contains => $"\"{colName}\" ILIKE '%' || {paramName} || '%'",
-                    FilterOperator.NotContains => $"\"{colName}\" NOT ILIKE '%' || {paramName} || '%'",
-                    FilterOperator.StartsWith => $"\"{colName}\" ILIKE {paramName} || '%'",
-                    FilterOperator.EndsWith => $"\"{colName}\" ILIKE '%' || {paramName}",
-                    FilterOperator.IsNullOrEmpty => $"(\"{colName}\" IS NULL OR \"{colName}\" = '')",
-                    FilterOperator.IsNotNullOrEmpty => $"(\"{colName}\" IS NOT NULL AND \"{colName}\" <> '')",
-                    FilterOperator.Between => $"\"{colName}\" BETWEEN {paramName}_start AND {paramName}_end",
-                    _ => null
-                };
-
-                if (clause != null)
-                {
-                    clauses.Add(clause);
-                    paramIndex++;
+                    string combined = string.Join(" OR ", propositions);
+                    clauses.Add($"({combined})");
                 }
             }
-            return clauses.Count > 0 ? string.Join(" OR ", clauses) : "";
+            return clauses.Count > 0 ? string.Join(" AND ", clauses) : "";
         }
 
         public static string BuildOrderByClause<T>(IEnumerable<SortOption> sortOptions)
@@ -368,6 +378,110 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
                 clauses.Add($"\"{colName}\" {direction}");
             }
             return clauses.Count > 0 ? string.Join(", ", clauses) : "";
+        }
+
+        public static string BuildOrderByClauseWithDefault<T>(IEnumerable<SortOption> sortOptions)
+        {
+            string orderByClause = BuildOrderByClause<T>(sortOptions);
+            
+            if (!string.IsNullOrEmpty(orderByClause))
+            {
+                return orderByClause;
+            }
+
+            // No explicit order provided, use first property as default
+            Type type = typeof(T);
+            PropertyInfo[] properties = ReflectionHelpers.GetProperties(type);
+
+            string firstColumnName = EntityHelper.GetColumnName(properties[0]);
+            return $"\"{firstColumnName}\" ASC";
+        }
+
+        public static object? ConvertToPropertyType(object? value, Type propType)
+        {
+            if (value == null)
+            {
+                return null;
+            }
+
+            Type targetType = Nullable.GetUnderlyingType(propType) ?? propType;
+
+            return targetType.IsEnum
+                ? value is string str1 ? Enum.Parse(targetType, str1) : Enum.ToObject(targetType, value)
+                : targetType == typeof(Guid)
+                ? value is string str2 ? Guid.Parse(str2) : value
+                : targetType == typeof(DateTime)
+                ? value is string str3 ? DateTime.Parse(str3) : Convert.ChangeType(value, targetType)
+                : Convert.ChangeType(value, targetType);
+        }
+
+        public static void AddFilterParameters<TResult>(DbCommand cmd, IEnumerable<FilterClause> filterClauses, string paramPrefix = "p")
+        {
+            if (filterClauses == null || !filterClauses.Any())
+            {
+                return;
+            }
+
+            PropertyInfo[] resultProperties = typeof(TResult).GetProperties();
+
+            int paramIndex = 0;
+            foreach (FilterClause filterClause in filterClauses)
+            {
+                foreach (Filter filter in filterClause.Filters)
+                {
+                    if (filter.Operator is FilterOperator.IsNullOrEmpty or FilterOperator.IsNotNullOrEmpty)
+                    {
+                        continue;
+                    }
+                    PropertyInfo? prop = resultProperties.FirstOrDefault(p => p.Name == filter.PropertyOrField);
+                    if (prop == null)
+                    {
+                        continue;
+                    }
+                    string paramName = $"@{paramPrefix}{paramIndex}";
+                    Type propType = prop.PropertyType;
+                    if (filter.Operator == FilterOperator.Between && filter.Value is object[] arr && arr.Length == 2)
+                    {
+                        object? startValue = ConvertToPropertyType(arr[0], propType);
+                        object? endValue = ConvertToPropertyType(arr[1], propType);
+                        AddParameter(cmd, paramName + "_start", startValue, propType);
+                        AddParameter(cmd, paramName + "_end", endValue, propType);
+                    }
+                    else
+                    {
+                        object? value = ConvertToPropertyType(filter.Value, propType);
+                        AddParameter(cmd, paramName, value, propType);
+                    }
+                    paramIndex++;
+                }
+            }
+        }
+
+        public static async Task<PagedResult<TResult>> MapPagedResultAsync<TResult>(
+            DbCommand cmd,
+            DbCommand countCmd,
+            Func<DbDataReader, TResult> mapFunc,
+            int page,
+            int pageSize,
+            CancellationToken cancellationToken)
+        {
+            List<TResult> items = [];
+            using (DbDataReader reader = await ExecuteReaderAsync(cmd, cancellationToken))
+            {
+                while (await reader.ReadAsync(cancellationToken))
+                {
+                    items.Add(mapFunc(reader));
+                }
+            }
+
+            long totalCount = (long)(await ExecuteScalarAsync(countCmd, cancellationToken))!;
+            return new PagedResult<TResult>
+            {
+                Items = items,
+                TotalCount = (int)totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
         }
     }
 }

@@ -30,7 +30,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
             {
                 using DbCommand cmd = SqlCommandHelper.CreateCommand(conn, transaction);
 
-                string filterClause = SqlCommandHelper.BuildFiltersClause<Station>(searchDto.Filters);
+                string filterClause = SqlCommandHelper.BuildFiltersClauses<Station>(searchDto.FilterClauses);
                 string whereClause = string.IsNullOrEmpty(filterClause) ? "" : $"WHERE {filterClause}";
                 string baseQuery = $"FROM grsdb.\"{_tableName}\" {whereClause}";
 
@@ -39,20 +39,19 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                 int offset = (page - 1) * pageSize;
                 StringBuilder sql = new();
                 _ = sql.Append($"SELECT * {baseQuery}");
-                if (searchDto.Orders.Count > 0)
-                {
-                    string orderByClause = SqlCommandHelper.BuildOrderByClause<Station>(searchDto.Orders);
-                    _ = sql.Append($" ORDER BY {orderByClause}");
-                }
+
+                string orderByClause = SqlCommandHelper.BuildOrderByClauseWithDefault<Station>(searchDto.Orders);
+                _ = sql.Append($" ORDER BY {orderByClause}");
+
                 _ = sql.Append($" LIMIT {pageSize} OFFSET {offset}");
                 cmd.CommandText = sql.ToString();
-                AddFilterParameters<Station>(cmd, searchDto.Filters);
+                SqlCommandHelper.AddFilterParameters<Station>(cmd, searchDto.FilterClauses);
 
                 using DbCommand countCmd = SqlCommandHelper.CreateCommand(conn, transaction);
                 countCmd.CommandText = $"SELECT COUNT(*) {baseQuery}";
-                AddFilterParameters<Station>(countCmd, searchDto.Filters);
+                SqlCommandHelper.AddFilterParameters<Station>(countCmd, searchDto.FilterClauses);
 
-                PagedResult<Station> result = await MapPagedResultAsync(
+                PagedResult<Station> result = await SqlCommandHelper.MapPagedResultAsync(
                     cmd,
                     countCmd,
                     (reader) => DataReaderMapper.MapReaderToEntity<Station>(reader, _properties),

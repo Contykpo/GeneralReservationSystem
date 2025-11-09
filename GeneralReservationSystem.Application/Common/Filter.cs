@@ -63,4 +63,6 @@
     }
 
     public sealed record Filter(string PropertyOrField, FilterOperator Operator, object? Value);
+
+    public sealed record FilterClause(IEnumerable<Filter> Filters);
 }

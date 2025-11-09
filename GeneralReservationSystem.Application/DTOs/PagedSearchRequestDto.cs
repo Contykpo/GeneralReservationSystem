@@ -6,7 +6,7 @@ namespace GeneralReservationSystem.Application.DTOs
     {
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 20;
-        public IList<Filter> Filters { get; set; } = [];
-        public IList<SortOption> Orders { get; set; } = [];
+        public IEnumerable<FilterClause> FilterClauses { get; set; } = [];
+        public IEnumerable<SortOption> Orders { get; set; } = [];
     }
 }

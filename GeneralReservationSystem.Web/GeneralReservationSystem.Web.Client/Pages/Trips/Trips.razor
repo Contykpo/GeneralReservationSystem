@@ -152,7 +152,7 @@
                 LoadingProgressColor="Color.Primary" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true"
                 RowsPerPage="10" Elevation="0">
                 <ToolBarContent>
-                    <MudTextField @bind-Value="_searchString" Placeholder="Buscar en todos los campos"
+                    <MudTextField @bind-Value="_searchString" Placeholder="Buscar en todos los campos - omite filtros avanzados"
                         Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium"
                         Class="mt-0" Clearable="true"
                         OnClearButtonClick="@(() => { _searchString = string.Empty; _table!.ReloadServerData(); })"
@@ -346,7 +346,7 @@
             {
                 Page = state.Page + 1,
                 PageSize = state.PageSize,
-                Filters = BuildFilters(state),
+                FilterClauses = BuildFilterClauses(state),
                 Orders = TableHelpers.BuildOrders(state)
             };
 
@@ -377,60 +377,59 @@
         return new TableData<TripWithDetailsDto> { Items = Array.Empty<TripWithDetailsDto>(), TotalItems = 0 };
     }
 
-    private IList<Filter> BuildFilters(TableState state)
+    private IEnumerable<FilterClause> BuildFilterClauses(TableState state)
     {
-        List<Filter> filters = new List<Filter>();
+        var filterClauses = new List<FilterClause>();
 
-        // Global search filter
         if (!string.IsNullOrWhiteSpace(_searchString))
         {
-            if (int.TryParse(_searchString, out var numericValue))
+            var searchFilters = new List<Filter>
             {
-                filters.Add(new Filter("TripId", AppFilterOperator.Equals, numericValue));
-                filters.Add(new Filter("DepartureStationId", AppFilterOperator.Equals, numericValue));
-                filters.Add(new Filter("ArrivalStationId", AppFilterOperator.Equals, numericValue));
-                filters.Add(new Filter("AvailableSeats", AppFilterOperator.Equals, numericValue));
-            }
-            else
-            {
-                // Search text across station names and locations
-                filters.Add(new Filter("DepartureStationName", AppFilterOperator.Contains, _searchString));
-                filters.Add(new Filter("DepartureCity", AppFilterOperator.Contains, _searchString));
-                filters.Add(new Filter("DepartureProvince", AppFilterOperator.Contains, _searchString));
-                filters.Add(new Filter("DepartureCountry", AppFilterOperator.Contains, _searchString));
-                filters.Add(new Filter("ArrivalStationName", AppFilterOperator.Contains, _searchString));
-                filters.Add(new Filter("ArrivalCity", AppFilterOperator.Contains, _searchString));
-                filters.Add(new Filter("ArrivalProvince", AppFilterOperator.Contains, _searchString));
-                filters.Add(new Filter("ArrivalCountry", AppFilterOperator.Contains, _searchString));
-            }
+                new Filter("DepartureStationName", AppFilterOperator.Contains, _searchString),
+                new Filter("DepartureCity", AppFilterOperator.Contains, _searchString),
+                new Filter("DepartureProvince", AppFilterOperator.Contains, _searchString),
+                new Filter("DepartureCountry", AppFilterOperator.Contains, _searchString),
+                new Filter("ArrivalStationName", AppFilterOperator.Contains, _searchString),
+                new Filter("ArrivalCity", AppFilterOperator.Contains, _searchString),
+                new Filter("ArrivalProvince", AppFilterOperator.Contains, _searchString),
+                new Filter("ArrivalCountry", AppFilterOperator.Contains, _searchString)
+            };
+            filterClauses.Add(new FilterClause(searchFilters));
         }
-        // Advanced filters
         else
         {
             if (_filterDepartureStationId.HasValue)
             {
-                filters.Add(new Filter("DepartureStationId", AppFilterOperator.Equals, _filterDepartureStationId.Value));
+                filterClauses.Add(new FilterClause([
+                    new Filter("DepartureStationId", AppFilterOperator.Equals, _filterDepartureStationId.Value)
+                ]));
             }
 
             if (_filterArrivalStationId.HasValue)
             {
-                filters.Add(new Filter("ArrivalStationId", AppFilterOperator.Equals, _filterArrivalStationId.Value));
+                filterClauses.Add(new FilterClause([
+                    new Filter("ArrivalStationId", AppFilterOperator.Equals, _filterArrivalStationId.Value)
+                ]));
             }
 
             if (_filterDepartureDateRange?.Start != null && _filterDepartureDateRange?.End != null)
             {
-                filters.Add(new Filter("DepartureTime", AppFilterOperator.Between, new object[] { _filterDepartureDateRange.Start,
-_filterDepartureDateRange.End }));
+                filterClauses.Add(new FilterClause([
+                    new Filter("DepartureTime", AppFilterOperator.Between, 
+                        new object[] { _filterDepartureDateRange.Start.Value, _filterDepartureDateRange.End.Value })
+                ]));
             }
 
             if (_filterArrivalDateRange?.Start != null && _filterArrivalDateRange?.End != null)
             {
-                filters.Add(new Filter("ArrivalTime", AppFilterOperator.Between, new object[] { _filterArrivalDateRange.Start,
-_filterArrivalDateRange.End }));
+                filterClauses.Add(new FilterClause([
+                    new Filter("ArrivalTime", AppFilterOperator.Between, 
+                        new object[] { _filterArrivalDateRange.Start.Value, _filterArrivalDateRange.End.Value })
+                ]));
             }
         }
 
-        return filters;
+        return filterClauses;
     }
 
     private void ClearFilters()
@@ -712,4 +711,4 @@ _filterArrivalDateRange.End }));
     {
         Navigation.NavigateTo($"/trips/reserve/{tripId}");
     }
-}
+}}

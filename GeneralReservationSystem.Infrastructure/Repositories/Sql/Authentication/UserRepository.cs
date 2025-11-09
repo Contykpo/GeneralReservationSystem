@@ -41,35 +41,28 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql.Authenticatio
             {
                 using DbCommand cmd = SqlCommandHelper.CreateCommand(conn, transaction);
 
-                string filterClause = SqlCommandHelper.BuildFiltersClause<UserInfo>(searchDto.Filters);
-                string orderByClause = SqlCommandHelper.BuildOrderByClause<UserInfo>(searchDto.Orders);
+                string filterClause = SqlCommandHelper.BuildFiltersClauses<UserInfo>(searchDto.FilterClauses);
+                string orderByClause = SqlCommandHelper.BuildOrderByClauseWithDefault<UserInfo>(searchDto.Orders);
                 bool hasFilter = !string.IsNullOrEmpty(filterClause);
-                bool hasOrder = !string.IsNullOrEmpty(orderByClause);
-                bool hasFilterOrOrder = hasFilter || hasOrder;
                 int page = searchDto.Page > 0 ? searchDto.Page : 1;
                 int pageSize = searchDto.PageSize > 0 ? searchDto.PageSize : 10;
                 int offset = (page - 1) * pageSize;
+                
                 StringBuilder sql = new();
-                if (hasFilterOrOrder)
-                {
-                    _ = sql.Append("SELECT * FROM (");
-                }
+                _ = sql.Append("SELECT * FROM (");
                 _ = sql.Append($"SELECT \"UserId\", \"UserName\", \"Email\", \"IsAdmin\" FROM grsdb.\"{_tableName}\"");
-                if (hasFilterOrOrder)
+                _ = sql.Append(") subquery");
+                
+                if (hasFilter)
                 {
-                    _ = sql.Append(") subquery");
-                    if (hasFilter)
-                    {
-                        _ = sql.Append($" WHERE {filterClause}");
-                    }
-                    if (hasOrder)
-                    {
-                        _ = sql.Append($" ORDER BY {orderByClause}");
-                    }
+                    _ = sql.Append($" WHERE {filterClause}");
                 }
+                
+                _ = sql.Append($" ORDER BY {orderByClause}");
                 _ = sql.Append($" LIMIT {pageSize} OFFSET {offset}");
+                
                 cmd.CommandText = sql.ToString();
-                AddFilterParameters<UserInfo>(cmd, searchDto.Filters);
+                SqlCommandHelper.AddFilterParameters<UserInfo>(cmd, searchDto.FilterClauses);
 
                 using DbCommand countCmd = SqlCommandHelper.CreateCommand(conn, transaction);
                 StringBuilder countSql = new();
@@ -81,11 +74,11 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql.Authenticatio
                 _ = countSql.Append($"SELECT \"UserId\", \"UserName\", \"Email\", \"IsAdmin\" FROM grsdb.\"{_tableName}\"");
                 if (hasFilter)
                 {
-                    _ = countSql.Append($") WHERE {filterClause}");
+                    _ = countSql.Append($") subquery WHERE {filterClause}");
                 }
                 _ = countSql.Append(')');
                 countCmd.CommandText = countSql.ToString();
-                AddFilterParameters<UserInfo>(countCmd, searchDto.Filters);
+                SqlCommandHelper.AddFilterParameters<UserInfo>(countCmd, searchDto.FilterClauses);
 
                 static UserInfo mapFunc(DbDataReader reader)
                 {
@@ -98,7 +91,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql.Authenticatio
                     };
                 }
 
-                PagedResult<UserInfo> result = await MapPagedResultAsync(cmd, countCmd, mapFunc, page, pageSize, cancellationToken);
+                PagedResult<UserInfo> result = await SqlCommandHelper.MapPagedResultAsync(cmd, countCmd, mapFunc, page, pageSize, cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
                 return result;
             }
