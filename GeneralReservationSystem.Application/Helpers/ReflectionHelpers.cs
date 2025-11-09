@@ -43,6 +43,20 @@ namespace GeneralReservationSystem.Application.Helpers
             return GetProperties(typeof(TEntity));
         }
 
+        public static PropertyInfo GetProperty(this Type type, string propertyName)
+        {
+            ThrowHelpers.ThrowIfNullOrWhiteSpace(propertyName, nameof(propertyName));
+
+            PropertyInfo? propertyInfo = GetProperties(type).FirstOrDefault(p => p.Name == propertyName);
+
+            if (propertyInfo == null)
+            {
+                throw new ArgumentException($"Property '{propertyName}' not found on type '{type.FullName}'", nameof(propertyName));
+            }
+
+            return propertyInfo;
+        }
+
         public static PropertyInfo[] GetFilteredProperties<TEntity>(Func<PropertyInfo, bool> predicate)
         {
             ThrowHelpers.ThrowIfNull(predicate, nameof(predicate));
