@@ -17,6 +17,7 @@
 @using Severity = MudBlazor.Severity
 
 @inject ITripService TripService
+@inject IReservationService ReservationService
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 @inject IStationService StationService
@@ -500,7 +501,7 @@
         }
     }
 
-    private void OpenEditDialog(TripWithDetailsDto trip)
+    private async void OpenEditDialog(TripWithDetailsDto trip)
     {
         _editTripDto = new UpdateTripDto
         {
@@ -509,8 +510,19 @@
             DepartureTime = trip.DepartureTime,
             ArrivalStationId = trip.ArrivalStationId,
             ArrivalTime = trip.ArrivalTime,
-            AvailableSeats = trip.AvailableSeats
         };
+
+        var reservation = await ReservationService.GetReservationAsync(new ReservationKeyDto { TripId = trip.TripId, Seat = trip.AvailableSeats });
+
+        if (reservation != null)
+        {
+            _editTripDto.AvailableSeats = trip.AvailableSeats;
+        }
+        else
+        {
+			Snackbar.Add("No se puede editar el número de asientos disponibles porque ya hay reservas para este viaje.", Severity.Warning);
+        }
+
         _updateForm?.ResetValidation();
         _editDialogVisible = true;
     }
