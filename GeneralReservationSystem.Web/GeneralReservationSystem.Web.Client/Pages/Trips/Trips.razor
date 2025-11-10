@@ -34,7 +34,7 @@
                     <MudCard Class="pd-2">
                         <MudCardContent>
                             <MudForm @ref="_createForm" Model="@_createTripDto"
-                                Validation="@(_createTripDtoValidator.ValidateValue)" ValidationDelay="0" Spacing="3">
+                                     Validation="@(CreateValidationDelegate())" ValidationDelay="0" Spacing="3">
                                 <MudSelect T="int" Label="Estación de salida"
                                     @bind-Value="_createTripDto.DepartureStationId"
                                     For="@(() => _createTripDto.DepartureStationId)" Variant="Variant.Outlined"
@@ -75,8 +75,7 @@
                                     Variant="Variant.Outlined" />
                                 <MudNumericField Label="Asientos disponibles"
                                     For="@(() => _createTripDto.AvailableSeats)"
-                                    @bind-Value="_createTripDto.AvailableSeats" Variant="Variant.Outlined"
-                                    Immediate="true" />
+                                    @bind-Value="_createTripDto.AvailableSeats" Variant="Variant.Outlined"/>
                             </MudForm>
                         </MudCardContent>
                         <MudCardActions Class="gap-2">
@@ -108,7 +107,7 @@
                         <MudItem xs="12" sm="6" md="3">
                             <MudSelect T="int?" Label="Estación de salida" Value="_filterDepartureStationId"
                                 ValueChanged="@(async (int? value) => { _filterDepartureStationId = value; await OnFilterChanged(); })"
-                                Variant="Variant.Outlined" Clearable="true" Immediate="true">
+                                Variant="Variant.Outlined" Clearable="true">
                                 <MudSelectItem T="int?" Value="null">Todas</MudSelectItem>
                                 @foreach (var station in _stations)
                                 {
@@ -121,7 +120,7 @@
                         <MudItem xs="12" sm="6" md="3">
                             <MudSelect T="int?" Label="Estación de llegada" Value="_filterArrivalStationId"
                                 ValueChanged="@(async (int? value) => { _filterArrivalStationId = value; await OnFilterChanged(); })"
-                                Variant="Variant.Outlined" Clearable="true" Immediate="true">
+                                Variant="Variant.Outlined" Clearable="true">
                                 <MudSelectItem T="int?" Value="null">Todas</MudSelectItem>
                                 @foreach (var station in _stations)
                                 {
@@ -326,6 +325,25 @@
 
     private List<Station> _stations = new();
 
+    // Flags de control de validacion.
+	// De esta manera solo validamos cuando el usuario intenta enviar el formulario.
+    private bool _shouldValidateCreate = false;
+    private bool _shouldValidateUpdate = false;
+
+	// Delegado que MudForm espera para aplicar la validacion.
+    private Func<object, string, Task<IEnumerable<string>>> CreateValidationDelegate()
+    {
+        return async (model, propertyName) =>
+        {
+            // Si el falg está desactivado, no validamos los campos.
+            if (!_shouldValidateCreate)
+                return Array.Empty<string>();
+
+            return await _createTripDtoValidator.ValidateValue(model, propertyName);
+        };
+    }
+
+
     protected override async Task OnInitializedAsync()
     {
         try
@@ -470,6 +488,8 @@
     {
         try
         {
+            _shouldValidateCreate = true;
+
             if (_createForm is not null)
             {
                 await _createForm.Validate();
@@ -478,7 +498,11 @@
 
             await TripService.CreateTripAsync(_createTripDto);
             Snackbar.Add("Viaje creado correctamente.", Severity.Success);
+            
             ClearForm();
+            
+            _shouldValidateCreate = false;
+
             await _table.ReloadServerData();
         }
         catch (ServiceValidationException ex)
@@ -609,14 +633,19 @@
         }
     }
 
-    private void ClearForm()
+    private async void ClearForm()
     {
-        _createTripDto = new()
-        {
-            DepartureTime = DefaultDepartureDate,
-            ArrivalTime = DefaultArrivalDate
-        };
+		_shouldValidateCreate = false;
+
+        _createTripDto.DepartureStationId = 0;
+        _createTripDto.ArrivalStationId = 0;
+        _createTripDto.DepartureTime = DefaultDepartureDate;
+        _createTripDto.ArrivalTime = DefaultArrivalDate;
+        _createTripDto.AvailableSeats = 0;
+
         _createForm?.ResetValidation();
+
+        StateHasChanged();
     }
 
     // Create form handlers
@@ -712,4 +741,4 @@
     {
         Navigation.NavigateTo($"/trips/reserve/{tripId}");
     }
-}}
+}

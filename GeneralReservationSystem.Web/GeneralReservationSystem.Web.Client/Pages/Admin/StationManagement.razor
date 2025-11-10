@@ -481,8 +481,11 @@
 
     private void ClearCreateForm()
     {
-        _createStationDto = new CreateStationDto();
-        _createForm?.ResetValidation();
+        _createStationDto.StationName = string.Empty;
+        _createStationDto.City = string.Empty;
+        _createStationDto.Province = string.Empty;
+        _createStationDto.Country = string.Empty;
+        _createForm.ResetValidation();
     }
 
     private void HandleFileSelected(IBrowserFile file)
