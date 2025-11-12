@@ -25,7 +25,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             return new(Encoding.UTF8.GetBytes(secretKey));
         }
 
-        public static string GenerateJwtToken(UserSessionInfo userSession, JwtSettings settings)
+        public static string GenerateJwtToken(this UserSessionInfo userSession, JwtSettings settings)
         {
             SymmetricSecurityKey key = GetIssuerSigningKeyFromString(settings.SecretKey);
             SigningCredentials credentials = new(key, SecurityAlgorithms.HmacSha256);
@@ -52,7 +52,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        public static void SetJwtCookie(HttpContext context, string token, JwtSettings settings)
+        public static void SetJwtCookie(this HttpResponse response, string token, JwtSettings settings)
         {
             CookieOptions options = new()
             {
@@ -65,10 +65,13 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
                 Expires = DateTimeOffset.UtcNow.AddDays(settings.ExpirationDays)
             };
 
-            context.Response.Cookies.Append(CookieName, token, options);
+            response.Cookies.Append(CookieName, token, options);
         }
 
-        public static string GenerateAndSetJwtCookie(HttpContext context, UserSessionInfo userSession, JwtSettings settings)
+        public static void SetJwtCookie(this HttpContext context, string token, JwtSettings settings)
+            => SetJwtCookie(context.Response, token, settings); 
+
+		public static string GenerateAndSetJwtCookie(this HttpContext context, UserSessionInfo userSession, JwtSettings settings)
         {
             string token = GenerateJwtToken(userSession, settings);
             SetJwtCookie(context, token, settings);
@@ -76,17 +79,18 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             return token;
         }
 
-        public static void ClearJwtCookie(HttpContext context)
-        {
-            context.Response.Cookies.Delete(CookieName, new()
-            {
+		public static void ClearJwtCookie(this HttpResponse response)
+		{
+			response.Cookies.Delete(CookieName, new()
+			{
 				HttpOnly = true,
 				Secure = true,
-
 				SameSite = SameSiteMode.None,
-
 				Path = CookiePath,
 			});
-        }
-    }
+		}
+
+		public static void ClearJwtCookie(this HttpContext context) 
+            => ClearJwtCookie(context.Response);
+	}
 }

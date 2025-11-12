@@ -6,6 +6,8 @@ using GeneralReservationSystem.Application.Entities.Authentication;
 using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Services.Interfaces.Authentication;
 using GeneralReservationSystem.Application.Helpers;
+using GeneralReservationSystem.Infrastructure.Helpers;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -167,6 +169,21 @@ namespace GeneralReservationSystem.API.Controllers
 		[Authorize(Roles = AdminRoleName)]
 		public async Task<IActionResult> DeleteUserById([FromRoute] int userId, CancellationToken cancellationToken)
 		{
+			string? currentIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+			if (string.IsNullOrEmpty(currentIdStr))
+			{
+				return Unauthorized();
+			}
+
+			int currentId = int.Parse(currentIdStr);
+
+			//Si el admin pretende eliminarse a sí mismo, se devuelve un conflicto.
+			if (userId == currentId)
+			{
+				return Conflict(new { error = "Los administradores no pueden eliminarse a sí mismos." });
+			}
+
 			UserKeyDto userKeyDto = new() { UserId = userId };
 
 			IActionResult? validationResult = await ValidationHelper.ValidateAsync(userKeyValidator, userKeyDto, cancellationToken);
@@ -199,7 +216,13 @@ namespace GeneralReservationSystem.API.Controllers
                 return Unauthorized();
             }
 
-            return await DeleteUserById(int.Parse(userId), cancellationToken);
-        }
+			var response = await DeleteUserById(int.Parse(userId), cancellationToken);
+
+			//Si el usuario se eliminó correctamente, se elimina la cookie con el JWT.
+			if (response.GetType() == typeof(NoContentResult))
+				Response.ClearJwtCookie();
+
+			return response;
+		}
     }
 }
