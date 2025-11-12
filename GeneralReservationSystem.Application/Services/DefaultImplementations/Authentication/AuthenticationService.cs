@@ -14,24 +14,20 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
         private async Task<UserInfo> RegisterUserAsync_Internal(RegisterUserDto dto, bool isAdmin = false, CancellationToken cancellationToken = default)
         {
 			(byte[] hash, byte[] salt) = PasswordHelper.HashPassword(dto.Password);
+
 			User user = new()
 			{
-				UserName = dto.UserName,
-				Email = dto.Email,
-				PasswordHash = hash,
-				PasswordSalt = salt,
-				IsAdmin = isAdmin
+				UserName        = dto.UserName,
+				Email           = dto.Email,
+				PasswordHash    = hash,
+				PasswordSalt    = salt,
+				IsAdmin         = isAdmin
 			};
+
 			try
 			{
 				_ = await userRepository.CreateAsync(user, cancellationToken);
-				return new UserInfo
-				{
-					UserId = user.UserId,
-					UserName = user.UserName,
-					Email = user.Email,
-					IsAdmin = user.IsAdmin
-				};
+                return user.GetUserInfo();
 			}
 			catch (UniqueConstraintViolationException ex)
 			{
@@ -53,16 +49,12 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
             try
             {
                 string normalizedInput = dto.UserNameOrEmail.Trim().ToUpperInvariant();
-                User user = await userRepository.GetByUserNameOrEmailAsync(normalizedInput, cancellationToken) ?? throw new ServiceNotFoundException("No se encontró el usuario.");
+
+                User user = await userRepository.GetByUserNameOrEmailAsync(normalizedInput, cancellationToken) ?? throw new ServiceBusinessException("Usuario o contraseña incorrectos.");
+
                 return !PasswordHelper.VerifyPassword(dto.Password, user.PasswordHash, user.PasswordSalt)
                     ? throw new ServiceBusinessException("Usuario o contraseña incorrectos.")
-                    : new UserInfo
-                    {
-                        UserId = user.UserId,
-                        UserName = user.UserName,
-                        Email = user.Email,
-                        IsAdmin = user.IsAdmin
-                    };
+                    : user.GetUserInfo();
             }
             catch (ServiceBusinessException)
             {

@@ -481,10 +481,10 @@ namespace GeneralReservationSystem.Tests.Services.Authentication
                 .ReturnsAsync((User?)null);
 
             // Act & Assert
-            ServiceNotFoundException exception = await Assert.ThrowsAsync<ServiceNotFoundException>(
+            ServiceBusinessException exception = await Assert.ThrowsAsync<ServiceBusinessException>(
                 () => _authenticationService.AuthenticateAsync(loginDto));
 
-            Assert.Equal("No se encontró el usuario.", exception.Message);
+            Assert.Equal("Usuario o contraseña incorrectos.", exception.Message);
         }
 
         [Fact]
