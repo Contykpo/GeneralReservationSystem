@@ -3,13 +3,16 @@
 on:
   push:
     branches:
-      - main
-      - Nachito
-      - Facundo
-      - Samuel
+      - '**'
+  workflow_dispatch:
+    inputs:
+      deploy_confirm:
+        description: 'Confirm deployment'
+        required: false
+        default: 'false'
 
 jobs:
-  build-test-push-deploy:
+  build_test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -28,59 +31,66 @@ jobs:
       - name: Test
         run: dotnet test GeneralReservationSystem.sln --no-build -c Release
 
+  deploy:
+    needs: build-test
+    runs-on: ubuntu-latest
+    if: >
+      needs.build_test.result == 'success' &&
+      github.ref == 'refs/heads/main' &&
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.deploy_confirm == 'true'
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0.x'
+      
+      - name: Restore
+        run: dotnet restore GeneralReservationSystem.sln
+
+      - name: Build
+        run: dotnet build GeneralReservationSystem.sln --no-restore -c Release
+
       - name: Build Docker images
         run: docker compose -f docker-compose.yml build
 
       - name: Log in to Docker Hub
-        if: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') }}
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
       - name: Push Images
-        if: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') }}
         run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            TAG="${{ github.sha }}"
-          else
-            TAG="${GITHUB_REF#refs/tags/}"
-          fi
-          
+          TAG="${{ github.sha }}"
           docker tag generalreservationsystem-generalreservationsystem.migrator ${{ secrets.DOCKER_HUB_USER }}/grs-migrator:$TAG
           docker tag generalreservationsystem-generalreservationsystem.api ${{ secrets.DOCKER_HUB_USER }}/grs-api:$TAG
           docker tag generalreservationsystem-generalreservationsystem.web ${{ secrets.DOCKER_HUB_USER }}/grs-web:$TAG
-          
           docker push ${{ secrets.DOCKER_HUB_USER }}/grs-migrator:$TAG
           docker push ${{ secrets.DOCKER_HUB_USER }}/grs-api:$TAG
           docker push ${{ secrets.DOCKER_HUB_USER }}/grs-web:$TAG
-          
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            docker tag ${{ secrets.DOCKER_HUB_USER }}/grs-migrator:$TAG ${{ secrets.DOCKER_HUB_USER }}/grs-migrator:latest
-            docker tag ${{ secrets.DOCKER_HUB_USER }}/grs-api:$TAG ${{ secrets.DOCKER_HUB_USER }}/grs-api:latest
-            docker tag ${{ secrets.DOCKER_HUB_USER }}/grs-web:$TAG ${{ secrets.DOCKER_HUB_USER }}/grs-web:latest
-            
-            docker push ${{ secrets.DOCKER_HUB_USER }}/grs-migrator:latest
-            docker push ${{ secrets.DOCKER_HUB_USER }}/grs-api:latest
-            docker push ${{ secrets.DOCKER_HUB_USER }}/grs-web:latest
-          fi
+          docker tag ${{ secrets.DOCKER_HUB_USER }}/grs-migrator:$TAG ${{ secrets.DOCKER_HUB_USER }}/grs-migrator:latest
+          docker tag ${{ secrets.DOCKER_HUB_USER }}/grs-api:$TAG ${{ secrets.DOCKER_HUB_USER }}/grs-api:latest
+          docker tag ${{ secrets.DOCKER_HUB_USER }}/grs-web:$TAG ${{ secrets.DOCKER_HUB_USER }}/grs-web:latest
+          docker push ${{ secrets.DOCKER_HUB_USER }}/grs-migrator:latest
+          docker push ${{ secrets.DOCKER_HUB_USER }}/grs-api:latest
+          docker push ${{ secrets.DOCKER_HUB_USER }}/grs-web:latest
 
       - name: Run Migrations on Supabase
-        if: ${{ github.ref == 'refs/heads/main' }}
         env:
           SUPABASE_CONNECTION_STRING: ${{ secrets.SUPABASE_CONNECTION_STRING }}
         run: |
           docker run --rm generalreservationsystem-generalreservationsystem.migrator migrate "$SUPABASE_CONNECTION_STRING"
 
       - name: Deploy API server on Render
-        if: ${{ github.ref == 'refs/heads/main' }}
         env:
           deploy_url_api: ${{ secrets.RENDER_DEPLOY_HOOK_URL_API }}
         run: |
           curl "$deploy_url_api"
 
       - name: Deploy Web server on Render
-        if: ${{ github.ref == 'refs/heads/main' }}
         env:
           deploy_url_web: ${{ secrets.RENDER_DEPLOY_HOOK_URL_WEB }}
         run: |
