@@ -2,14 +2,15 @@
 
 on:
   push:
-    branches:
-      - '**'
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
   workflow_dispatch:
     inputs:
       deploy_confirm:
-        description: 'Confirm deployment'
-        required: false
-        default: 'false'
+        description: "Deploy after CI? (yes/no)"
+        required: true
+        default: "no"
 
 jobs:
   build_test:
@@ -32,13 +33,9 @@ jobs:
         run: dotnet test GeneralReservationSystem.sln --no-build -c Release
 
   deploy:
-    needs: build-test
+    needs: build_test
     runs-on: ubuntu-latest
-    if: >
-      needs.build_test.result == 'success' &&
-      github.ref == 'refs/heads/main' &&
-      github.event_name == 'workflow_dispatch' &&
-      github.event.inputs.deploy_confirm == 'true'
+    if: github.ref == 'refs/heads/main' && github.event.inputs.deploy_confirm == 'yes'
     steps:
       - uses: actions/checkout@v3
       
