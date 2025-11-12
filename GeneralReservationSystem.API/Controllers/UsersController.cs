@@ -5,9 +5,14 @@ using GeneralReservationSystem.Application.DTOs.Authentication;
 using GeneralReservationSystem.Application.Entities.Authentication;
 using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Services.Interfaces.Authentication;
+using GeneralReservationSystem.Application.Helpers;
+using GeneralReservationSystem.Infrastructure.Helpers;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+
+using static GeneralReservationSystem.Application.Constants;
 
 namespace GeneralReservationSystem.API.Controllers
 {
@@ -17,33 +22,30 @@ namespace GeneralReservationSystem.API.Controllers
     public class UsersController(IUserService userService, IValidator<PagedSearchRequestDto> pagedSearchValidator, IValidator<UpdateUserDto> updateUserValidator, IValidator<UserKeyDto> userKeyValidator) : ControllerBase
     {
         [HttpPost("search")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = AdminRoleName)]
         public async Task<IActionResult> SearchUsers([FromBody] PagedSearchRequestDto searchDto, CancellationToken cancellationToken)
         {
             IActionResult? validationResult = await ValidationHelper.ValidateAsync(pagedSearchValidator, searchDto, cancellationToken);
+
             if (validationResult != null)
             {
                 return validationResult;
             }
 
             Application.Common.PagedResult<UserInfo> result = await userService.SearchUsersAsync(searchDto, cancellationToken);
+
             return Ok(result);
         }
 
         [HttpGet("search")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = AdminRoleName)]
         public async Task<IActionResult> SearchUsers(CancellationToken cancellationToken)
         {
             PagedSearchRequestDto searchDto = new();
-            searchDto.PopulateFromQuery(Request.Query);
-            IActionResult? validationResult = await ValidationHelper.ValidateAsync(pagedSearchValidator, searchDto, cancellationToken);
-            if (validationResult != null)
-            {
-                return validationResult;
-            }
 
-            Application.Common.PagedResult<UserInfo> result = await userService.SearchUsersAsync(searchDto, cancellationToken);
-            return Ok(result);
+            searchDto.PopulateFromQuery(Request.Query);
+
+            return await SearchUsers(searchDto, cancellationToken);
         }
 
         [HttpGet("me")]
@@ -51,206 +53,169 @@ namespace GeneralReservationSystem.API.Controllers
         public async Task<IActionResult> GetCurrentUser(CancellationToken cancellationToken)
         {
             string? userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized();
             }
-            UserKeyDto userKeyDto = new() { UserId = int.Parse(userId) };
-            IActionResult? validationResult = await ValidationHelper.ValidateAsync(userKeyValidator, userKeyDto, cancellationToken);
-            if (validationResult != null)
-            {
-                return validationResult;
-            }
 
-            try
-            {
-                UserKeyDto keyDto = new() { UserId = int.Parse(userId) };
-                User user = await userService.GetUserAsync(keyDto, cancellationToken);
-                UserInfo userInfo = new()
-                {
-                    UserId = user.UserId,
-                    UserName = user.UserName,
-                    Email = user.Email,
-                    IsAdmin = user.IsAdmin
-                };
-                return Ok(userInfo);
-            }
-            catch (ServiceNotFoundException ex)
-            {
-                return NotFound(new { error = ex.Message });
-            }
+            return await GetUserById(int.Parse(userId), cancellationToken);
         }
 
         [HttpGet("{userId:int}")]
-        public async Task<IActionResult> GetUserById([FromRoute] int userId, CancellationToken cancellationToken)
+		[Authorize]
+		public async Task<IActionResult> GetUserById([FromRoute] int userId, CancellationToken cancellationToken)
         {
-            string? currentIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(currentIdStr))
-            {
-                return Unauthorized();
-            }
-            int currentId = int.Parse(currentIdStr);
-            if (!User.IsInRole("Admin") && userId != currentId)
-            {
-                return Forbid();
-            }
-            UserKeyDto userKeyDto = new() { UserId = userId };
-            IActionResult? validationResult = await ValidationHelper.ValidateAsync(userKeyValidator, userKeyDto, cancellationToken);
-            if (validationResult != null)
-            {
-                return validationResult;
-            }
+			string? currentIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            try
-            {
-                UserKeyDto keyDto = new() { UserId = userId };
-                User user = await userService.GetUserAsync(keyDto, cancellationToken);
-                return Ok(user);
-            }
-            catch (ServiceNotFoundException ex)
-            {
-                return NotFound(new { error = ex.Message });
-            }
-        }
+			if (string.IsNullOrEmpty(currentIdStr))
+			{
+				return Unauthorized();
+			}
+
+			int currentId = int.Parse(currentIdStr);
+
+			if (!User.IsInRole("Admin") && userId != currentId)
+			{
+				return Forbid();
+			}
+
+			UserKeyDto keyDto = new() { UserId = userId };
+
+			IActionResult? validationResult = await ValidationHelper.ValidateAsync(userKeyValidator, keyDto, cancellationToken);
+
+			if (validationResult != null)
+			{
+				return validationResult;
+			}
+
+			try
+			{
+				UserInfo userInfo  = (await userService.GetUserAsync(keyDto, cancellationToken)).GetUserInfo();
+
+				return Ok(userInfo);
+			}
+			catch (ServiceNotFoundException ex)
+			{
+				return NotFound(new { error = ex.Message });
+			}
+		}
+
+        public async Task<IActionResult> UpdateUser(UpdateUserDto dto, CancellationToken cancellationToken)
+        {
+			IActionResult? validationResult = await ValidationHelper.ValidateAsync(updateUserValidator, dto, cancellationToken);
+
+			if (validationResult != null)
+			{
+				return validationResult;
+			}
+
+			try
+			{
+                UserInfo userInfo = (await userService.UpdateUserAsync(dto, cancellationToken)).GetUserInfo();
+
+				return Ok(userInfo);
+			}
+			catch (ServiceNotFoundException ex)
+			{
+				return NotFound(new { error = ex.Message });
+			}
+			catch (ServiceBusinessException ex)
+			{
+				return Conflict(new { error = ex.Message });
+			}
+		}
 
         [HttpPut("me")]
         [Authorize]
         public async Task<IActionResult> UpdateCurrentUser([FromBody] UpdateUserDto dto, CancellationToken cancellationToken)
         {
             string? userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized();
             }
-            dto.UserId = int.Parse(userId);
-            IActionResult? validationResult = await ValidationHelper.ValidateAsync(updateUserValidator, dto, cancellationToken);
-            if (validationResult != null)
-            {
-                return validationResult;
-            }
 
-            try
-            {
-                User user = await userService.UpdateUserAsync(dto, cancellationToken);
-                UserInfo userInfo = new()
-                {
-                    UserId = user.UserId,
-                    UserName = user.UserName,
-                    Email = user.Email,
-                    IsAdmin = user.IsAdmin
-                };
-                return Ok(userInfo);
-            }
-            catch (ServiceNotFoundException ex)
-            {
-                return NotFound(new { error = ex.Message });
-            }
-            catch (ServiceBusinessException ex)
-            {
-                return Conflict(new { error = ex.Message });
-            }
+            dto.UserId = int.Parse(userId);
+
+            return await UpdateUser(dto, cancellationToken);
         }
 
         [HttpPut("{userId:int}")]
-        public async Task<IActionResult> UpdateUserById([FromRoute] int userId, [FromBody] UpdateUserDto dto, CancellationToken cancellationToken)
+		[Authorize]
+		public async Task<IActionResult> UpdateUserById([FromRoute] int userId, [FromBody] UpdateUserDto dto, CancellationToken cancellationToken)
         {
-            string? currentIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(currentIdStr))
-            {
-                return Unauthorized();
-            }
-            int currentId = int.Parse(currentIdStr);
-            if (!User.IsInRole("Admin") && userId != currentId)
-            {
-                return Forbid();
-            }
             dto.UserId = userId;
-            IActionResult? validationResult = await ValidationHelper.ValidateAsync(updateUserValidator, dto, cancellationToken);
-            if (validationResult != null)
-            {
-                return validationResult;
-            }
 
-            try
-            {
-                User user = await userService.UpdateUserAsync(dto, cancellationToken);
-                UserInfo userInfo = new()
-                {
-                    UserId = user.UserId,
-                    UserName = user.UserName,
-                    Email = user.Email,
-                    IsAdmin = user.IsAdmin
-                };
-                return Ok(userInfo);
-            }
-            catch (ServiceNotFoundException ex)
-            {
-                return NotFound(new { error = ex.Message });
-            }
-            catch (ServiceBusinessException ex)
-            {
-                return Conflict(new { error = ex.Message });
-            }
+			string? currentIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+			if (string.IsNullOrEmpty(currentIdStr))
+			{
+				return Unauthorized();
+			}
+
+			int currentId = int.Parse(currentIdStr);
+
+			if (!User.IsInRole("Admin") && userId != currentId)
+			{
+				return Forbid();
+			}
+
+			return await UpdateUser(dto, cancellationToken);
         }
 
-        [HttpDelete("me")]
+		[HttpDelete("{userId:int}")]
+		[Authorize(Roles = AdminRoleName)]
+		public async Task<IActionResult> DeleteUserById([FromRoute] int userId, CancellationToken cancellationToken)
+		{
+			string? currentIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+			if (string.IsNullOrEmpty(currentIdStr))
+			{
+				return Unauthorized();
+			}
+
+			int currentId = int.Parse(currentIdStr);
+
+			UserKeyDto userKeyDto = new() { UserId = userId };
+
+			IActionResult? validationResult = await ValidationHelper.ValidateAsync(userKeyValidator, userKeyDto, cancellationToken);
+
+			if (validationResult != null)
+			{
+				return validationResult;
+			}
+
+			try
+			{
+				UserKeyDto keyDto = new() { UserId = userId };
+				await userService.DeleteUserAsync(keyDto, cancellationToken);
+
+				//Si el usuario pretende eliminarse a si mismo, se elimina la cookie con el JWT.
+				if (userId == currentId)
+					Response.ClearJwtCookie();
+
+				return NoContent();
+			}
+			catch (ServiceNotFoundException ex)
+			{
+				return NotFound(new { error = ex.Message });
+			}
+		}
+
+		[HttpDelete("me")]
         [Authorize]
         public async Task<IActionResult> DeleteCurrentUser(CancellationToken cancellationToken)
         {
             string? userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized();
             }
-            UserKeyDto userKeyDto = new() { UserId = int.Parse(userId) };
-            IActionResult? validationResult = await ValidationHelper.ValidateAsync(userKeyValidator, userKeyDto, cancellationToken);
-            if (validationResult != null)
-            {
-                return validationResult;
-            }
 
-            try
-            {
-                UserKeyDto keyDto = new() { UserId = int.Parse(userId) };
-                await userService.DeleteUserAsync(keyDto, cancellationToken);
-                return NoContent();
-            }
-            catch (ServiceNotFoundException ex)
-            {
-                return NotFound(new { error = ex.Message });
-            }
-        }
-
-        [HttpDelete("{userId:int}")]
-        public async Task<IActionResult> DeleteUserById([FromRoute] int userId, CancellationToken cancellationToken)
-        {
-            string? currentIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(currentIdStr))
-            {
-                return Unauthorized();
-            }
-            int currentId = int.Parse(currentIdStr);
-            if (!User.IsInRole("Admin") && userId != currentId)
-            {
-                return Forbid();
-            }
-            UserKeyDto userKeyDto = new() { UserId = userId };
-            IActionResult? validationResult = await ValidationHelper.ValidateAsync(userKeyValidator, userKeyDto, cancellationToken);
-            if (validationResult != null)
-            {
-                return validationResult;
-            }
-
-            try
-            {
-                UserKeyDto keyDto = new() { UserId = userId };
-                await userService.DeleteUserAsync(keyDto, cancellationToken);
-                return NoContent();
-            }
-            catch (ServiceNotFoundException ex)
-            {
-                return NotFound(new { error = ex.Message });
-            }
-        }
+			return await DeleteUserById(int.Parse(userId), cancellationToken);
+		}
     }
 }

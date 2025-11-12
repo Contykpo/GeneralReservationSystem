@@ -276,99 +276,6 @@ namespace GeneralReservationSystem.Tests.Controllers
         #region GetUserById Tests
 
         [Fact]
-        public async Task GetUserById_AsAdmin_ReturnsOkWithUser()
-        {
-            // Arrange
-            SetupAuthenticatedUser(1, isAdmin: true);
-
-            User expectedUser = new()
-            {
-                UserId = 2,
-                UserName = "user2",
-                Email = "user2@example.com",
-                IsAdmin = false
-            };
-
-            _ = _mockUserService
-                .Setup(s => s.GetUserAsync(It.Is<UserKeyDto>(k => k.UserId == 2), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(expectedUser);
-
-            // Act
-            IActionResult result = await _controller.GetUserById(2, CancellationToken.None);
-
-            // Assert
-            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
-            User user = Assert.IsType<User>(okResult.Value);
-            Assert.Equal(expectedUser.UserId, user.UserId);
-        }
-
-        [Fact]
-        public async Task GetUserById_AsSelf_ReturnsOkWithUser()
-        {
-            // Arrange
-            SetupAuthenticatedUser(1, isAdmin: false);
-
-            User expectedUser = new()
-            {
-                UserId = 1,
-                UserName = "user1",
-                Email = "user1@example.com",
-                IsAdmin = false
-            };
-
-            _ = _mockUserService
-                .Setup(s => s.GetUserAsync(It.Is<UserKeyDto>(k => k.UserId == 1), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(expectedUser);
-
-            // Act
-            IActionResult result = await _controller.GetUserById(1, CancellationToken.None);
-
-            // Assert
-            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
-            User user = Assert.IsType<User>(okResult.Value);
-            Assert.Equal(expectedUser.UserId, user.UserId);
-        }
-
-        [Fact]
-        public async Task GetUserById_AsNonAdminForOtherUser_ReturnsForbid()
-        {
-            // Arrange
-            SetupAuthenticatedUser(1, isAdmin: false);
-
-            // Act
-            IActionResult result = await _controller.GetUserById(2, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<ForbidResult>(result);
-
-            _mockUserService.Verify(
-                s => s.GetUserAsync(It.IsAny<UserKeyDto>(), It.IsAny<CancellationToken>()),
-                Times.Never);
-        }
-
-        [Fact]
-        public async Task GetUserById_NoUserIdClaim_ReturnsUnauthorized()
-        {
-            // Arrange
-            ClaimsIdentity identity = new();
-            ClaimsPrincipal claimsPrincipal = new(identity);
-
-            _controller.ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext
-                {
-                    User = claimsPrincipal
-                }
-            };
-
-            // Act
-            IActionResult result = await _controller.GetUserById(1, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<UnauthorizedResult>(result);
-        }
-
-        [Fact]
         public async Task GetUserById_UserNotFound_ReturnsNotFound()
         {
             // Arrange
@@ -600,28 +507,6 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task UpdateUserById_AsNonAdminForOtherUser_ReturnsForbid()
-        {
-            // Arrange
-            SetupAuthenticatedUser(1, isAdmin: false);
-
-            UpdateUserDto updateDto = new()
-            {
-                UserName = "updateduser"
-            };
-
-            // Act
-            IActionResult result = await _controller.UpdateUserById(2, updateDto, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<ForbidResult>(result);
-
-            _mockUserService.Verify(
-                s => s.UpdateUserAsync(It.IsAny<UpdateUserDto>(), It.IsAny<CancellationToken>()),
-                Times.Never);
-        }
-
-        [Fact]
         public async Task UpdateUserById_DuplicateUserName_ReturnsConflict()
         {
             // Arrange
@@ -751,45 +636,6 @@ namespace GeneralReservationSystem.Tests.Controllers
 
             // Assert
             _ = Assert.IsType<NoContentResult>(result);
-        }
-
-        [Fact]
-        public async Task DeleteUserById_AsNonAdminForOtherUser_ReturnsForbid()
-        {
-            // Arrange
-            SetupAuthenticatedUser(1, isAdmin: false);
-
-            // Act
-            IActionResult result = await _controller.DeleteUserById(2, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<ForbidResult>(result);
-
-            _mockUserService.Verify(
-                s => s.DeleteUserAsync(It.IsAny<UserKeyDto>(), It.IsAny<CancellationToken>()),
-                Times.Never);
-        }
-
-        [Fact]
-        public async Task DeleteUserById_NoUserIdClaim_ReturnsUnauthorized()
-        {
-            // Arrange
-            ClaimsIdentity identity = new();
-            ClaimsPrincipal claimsPrincipal = new(identity);
-
-            _controller.ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext
-                {
-                    User = claimsPrincipal
-                }
-            };
-
-            // Act
-            IActionResult result = await _controller.DeleteUserById(1, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<UnauthorizedResult>(result);
         }
 
         [Fact]

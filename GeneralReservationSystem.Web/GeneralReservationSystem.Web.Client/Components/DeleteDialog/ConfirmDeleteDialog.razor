@@ -1,0 +1,38 @@
+﻿@using System.Threading.Tasks
+@typeparam TItem
+
+@inject IDialogService DialogService
+
+<MudDialog>
+    <DialogContent>
+        <MudText>@ContentText</MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudButton OnClick="Submit" Color="Color.Error">Eliminar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public TItem Value { get; set; }
+
+    [Parameter]
+    public EventCallback<TItem> OnDeleteConfirmed { get; set; }
+
+    [Parameter]
+    public string ContentText { get; set; } = "¿Estás seguro de que deseas eliminar este elemento?";
+
+    private async Task Submit()
+    {
+        MudDialog.Close(DialogResult.Ok<TItem>(Value));
+
+        await OnDeleteConfirmed.InvokeAsync(Value);
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

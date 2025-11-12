@@ -9,7 +9,7 @@
 
 <AuthorizeView>
     <Authorized>
-        <MudNavLink OnClick="logout">Cerrar sesión</MudNavLink>
+        <MudNavLink OnClick="logout" >Cerrar sesión</MudNavLink>
     </Authorized>
     <NotAuthorized>
         <MudNavLink Href="/login">Iniciar sesión</MudNavLink>
@@ -18,12 +18,20 @@
 </AuthorizeView>
 
 @code {
+
+    [Parameter]
+    public EventCallback OnLogout { get; set; }
+
     private async Task logout()
     {
         await ClientAuthenticationService.LogoutAsync();
         if (AuthStateProvider is ClientAuthenticationStateProvider custom)
         {
             custom.MarkUserAsLoggedOut();
+
+            Navigation.NavigateTo("/");
+
+            await OnLogout.InvokeAsync();
         }
     }
 }
