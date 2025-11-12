@@ -21,7 +21,7 @@
     </MudAppBar>
 
     <MudDrawer @bind-Open="@_drawerOpen" Anchor="Anchor.End" Elevation="1" Variant="@DrawerVariant.Temporary">
-        <NavMenu />
+        <NavMenu OnLogout="ToggleDrawer"/>
     </MudDrawer>
 
     <MudMainContent Class="d-flex flex-fill">

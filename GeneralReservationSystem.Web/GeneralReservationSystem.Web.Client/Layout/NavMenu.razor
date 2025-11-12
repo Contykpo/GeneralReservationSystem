@@ -16,5 +16,10 @@
             <MudNavLink Href="/admin/users">Usuarios</MudNavLink>
         </Authorized>
     </AuthorizeView>
-    <LoginDisplay />
+    <LoginDisplay OnLogout="OnLogout"/>
 </MudNavMenu>
+
+@code{
+    [Parameter]
+    public EventCallback OnLogout { get; set; }
+}
