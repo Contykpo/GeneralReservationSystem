@@ -21,6 +21,7 @@
 @inject ISnackbar Snackbar
 @inject NavigationManager Navigation
 
+
 <PageTitle>Reservar Asiento</PageTitle>
 
 @if (_loading)
@@ -97,6 +98,7 @@ else
     private bool _loading = true;
     private string? _error;
 
+
     protected override async Task OnParametersSetAsync()
     {
         _loading = true;
@@ -112,9 +114,10 @@ else
                 Snackbar.Add("No hay asientos libres para este viaje.", Severity.Warning);
             }
         }
-        catch (ServiceNotFoundException)
+        catch (ServiceNotFoundException ex)
         {
             // Trip not found - handled by null check
+            Snackbar.Add(ex.Message, Severity.Error);
         }
         catch
         {
@@ -135,50 +138,65 @@ else
     private async Task ConfirmReservation()
     {
         if (_selectedSeat == null) return;
+
         if (_tripDetails != null && DateTime.Now >= _tripDetails.DepartureTime)
         {
             Snackbar.Add("No se pueden reservar asientos porque el viaje ya comenzó.", Severity.Error);
             return;
         }
+
         try
         {
             var keyDto = new ReservationKeyDto { TripId = TripId, Seat = _selectedSeat.Value };
+
             await ClientReservationService.CreateCurrentUserReservationAsync(keyDto);
             Snackbar.Add("Reserva creada correctamente.", Severity.Success);
 
+            // Get current user info
             var currentUser = await ClientAuthenticationService.GetCurrentUserAsync();
 
             var emailDto = new ReservationConfirmationEmailDto
             {
-                Email             = currentUser.Email,
-                UserName          = currentUser.UserName,
-                DepartureStation  = _tripDetails!.DepartureStationName,
-                ArrivalStation    = _tripDetails!.ArrivalStationName,
-                DepartureTime     = _tripDetails!.DepartureTime.ToString(),
-                SeatNumber        = keyDto.Seat
-			};
+                Email = currentUser.Email,
+                UserName = currentUser.UserName,
+                DepartureStation = _tripDetails!.DepartureStationName,
+                ArrivalStation = _tripDetails!.ArrivalStationName,
+                DepartureTime = _tripDetails!.DepartureTime.ToString(),
+                SeatNumber = keyDto.Seat
+            };
 
-			// TODO: Habilitar el envío de correos cuando EmailManager esté configurado correctamente con credenciales reales de un servidor SMTP.
-			// await EmailService.SendReservationConfirmationAsync(emailDto);
+            // TODO: enable email once EmailManager SMTP works properly
+            // await EmailService.SendReservationConfirmationAsync(emailDto);
 
             Navigation.NavigateTo("/trips");
         }
         catch (ServiceBusinessException ex)
         {
             Snackbar.Add(ex.Message, Severity.Error);
-            _freeSeats = (await TripService.GetFreeSeatsAsync(new TripKeyDto { TripId = TripId })).ToList();
-            _selectedSeat = null;
+
+			await RefreshFreeSeatsAsync();
         }
         catch (ServiceValidationException ex)
         {
             foreach (var err in ex.Errors)
-            {
                 Snackbar.Add(err.Error, Severity.Error);
-            }
         }
         catch (Exception ex)
         {
             Snackbar.Add($"Error inesperado al crear la reserva. {ex.Message}", Severity.Error);
         }
     }
+
+    private async Task RefreshFreeSeatsAsync()
+    {
+        _loading = true;
+        StateHasChanged();
+
+        _freeSeats = (await TripService.GetFreeSeatsAsync(new TripKeyDto { TripId = TripId })).ToList();
+        _selectedSeat = null;
+
+        _loading = false;
+        StateHasChanged();
+    }
+
 }
