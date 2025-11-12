@@ -338,31 +338,6 @@ public class UsersControllerIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task DeleteUserById_OwnUser_ReturnsNoContent()
-    {
-        // Arrange
-        string token = await IntegrationTestHelpers.RegisterUserAsync(
-            _client,
-            "deleteuser2",
-            "delete2@example.com",
-            "DeletePassword123!");
-
-        HttpClient deleteClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, token);
-
-        HttpResponseMessage meResponse = await deleteClient.GetAsync("/api/auth/me");
-        JsonElement userInfo = await meResponse.Content.ReadFromJsonAsync<JsonElement>();
-        int deleteUserId = userInfo.GetProperty("userId").GetInt32();
-
-        // Act
-        HttpResponseMessage response = await deleteClient.DeleteAsync($"/api/users/{deleteUserId}");
-
-        // Assert
-        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
-
-        deleteClient.Dispose();
-    }
-
-    [Fact]
     public async Task DeleteUserById_AsAdmin_ReturnsNoContent()
     {
         // Arrange

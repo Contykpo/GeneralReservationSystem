@@ -1,4 +1,6 @@
-﻿namespace GeneralReservationSystem.Application.DTOs.Authentication
+﻿using GeneralReservationSystem.Application.Entities.Authentication;
+
+namespace GeneralReservationSystem.Application.DTOs.Authentication
 {
     public class RegisterUserDto
     {
@@ -35,6 +37,16 @@
 
     public class UserInfo
     {
+        public UserInfo() { }
+
+        public UserInfo(User usr) 
+        {
+            UserId      = usr.UserId;
+            UserName    = usr.UserName;
+            Email       = usr.Email;
+            IsAdmin     = usr.IsAdmin;
+		}
+
         public int UserId { get; set; }
         public string UserName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;

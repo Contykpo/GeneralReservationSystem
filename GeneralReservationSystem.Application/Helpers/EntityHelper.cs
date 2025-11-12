@@ -1,4 +1,6 @@
 ﻿using GeneralReservationSystem.Application.Common;
+using GeneralReservationSystem.Application.Entities.Authentication;
+using GeneralReservationSystem.Application.DTOs.Authentication;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -6,6 +8,8 @@ namespace GeneralReservationSystem.Application.Helpers
 {
     public static class EntityHelper
     {
+        public static UserInfo GetUserInfo(this User usr) => new UserInfo(usr);
+
         public static string GetTableName(Type entityType)
         {
             TableNameAttribute? attr = entityType.TryGetAttribute<TableNameAttribute>();

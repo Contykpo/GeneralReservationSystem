@@ -1,0 +1,38 @@
+﻿@typeparam TItem
+
+<MudIconButton 
+    OnClick="ShowConfirmDeleteDialog" 
+    Icon="@Icons.Material.Outlined.Delete" 
+    Color="Color.Error" 
+    Size="Size.Small"/>
+
+@code {
+
+    [Inject]
+    IDialogService DialogService { get; set; }
+
+    [Parameter]
+    public EventCallback<TItem> OnDeleteConfirmed { get; set; }
+
+    [Parameter]
+    public TItem Value { get; set; }
+
+    private async Task ShowConfirmDeleteDialog()
+    {
+        var options = new DialogOptions()
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.ExtraSmall,
+            FullWidth = true
+        };
+
+        var parameters = new DialogParameters<ConfirmDeleteDialog<TItem>>
+        {
+            { x => x.OnDeleteConfirmed, OnDeleteConfirmed },
+            { x => x.Value, Value }
+        };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog<TItem>>("Confirmar Eliminación", parameters, options);
+    }
+
+}
