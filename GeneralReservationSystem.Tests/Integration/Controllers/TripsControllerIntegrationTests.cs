@@ -1,4 +1,4 @@
-using GeneralReservationSystem.Application.DTOs;
+﻿using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.Entities;
 using System.Net;
 using System.Net.Http.Json;
@@ -462,12 +462,12 @@ public class TripsControllerIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task SearchTrips_ReturnsResults()
+    public async Task SearchTrips_NoFiltersOrOrders_ReturnsPagedResult()
     {
         // Arrange
         HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
 
-        CreateTripDto createDto = new()
+        CreateTripDto trip1 = new()
         {
             DepartureStationId = _departureStationId,
             DepartureTime = DateTime.UtcNow.AddDays(1),
@@ -475,20 +475,401 @@ public class TripsControllerIntegrationTests : IntegrationTestBase
             ArrivalTime = DateTime.UtcNow.AddDays(1).AddHours(2),
             AvailableSeats = 50
         };
-
-        _ = await adminClient.PostAsJsonAsync("/api/trips", createDto);
-
-        PagedSearchRequestDto searchDto = new()
+        CreateTripDto trip2 = new()
         {
-            Page = 1,
-            PageSize = 10
+            DepartureStationId = _departureStationId,
+            DepartureTime = DateTime.UtcNow.AddDays(2),
+            ArrivalStationId = _arrivalStationId,
+            ArrivalTime = DateTime.UtcNow.AddDays(2).AddHours(2),
+            AvailableSeats = 40
+        };
+        CreateTripDto trip3 = new()
+        {
+            DepartureStationId = _departureStationId,
+            DepartureTime = DateTime.UtcNow.AddDays(3),
+            ArrivalStationId = _arrivalStationId,
+            ArrivalTime = DateTime.UtcNow.AddDays(3).AddHours(2),
+            AvailableSeats = 60
         };
 
+        _ = await adminClient.PostAsJsonAsync("/api/trips", trip1);
+        _ = await adminClient.PostAsJsonAsync("/api/trips", trip2);
+        _ = await adminClient.PostAsJsonAsync("/api/trips", trip3);
+
         // Act
-        HttpResponseMessage response = await _client.PostAsJsonAsync("/api/trips/search", searchDto);
+        HttpResponseMessage response = await _client.GetAsync("/api/trips/search");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int totalCount = doc.RootElement.GetProperty("totalCount").GetInt32();
+        int itemsCount = doc.RootElement.GetProperty("items").GetArrayLength();
+        Assert.Equal(3, totalCount);
+        Assert.Equal(3, itemsCount);
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchTrips_WithPagination_ReturnsCorrectPage()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+
+        for (int i = 1; i <= 25; i++)
+        {
+            CreateTripDto trip = new()
+            {
+                DepartureStationId = _departureStationId,
+                DepartureTime = DateTime.UtcNow.AddDays(i),
+                ArrivalStationId = _arrivalStationId,
+                ArrivalTime = DateTime.UtcNow.AddDays(i).AddHours(2),
+                AvailableSeats = 50
+            };
+            _ = await adminClient.PostAsJsonAsync("/api/trips", trip);
+        }
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync("/api/trips/search?page=2&pageSize=10");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int page = doc.RootElement.GetProperty("page").GetInt32();
+        int pageSize = doc.RootElement.GetProperty("pageSize").GetInt32();
+        int totalCount = doc.RootElement.GetProperty("totalCount").GetInt32();
+        int itemsCount = doc.RootElement.GetProperty("items").GetArrayLength();
+        Assert.Equal(2, page);
+        Assert.Equal(10, pageSize);
+        Assert.Equal(25, totalCount);
+        Assert.Equal(10, itemsCount);
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchTrips_WithFilters_ReturnsFilteredResults()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+
+        CreateStationDto thirdStation = new()
+        {
+            StationName = "Third Station",
+            City = "Rosario",
+            Province = "Santa Fe",
+            Country = "Argentina"
+        };
+        HttpResponseMessage thirdStationResponse = await adminClient.PostAsJsonAsync("/api/stations", thirdStation);
+        Station? thirdStationObj = await thirdStationResponse.Content.ReadFromJsonAsync<Station>();
+        int thirdStationId = thirdStationObj!.StationId;
+
+        CreateTripDto trip1 = new()
+        {
+            DepartureStationId = _departureStationId,
+            DepartureTime = DateTime.UtcNow.AddDays(1),
+            ArrivalStationId = _arrivalStationId,
+            ArrivalTime = DateTime.UtcNow.AddDays(1).AddHours(2),
+            AvailableSeats = 50
+        };
+        CreateTripDto trip2 = new()
+        {
+            DepartureStationId = _departureStationId,
+            DepartureTime = DateTime.UtcNow.AddDays(2),
+            ArrivalStationId = thirdStationId,
+            ArrivalTime = DateTime.UtcNow.AddDays(2).AddHours(2),
+            AvailableSeats = 40
+        };
+        CreateTripDto trip3 = new()
+        {
+            DepartureStationId = thirdStationId,
+            DepartureTime = DateTime.UtcNow.AddDays(3),
+            ArrivalStationId = _arrivalStationId,
+            ArrivalTime = DateTime.UtcNow.AddDays(3).AddHours(2),
+            AvailableSeats = 60
+        };
+
+        _ = await adminClient.PostAsJsonAsync("/api/trips", trip1);
+        _ = await adminClient.PostAsJsonAsync("/api/trips", trip2);
+        _ = await adminClient.PostAsJsonAsync("/api/trips", trip3);
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync($"/api/trips/search?filters=[DepartureStationId|Equals|{_departureStationId}]");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int totalCount = doc.RootElement.GetProperty("totalCount").GetInt32();
+        int itemsCount = doc.RootElement.GetProperty("items").GetArrayLength();
+        Assert.Equal(2, totalCount);
+        Assert.Equal(2, itemsCount);
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchTrips_WithMultipleFilters_ReturnsMatchingResults()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+
+        CreateTripDto trip1 = new()
+        {
+            DepartureStationId = _departureStationId,
+            DepartureTime = DateTime.UtcNow.AddDays(1),
+            ArrivalStationId = _arrivalStationId,
+            ArrivalTime = DateTime.UtcNow.AddDays(1).AddHours(2),
+            AvailableSeats = 50
+        };
+        CreateTripDto trip2 = new()
+        {
+            DepartureStationId = _departureStationId,
+            DepartureTime = DateTime.UtcNow.AddDays(2),
+            ArrivalStationId = _arrivalStationId,
+            ArrivalTime = DateTime.UtcNow.AddDays(2).AddHours(2),
+            AvailableSeats = 30
+        };
+        CreateTripDto trip3 = new()
+        {
+            DepartureStationId = _departureStationId,
+            DepartureTime = DateTime.UtcNow.AddDays(3),
+            ArrivalStationId = _arrivalStationId,
+            ArrivalTime = DateTime.UtcNow.AddDays(3).AddHours(2),
+            AvailableSeats = 60
+        };
+
+        _ = await adminClient.PostAsJsonAsync("/api/trips", trip1);
+        _ = await adminClient.PostAsJsonAsync("/api/trips", trip2);
+        _ = await adminClient.PostAsJsonAsync("/api/trips", trip3);
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync($"/api/trips/search?filters=[DepartureStationId|Equals|{_departureStationId}]&filters=[AvailableSeats|GreaterThan|40]");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int totalCount = doc.RootElement.GetProperty("totalCount").GetInt32();
+        Assert.Equal(2, totalCount);
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchTrips_WithOrders_ReturnsSortedResults()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+
+        DateTime now = DateTime.UtcNow;
+        CreateTripDto trip1 = new()
+        {
+            DepartureStationId = _departureStationId,
+            DepartureTime = now.AddDays(3),
+            ArrivalStationId = _arrivalStationId,
+            ArrivalTime = now.AddDays(3).AddHours(2),
+            AvailableSeats = 50
+        };
+        CreateTripDto trip2 = new()
+        {
+            DepartureStationId = _departureStationId,
+            DepartureTime = now.AddDays(1),
+            ArrivalStationId = _arrivalStationId,
+            ArrivalTime = now.AddDays(1).AddHours(2),
+            AvailableSeats = 40
+        };
+        CreateTripDto trip3 = new()
+        {
+            DepartureStationId = _departureStationId,
+            DepartureTime = now.AddDays(2),
+            ArrivalStationId = _arrivalStationId,
+            ArrivalTime = now.AddDays(2).AddHours(2),
+            AvailableSeats = 60
+        };
+
+        _ = await adminClient.PostAsJsonAsync("/api/trips", trip1);
+        _ = await adminClient.PostAsJsonAsync("/api/trips", trip2);
+        _ = await adminClient.PostAsJsonAsync("/api/trips", trip3);
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync("/api/trips/search?orders=AvailableSeats|Asc");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        JsonElement items = doc.RootElement.GetProperty("items");
+        Assert.Equal(40, items[0].GetProperty("availableSeats").GetInt32());
+        Assert.Equal(50, items[1].GetProperty("availableSeats").GetInt32());
+        Assert.Equal(60, items[2].GetProperty("availableSeats").GetInt32());
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchTrips_WithDescendingOrder_ReturnsSortedResults()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+
+        CreateTripDto trip1 = new()
+        {
+            DepartureStationId = _departureStationId,
+            DepartureTime = DateTime.UtcNow.AddDays(1),
+            ArrivalStationId = _arrivalStationId,
+            ArrivalTime = DateTime.UtcNow.AddDays(1).AddHours(2),
+            AvailableSeats = 30
+        };
+        CreateTripDto trip2 = new()
+        {
+            DepartureStationId = _departureStationId,
+            DepartureTime = DateTime.UtcNow.AddDays(2),
+            ArrivalStationId = _arrivalStationId,
+            ArrivalTime = DateTime.UtcNow.AddDays(2).AddHours(2),
+            AvailableSeats = 50
+        };
+        CreateTripDto trip3 = new()
+        {
+            DepartureStationId = _departureStationId,
+            DepartureTime = DateTime.UtcNow.AddDays(3),
+            ArrivalStationId = _arrivalStationId,
+            ArrivalTime = DateTime.UtcNow.AddDays(3).AddHours(2),
+            AvailableSeats = 40
+        };
+
+        _ = await adminClient.PostAsJsonAsync("/api/trips", trip1);
+        _ = await adminClient.PostAsJsonAsync("/api/trips", trip2);
+        _ = await adminClient.PostAsJsonAsync("/api/trips", trip3);
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync("/api/trips/search?orders=AvailableSeats|Desc");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        JsonElement items = doc.RootElement.GetProperty("items");
+        Assert.Equal(50, items[0].GetProperty("availableSeats").GetInt32());
+        Assert.Equal(40, items[1].GetProperty("availableSeats").GetInt32());
+        Assert.Equal(30, items[2].GetProperty("availableSeats").GetInt32());
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchTrips_EmptyDatabase_ReturnsEmptyPagedResult()
+    {
+        // Arrange
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync("/api/trips/search");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int totalCount = doc.RootElement.GetProperty("totalCount").GetInt32();
+        int itemsCount = doc.RootElement.GetProperty("items").GetArrayLength();
+        Assert.Equal(0, totalCount);
+        Assert.Equal(0, itemsCount);
+    }
+
+    [Fact]
+    public async Task SearchTrips_NoMatchingFilters_ReturnsEmptyResults()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+
+        CreateTripDto trip = new()
+        {
+            DepartureStationId = _departureStationId,
+            DepartureTime = DateTime.UtcNow.AddDays(1),
+            ArrivalStationId = _arrivalStationId,
+            ArrivalTime = DateTime.UtcNow.AddDays(1).AddHours(2),
+            AvailableSeats = 50
+        };
+        _ = await adminClient.PostAsJsonAsync("/api/trips", trip);
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync("/api/trips/search?filters=[AvailableSeats|Equals|999]");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int totalCount = doc.RootElement.GetProperty("totalCount").GetInt32();
+        Assert.Equal(0, totalCount);
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchTrips_InvalidPageNumber_ReturnsEmptyPage()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+
+        CreateTripDto trip = new()
+        {
+            DepartureStationId = _departureStationId,
+            DepartureTime = DateTime.UtcNow.AddDays(1),
+            ArrivalStationId = _arrivalStationId,
+            ArrivalTime = DateTime.UtcNow.AddDays(1).AddHours(2),
+            AvailableSeats = 50
+        };
+        _ = await adminClient.PostAsJsonAsync("/api/trips", trip);
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync("/api/trips/search?page=100&pageSize=10");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int itemsCount = doc.RootElement.GetProperty("items").GetArrayLength();
+        Assert.Equal(0, itemsCount);
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchTrips_FilterByDepartureCity_ReturnsMatchingTrips()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+
+        CreateTripDto trip1 = new()
+        {
+            DepartureStationId = _departureStationId,
+            DepartureTime = DateTime.UtcNow.AddDays(1),
+            ArrivalStationId = _arrivalStationId,
+            ArrivalTime = DateTime.UtcNow.AddDays(1).AddHours(2),
+            AvailableSeats = 50
+        };
+        CreateTripDto trip2 = new()
+        {
+            DepartureStationId = _departureStationId,
+            DepartureTime = DateTime.UtcNow.AddDays(2),
+            ArrivalStationId = _arrivalStationId,
+            ArrivalTime = DateTime.UtcNow.AddDays(2).AddHours(2),
+            AvailableSeats = 40
+        };
+
+        _ = await adminClient.PostAsJsonAsync("/api/trips", trip1);
+        _ = await adminClient.PostAsJsonAsync("/api/trips", trip2);
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync("/api/trips/search?filters=[DepartureCity|Contains|Buenos]");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int totalCount = doc.RootElement.GetProperty("totalCount").GetInt32();
+        Assert.Equal(2, totalCount);
 
         adminClient.Dispose();
     }

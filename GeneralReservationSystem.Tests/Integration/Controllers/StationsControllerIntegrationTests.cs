@@ -1,4 +1,4 @@
-using GeneralReservationSystem.Application.DTOs;
+﻿using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.Entities;
 using System.Net;
 using System.Net.Http.Json;
@@ -148,65 +148,6 @@ public class StationsControllerIntegrationTests : IntegrationTestBase
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task SearchStations_WithQueryParameters_ReturnsFilteredResults()
-    {
-        // Arrange
-        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
-
-        CreateStationDto[] stations =
-        [
-            new CreateStationDto { StationName = "Central", City = "Buenos Aires", Province = "Buenos Aires", Country = "Argentina" },
-            new CreateStationDto { StationName = "North", City = "Rosario", Province = "Santa Fe", Country = "Argentina" },
-            new CreateStationDto { StationName = "South", City = "Cordoba", Province = "Cordoba", Country = "Argentina" }
-        ];
-
-        foreach (CreateStationDto? station in stations)
-        {
-            _ = await adminClient.PostAsJsonAsync("/api/stations", station);
-        }
-
-        // Act
-        HttpResponseMessage response = await _client.GetAsync("/api/stations/search?searchTerm=central&pageSize=10&pageNumber=1");
-
-        // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        JsonElement result = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.NotEqual(JsonValueKind.Undefined, result.ValueKind);
-
-        adminClient.Dispose();
-    }
-
-    [Fact]
-    public async Task SearchStations_PostMethod_ReturnsResults()
-    {
-        // Arrange
-        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
-
-        CreateStationDto station = new()
-        {
-            StationName = "Test Station",
-            City = "Test City",
-            Province = "Test Province",
-            Country = "Argentina"
-        };
-        _ = await adminClient.PostAsJsonAsync("/api/stations", station);
-
-        PagedSearchRequestDto searchDto = new()
-        {
-            Page = 1,
-            PageSize = 10
-        };
-
-        // Act
-        HttpResponseMessage response = await _client.PostAsJsonAsync("/api/stations/search", searchDto);
-
-        // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        adminClient.Dispose();
     }
 
     [Fact]
@@ -506,5 +447,349 @@ public class StationsControllerIntegrationTests : IntegrationTestBase
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task SearchStations_NoFiltersOrOrders_ReturnsPagedResult()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+
+        CreateStationDto station1 = new()
+        {
+            StationName = "Central Station",
+            City = "Buenos Aires",
+            Province = "Buenos Aires",
+            Country = "Argentina"
+        };
+        CreateStationDto station2 = new()
+        {
+            StationName = "North Station",
+            City = "Rosario",
+            Province = "Santa Fe",
+            Country = "Argentina"
+        };
+        CreateStationDto station3 = new()
+        {
+            StationName = "South Station",
+            City = "Cordoba",
+            Province = "Cordoba",
+            Country = "Argentina"
+        };
+
+        _ = await adminClient.PostAsJsonAsync("/api/stations", station1);
+        _ = await adminClient.PostAsJsonAsync("/api/stations", station2);
+        _ = await adminClient.PostAsJsonAsync("/api/stations", station3);
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync("/api/stations/search");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int totalCount = doc.RootElement.GetProperty("totalCount").GetInt32();
+        int itemsCount = doc.RootElement.GetProperty("items").GetArrayLength();
+        Assert.Equal(3, totalCount);
+        Assert.Equal(3, itemsCount);
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchStations_WithPagination_ReturnsCorrectPage()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+
+        for (int i = 1; i <= 25; i++)
+        {
+            CreateStationDto station = new()
+            {
+                StationName = $"Station {i}",
+                City = $"City {i}",
+                Province = $"Province {i}",
+                Country = "Argentina"
+            };
+            _ = await adminClient.PostAsJsonAsync("/api/stations", station);
+        }
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync("/api/stations/search?page=2&pageSize=10");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int page = doc.RootElement.GetProperty("page").GetInt32();
+        int pageSize = doc.RootElement.GetProperty("pageSize").GetInt32();
+        int totalCount = doc.RootElement.GetProperty("totalCount").GetInt32();
+        int itemsCount = doc.RootElement.GetProperty("items").GetArrayLength();
+        Assert.Equal(2, page);
+        Assert.Equal(10, pageSize);
+        Assert.Equal(10, itemsCount);
+        Assert.Equal(25, totalCount);
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchStations_WithFilters_ReturnsFilteredResults()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+
+        CreateStationDto station1 = new()
+        {
+            StationName = "Buenos Aires Central",
+            City = "Buenos Aires",
+            Province = "Buenos Aires",
+            Country = "Argentina"
+        };
+        CreateStationDto station2 = new()
+        {
+            StationName = "Buenos Aires Retiro",
+            City = "Buenos Aires",
+            Province = "Buenos Aires",
+            Country = "Argentina"
+        };
+        CreateStationDto station3 = new()
+        {
+            StationName = "Rosario North",
+            City = "Rosario",
+            Province = "Santa Fe",
+            Country = "Argentina"
+        };
+
+        _ = await adminClient.PostAsJsonAsync("/api/stations", station1);
+        _ = await adminClient.PostAsJsonAsync("/api/stations", station2);
+        _ = await adminClient.PostAsJsonAsync("/api/stations", station3);
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync("/api/stations/search?filters=[City|Contains|Buenos]");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int totalCount = doc.RootElement.GetProperty("totalCount").GetInt32();
+        int itemsCount = doc.RootElement.GetProperty("items").GetArrayLength();
+        Assert.Equal(2, totalCount);
+        Assert.Equal(2, itemsCount);
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchStations_WithMultipleFilters_ReturnsMatchingResults()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+
+        CreateStationDto station1 = new()
+        {
+            StationName = "Central Station",
+            City = "Buenos Aires",
+            Province = "Buenos Aires",
+            Country = "Argentina"
+        };
+        CreateStationDto station2 = new()
+        {
+            StationName = "North Station",
+            City = "Buenos Aires",
+            Province = "Buenos Aires",
+            Country = "Argentina"
+        };
+        CreateStationDto station3 = new()
+        {
+            StationName = "Central Station",
+            City = "Rosario",
+            Province = "Santa Fe",
+            Country = "Argentina"
+        };
+
+        _ = await adminClient.PostAsJsonAsync("/api/stations", station1);
+        _ = await adminClient.PostAsJsonAsync("/api/stations", station2);
+        _ = await adminClient.PostAsJsonAsync("/api/stations", station3);
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync("/api/stations/search?filters=[City|Equals|Buenos Aires]&filters=[StationName|Contains|Central]");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int totalCount = doc.RootElement.GetProperty("totalCount").GetInt32();
+        Assert.Equal(1, totalCount);
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchStations_WithOrders_ReturnsSortedResults()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+
+        CreateStationDto station1 = new()
+        {
+            StationName = "Charlie Station",
+            City = "City C",
+            Province = "Province C",
+            Country = "Argentina"
+        };
+        CreateStationDto station2 = new()
+        {
+            StationName = "Alpha Station",
+            City = "City A",
+            Province = "Province A",
+            Country = "Argentina"
+        };
+        CreateStationDto station3 = new()
+        {
+            StationName = "Bravo Station",
+            City = "City B",
+            Province = "Province B",
+            Country = "Argentina"
+        };
+
+        _ = await adminClient.PostAsJsonAsync("/api/stations", station1);
+        _ = await adminClient.PostAsJsonAsync("/api/stations", station2);
+        _ = await adminClient.PostAsJsonAsync("/api/stations", station3);
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync("/api/stations/search?orders=StationName|Asc");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        JsonElement items = doc.RootElement.GetProperty("items");
+        Assert.Equal("Alpha Station", items[0].GetProperty("stationName").GetString());
+        Assert.Equal("Bravo Station", items[1].GetProperty("stationName").GetString());
+        Assert.Equal("Charlie Station", items[2].GetProperty("stationName").GetString());
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchStations_WithDescendingOrder_ReturnsSortedResults()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+
+        CreateStationDto station1 = new()
+        {
+            StationName = "Station A",
+            City = "City A",
+            Province = "Province A",
+            Country = "Argentina"
+        };
+        CreateStationDto station2 = new()
+        {
+            StationName = "Station B",
+            City = "City B",
+            Province = "Province B",
+            Country = "Argentina"
+        };
+        CreateStationDto station3 = new()
+        {
+            StationName = "Station C",
+            City = "City C",
+            Province = "Province C",
+            Country = "Argentina"
+        };
+
+        _ = await adminClient.PostAsJsonAsync("/api/stations", station1);
+        _ = await adminClient.PostAsJsonAsync("/api/stations", station2);
+        _ = await adminClient.PostAsJsonAsync("/api/stations", station3);
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync("/api/stations/search?orders=StationName|Desc");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        JsonElement items = doc.RootElement.GetProperty("items");
+        Assert.Equal("Station C", items[0].GetProperty("stationName").GetString());
+        Assert.Equal("Station B", items[1].GetProperty("stationName").GetString());
+        Assert.Equal("Station A", items[2].GetProperty("stationName").GetString());
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchStations_EmptyDatabase_ReturnsEmptyPagedResult()
+    {
+        // Arrange
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync("/api/stations/search");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int totalCount = doc.RootElement.GetProperty("totalCount").GetInt32();
+        int itemsCount = doc.RootElement.GetProperty("items").GetArrayLength();
+        Assert.Equal(0, totalCount);
+        Assert.Equal(0, itemsCount);
+    }
+
+    [Fact]
+    public async Task SearchStations_NoMatchingFilters_ReturnsEmptyResults()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+
+        CreateStationDto station = new()
+        {
+            StationName = "Test Station",
+            City = "Test City",
+            Province = "Test Province",
+            Country = "Argentina"
+        };
+        _ = await adminClient.PostAsJsonAsync("/api/stations", station);
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync("/api/stations/search?filters=[City|Equals|NonExistentCity]");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int totalCount = doc.RootElement.GetProperty("totalCount").GetInt32();
+        Assert.Equal(0, totalCount);
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchStations_InvalidPageNumber_ReturnsEmptyPage()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+
+        CreateStationDto station = new()
+        {
+            StationName = "Test Station",
+            City = "Test City",
+            Province = "Test Province",
+            Country = "Argentina"
+        };
+        _ = await adminClient.PostAsJsonAsync("/api/stations", station);
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync("/api/stations/search?page=100&pageSize=10");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int itemsCount = doc.RootElement.GetProperty("items").GetArrayLength();
+        Assert.Equal(0, itemsCount);
+
+        adminClient.Dispose();
     }
 }

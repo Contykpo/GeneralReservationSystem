@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 using static GeneralReservationSystem.Application.Constants;
+using GeneralReservationSystem.Application.Common;
 
 namespace GeneralReservationSystem.API.Controllers
 {
@@ -21,31 +22,19 @@ namespace GeneralReservationSystem.API.Controllers
     [Authorize]
     public class UsersController(IUserService userService, IValidator<PagedSearchRequestDto> pagedSearchValidator, IValidator<UpdateUserDto> updateUserValidator, IValidator<UserKeyDto> userKeyValidator) : ControllerBase
     {
-        [HttpPost("search")]
-        [Authorize(Roles = AdminRoleName)]
-        public async Task<IActionResult> SearchUsers([FromBody] PagedSearchRequestDto searchDto, CancellationToken cancellationToken)
-        {
-            IActionResult? validationResult = await ValidationHelper.ValidateAsync(pagedSearchValidator, searchDto, cancellationToken);
-
-            if (validationResult != null)
-            {
-                return validationResult;
-            }
-
-            Application.Common.PagedResult<UserInfo> result = await userService.SearchUsersAsync(searchDto, cancellationToken);
-
-            return Ok(result);
-        }
-
         [HttpGet("search")]
         [Authorize(Roles = AdminRoleName)]
         public async Task<IActionResult> SearchUsers(CancellationToken cancellationToken)
         {
             PagedSearchRequestDto searchDto = new();
-
             searchDto.PopulateFromQuery(Request.Query);
-
-            return await SearchUsers(searchDto, cancellationToken);
+            IActionResult? validationResult = await ValidationHelper.ValidateAsync(pagedSearchValidator, searchDto, cancellationToken);
+            if (validationResult != null)
+            {
+                return validationResult;
+            }
+            PagedResult<UserInfo> result = await userService.SearchUsersAsync(searchDto, cancellationToken);
+            return Ok(result);
         }
 
         [HttpGet("me")]

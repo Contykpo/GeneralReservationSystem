@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 using FluentValidation.Results;
 using GeneralReservationSystem.API.Controllers;
 using GeneralReservationSystem.Application.Common;
@@ -8,6 +8,7 @@ using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Primitives;
 using Moq;
 using System.Security.Claims;
 
@@ -119,115 +120,6 @@ namespace GeneralReservationSystem.Tests.Controllers
             OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
             IEnumerable<Trip> trips = Assert.IsType<IEnumerable<Trip>>(okResult.Value, exactMatch: false);
             Assert.Empty(trips);
-        }
-
-        #endregion
-
-        #region SearchTrips (POST) Tests
-
-        [Fact]
-        public async Task SearchTrips_Post_ReturnsOkWithPagedResults()
-        {
-            // Arrange
-            PagedSearchRequestDto searchDto = new()
-            {
-                Page = 1,
-                PageSize = 10,
-                FilterClauses = [],
-                Orders = []
-            };
-
-            PagedResult<TripWithDetailsDto> expectedResult = new()
-            {
-                Items =
-                [
-                    new() { TripId = 1, DepartureStationName = "Station A", ArrivalStationName = "Station B" }
-                ],
-                TotalCount = 1,
-                Page = 1,
-                PageSize = 10
-            };
-
-            _ = _mockTripService
-                .Setup(s => s.SearchTripsAsync(searchDto, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(expectedResult);
-
-            // Act
-            IActionResult result = await _controller.SearchTrips(searchDto, CancellationToken.None);
-
-            // Assert
-            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
-            PagedResult<TripWithDetailsDto> pagedResult = Assert.IsType<PagedResult<TripWithDetailsDto>>(okResult.Value);
-            _ = Assert.Single(pagedResult.Items);
-            Assert.Equal(1, pagedResult.TotalCount);
-        }
-
-        [Fact]
-        public async Task SearchTrips_Post_ValidationFails_ReturnsBadRequest()
-        {
-            // Arrange
-            PagedSearchRequestDto searchDto = new()
-            {
-                Page = 0, // Invalid
-                PageSize = 10
-            };
-
-            List<ValidationFailure> validationFailures =
-            [
-                new ValidationFailure("Page", "Page must be greater than 0")
-            ];
-
-            _ = _mockPagedSearchValidator
-                .Setup(v => v.ValidateAsync(searchDto, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new ValidationResult(validationFailures));
-
-            // Act
-            IActionResult result = await _controller.SearchTrips(searchDto, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<BadRequestObjectResult>(result);
-
-            _mockTripService.Verify(
-                s => s.SearchTripsAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()),
-                Times.Never);
-        }
-
-        #endregion
-
-        #region SearchTrips (GET) Tests
-
-        [Fact]
-        public async Task SearchTrips_Get_ReturnsOkWithPagedResults()
-        {
-            // Arrange
-            PagedResult<TripWithDetailsDto> expectedResult = new()
-            {
-                Items =
-                [
-                    new() { TripId = 1 }
-                ],
-                TotalCount = 1,
-                Page = 1,
-                PageSize = 10
-            };
-
-            _ = _mockTripService
-                .Setup(s => s.SearchTripsAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(expectedResult);
-
-            _controller.ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext()
-            };
-            _controller.ControllerContext.HttpContext.Request.QueryString = new QueryString("?page=1&pageSize=10");
-
-            // Act
-            IActionResult result = await _controller.SearchTrips(CancellationToken.None);
-
-            // Assert
-            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
-            PagedResult<TripWithDetailsDto> pagedResult = Assert.IsType<PagedResult<TripWithDetailsDto>>(okResult.Value);
-            _ = Assert.Single(pagedResult.Items);
         }
 
         #endregion
@@ -645,6 +537,334 @@ namespace GeneralReservationSystem.Tests.Controllers
             // Assert
             ObjectResult statusResult = Assert.IsType<ObjectResult>(result);
             Assert.Equal(500, statusResult.StatusCode);
+        }
+
+        #endregion
+
+        #region SearchTrips Tests
+
+        [Fact]
+        public async Task SearchTrips_NoFiltersOrOrders_ReturnsPagedResult()
+        {
+            // Arrange
+            List<TripWithDetailsDto> trips =
+            [
+                new TripWithDetailsDto
+                {
+                    TripId = 1,
+                    DepartureStationId = 1,
+                    DepartureStationName = "Station A",
+                    ArrivalStationId = 2,
+                    ArrivalStationName = "Station B",
+                    DepartureTime = new DateTime(2024, 6, 1, 10, 0, 0),
+                    ArrivalTime = new DateTime(2024, 6, 1, 14, 0, 0),
+                    AvailableSeats = 50,
+                    ReservedSeats = 10
+                },
+                new TripWithDetailsDto
+                {
+                    TripId = 2,
+                    DepartureStationId = 2,
+                    DepartureStationName = "Station B",
+                    ArrivalStationId = 3,
+                    ArrivalStationName = "Station C",
+                    DepartureTime = new DateTime(2024, 6, 2, 11, 0, 0),
+                    ArrivalTime = new DateTime(2024, 6, 2, 15, 0, 0),
+                    AvailableSeats = 40,
+                    ReservedSeats = 5
+                }
+            ];
+
+            PagedResult<TripWithDetailsDto> expectedResult = new()
+            {
+                Items = trips,
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 20
+            };
+
+            _ = _mockTripService
+                .Setup(s => s.SearchTripsAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>());
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    Request = { Query = queryCollection }
+                }
+            };
+
+            // Act
+            IActionResult result = await _controller.SearchTrips(CancellationToken.None);
+
+            // Assert
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
+            PagedResult<TripWithDetailsDto> pagedResult = Assert.IsType<PagedResult<TripWithDetailsDto>>(okResult.Value);
+            Assert.Equal(2, pagedResult.TotalCount);
+            Assert.Equal(2, pagedResult.Items.Count());
+
+            _mockTripService.Verify(
+                s => s.SearchTripsAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchTrips_WithPagination_ReturnsCorrectPage()
+        {
+            // Arrange
+            List<TripWithDetailsDto> trips =
+            [
+                new TripWithDetailsDto
+                {
+                    TripId = 3,
+                    DepartureStationId = 1,
+                    DepartureStationName = "Station A",
+                    ArrivalStationId = 2,
+                    ArrivalStationName = "Station B",
+                    AvailableSeats = 50
+                }
+            ];
+
+            PagedResult<TripWithDetailsDto> expectedResult = new()
+            {
+                Items = trips,
+                TotalCount = 10,
+                Page = 2,
+                PageSize = 5
+            };
+
+            _ = _mockTripService
+                .Setup(s => s.SearchTripsAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>
+            {
+                { "page", new StringValues("2") },
+                { "pageSize", new StringValues("5") }
+            });
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    Request = { Query = queryCollection }
+                }
+            };
+
+            // Act
+            IActionResult result = await _controller.SearchTrips(CancellationToken.None);
+
+            // Assert
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
+            PagedResult<TripWithDetailsDto> pagedResult = Assert.IsType<PagedResult<TripWithDetailsDto>>(okResult.Value);
+            Assert.Equal(2, pagedResult.Page);
+            Assert.Equal(5, pagedResult.PageSize);
+            Assert.Equal(10, pagedResult.TotalCount);
+        }
+
+        [Fact]
+        public async Task SearchTrips_WithFilters_ReturnsFilteredResults()
+        {
+            // Arrange
+            List<TripWithDetailsDto> trips =
+            [
+                new TripWithDetailsDto
+                {
+                    TripId = 1,
+                    DepartureStationId = 1,
+                    DepartureStationName = "Buenos Aires Central",
+                    DepartureCity = "Buenos Aires",
+                    ArrivalStationId = 2,
+                    ArrivalStationName = "Cordoba Terminal",
+                    ArrivalCity = "Cordoba",
+                    AvailableSeats = 50
+                }
+            ];
+
+            PagedResult<TripWithDetailsDto> expectedResult = new()
+            {
+                Items = trips,
+                TotalCount = 1,
+                Page = 1,
+                PageSize = 20
+            };
+
+            _ = _mockTripService
+                .Setup(s => s.SearchTripsAsync(It.Is<PagedSearchRequestDto>(dto =>
+                    dto.FilterClauses.Any()), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>
+            {
+                { "filters", new StringValues("[DepartureCity|Contains|Buenos]") }
+            });
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    Request = { Query = queryCollection }
+                }
+            };
+
+            // Act
+            IActionResult result = await _controller.SearchTrips(CancellationToken.None);
+
+            // Assert
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
+            PagedResult<TripWithDetailsDto> pagedResult = Assert.IsType<PagedResult<TripWithDetailsDto>>(okResult.Value);
+            Assert.Single(pagedResult.Items);
+        }
+
+        [Fact]
+        public async Task SearchTrips_WithOrders_ReturnsSortedResults()
+        {
+            // Arrange
+            List<TripWithDetailsDto> trips =
+            [
+                new TripWithDetailsDto
+                {
+                    TripId = 2,
+                    DepartureStationName = "Station B",
+                    DepartureTime = new DateTime(2024, 6, 2, 10, 0, 0),
+                    ArrivalStationName = "Station A",
+                    AvailableSeats = 40
+                },
+                new TripWithDetailsDto
+                {
+                    TripId = 1,
+                    DepartureStationName = "Station A",
+                    DepartureTime = new DateTime(2024, 6, 1, 10, 0, 0),
+                    ArrivalStationName = "Station B",
+                    AvailableSeats = 50
+                }
+            ];
+
+            PagedResult<TripWithDetailsDto> expectedResult = new()
+            {
+                Items = trips,
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 20
+            };
+
+            _ = _mockTripService
+                .Setup(s => s.SearchTripsAsync(It.Is<PagedSearchRequestDto>(dto =>
+                    dto.Orders.Any()), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>
+            {
+                { "orders", new StringValues("DepartureTime|Desc") }
+            });
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    Request = { Query = queryCollection }
+                }
+            };
+
+            // Act
+            IActionResult result = await _controller.SearchTrips(CancellationToken.None);
+
+            // Assert
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
+            PagedResult<TripWithDetailsDto> pagedResult = Assert.IsType<PagedResult<TripWithDetailsDto>>(okResult.Value);
+            Assert.Equal(2, pagedResult.Items.Count());
+        }
+
+        [Fact]
+        public async Task SearchTrips_ValidationFails_ReturnsBadRequest()
+        {
+            // Arrange
+            List<ValidationFailure> validationFailures =
+            [
+                new ValidationFailure("Page", "Page must be greater than 0")
+            ];
+
+            _ = _mockPagedSearchValidator
+                .Setup(v => v.ValidateAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ValidationResult(validationFailures));
+
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>
+            {
+                { "page", new StringValues("0") }
+            });
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    Request = { Query = queryCollection }
+                }
+            };
+
+            // Act
+            IActionResult result = await _controller.SearchTrips(CancellationToken.None);
+
+            // Assert
+            _ = Assert.IsType<BadRequestObjectResult>(result);
+
+            _mockTripService.Verify(
+                s => s.SearchTripsAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()),
+                Times.Never);
+        }
+
+        [Fact]
+        public async Task SearchTrips_EmptyResults_ReturnsEmptyPagedResult()
+        {
+            // Arrange
+            PagedResult<TripWithDetailsDto> expectedResult = new()
+            {
+                Items = [],
+                TotalCount = 0,
+                Page = 1,
+                PageSize = 20
+            };
+
+            _ = _mockTripService
+                .Setup(s => s.SearchTripsAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>());
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    Request = { Query = queryCollection }
+                }
+            };
+
+            // Act
+            IActionResult result = await _controller.SearchTrips(CancellationToken.None);
+
+            // Assert
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
+            PagedResult<TripWithDetailsDto> pagedResult = Assert.IsType<PagedResult<TripWithDetailsDto>>(okResult.Value);
+            Assert.Empty(pagedResult.Items);
+            Assert.Equal(0, pagedResult.TotalCount);
+        }
+
+        [Fact]
+        public async Task SearchTrips_ServiceError_ThrowsServiceException()
+        {
+            // Arrange
+            _ = _mockTripService
+                .Setup(s => s.SearchTripsAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new ServiceException("Database error"));
+
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>());
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    Request = { Query = queryCollection }
+                }
+            };
+
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<ServiceException>(
+                () => _controller.SearchTrips(CancellationToken.None));
         }
 
         #endregion

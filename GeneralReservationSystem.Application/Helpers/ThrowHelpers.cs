@@ -10,13 +10,7 @@
                 throw new ArgumentNullException(parameterName);
             }
         }
-        public static void ThrowIfNullOrEmpty(string? value, string parameterName)
-        {
-            if (string.IsNullOrEmpty(value))
-            {
-                throw new ArgumentException("String cannot be null or empty", parameterName);
-            }
-        }
+
         public static void ThrowIfNullOrWhiteSpace(string? value, string parameterName)
         {
             if (string.IsNullOrWhiteSpace(value))

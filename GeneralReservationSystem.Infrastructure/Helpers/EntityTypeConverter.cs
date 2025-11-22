@@ -1,4 +1,6 @@
-﻿namespace GeneralReservationSystem.Infrastructure.Helpers
+﻿using System.Security.AccessControl;
+
+namespace GeneralReservationSystem.Infrastructure.Helpers
 {
     public static class EntityTypeConverter
     {
@@ -111,34 +113,15 @@
             }
             catch
             {
-                return IsCompatibleType(dbValue.GetType(), underlying)
+                return underlying.IsAssignableFrom(dbValue.GetType())
                     ? dbValue
                     : GetDefaultValue(targetType);
             }
         }
 
-        public static bool IsScalar(Type type)
-        {
-            Type underlying = Nullable.GetUnderlyingType(type) ?? type;
-
-            return underlying.IsPrimitive ||
-                   underlying == typeof(string) ||
-                   underlying == typeof(decimal) ||
-                   underlying == typeof(DateTime) ||
-                   underlying == typeof(DateTimeOffset) ||
-                   underlying == typeof(TimeSpan) ||
-                   underlying == typeof(Guid) ||
-                   underlying.IsValueType;
-        }
-
         private static object? GetDefaultValue(Type type)
         {
             return type.IsValueType ? Activator.CreateInstance(type) : null;
-        }
-
-        private static bool IsCompatibleType(Type sourceType, Type targetType)
-        {
-            return targetType.IsAssignableFrom(sourceType);
         }
     }
 }

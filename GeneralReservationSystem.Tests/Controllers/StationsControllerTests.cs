@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 using FluentValidation.Results;
 using GeneralReservationSystem.API.Controllers;
 using GeneralReservationSystem.API.Services.Interfaces;
@@ -8,6 +8,7 @@ using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Exceptions.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Primitives;
 using Moq;
 using System.Security.Claims;
 using System.Text;
@@ -149,69 +150,212 @@ namespace GeneralReservationSystem.Tests.Controllers
 
         #endregion
 
-        #region SearchStations (POST) Tests
+        #region SearchStations Tests
 
         [Fact]
-        public async Task SearchStations_Post_ReturnsOkWithPagedResults()
+        public async Task SearchStations_NoFiltersOrOrders_ReturnsPagedResult()
         {
             // Arrange
-            PagedSearchRequestDto searchDto = new()
-            {
-                Page = 1,
-                PageSize = 10,
-                FilterClauses = [],
-                Orders = []
-            };
+            List<Station> stations =
+            [
+                new Station { StationId = 1, StationName = "Station 1", City = "City 1", Province = "Province 1", Country = "Country 1" },
+                new Station { StationId = 2, StationName = "Station 2", City = "City 2", Province = "Province 2", Country = "Country 2" }
+            ];
 
             PagedResult<Station> expectedResult = new()
             {
-                Items =
-                [
-                    new Station { StationId = 1, StationName = "Station A" }
-                ],
-                TotalCount = 1,
+                Items = stations,
+                TotalCount = 2,
                 Page = 1,
-                PageSize = 10
+                PageSize = 20
             };
 
             _ = _mockStationService
-                .Setup(s => s.SearchStationsAsync(searchDto, It.IsAny<CancellationToken>()))
+                .Setup(s => s.SearchStationsAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedResult);
 
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>());
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    Request = { Query = queryCollection }
+                }
+            };
+
             // Act
-            IActionResult result = await _controller.SearchStations(searchDto, CancellationToken.None);
+            IActionResult result = await _controller.SearchStations(CancellationToken.None);
 
             // Assert
             OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
             PagedResult<Station> pagedResult = Assert.IsType<PagedResult<Station>>(okResult.Value);
-            _ = Assert.Single(pagedResult.Items);
+            Assert.Equal(2, pagedResult.TotalCount);
+            Assert.Equal(2, pagedResult.Items.Count());
 
             _mockStationService.Verify(
-                s => s.SearchStationsAsync(searchDto, It.IsAny<CancellationToken>()),
+                s => s.SearchStationsAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()),
                 Times.Once);
         }
 
         [Fact]
-        public async Task SearchStations_Post_ValidationFails_ReturnsBadRequest()
+        public async Task SearchStations_WithPagination_ReturnsCorrectPage()
         {
             // Arrange
-            PagedSearchRequestDto searchDto = new()
+            List<Station> stations =
+            [
+                new Station { StationId = 3, StationName = "Station 3", City = "City 3", Province = "Province 3", Country = "Country 3" }
+            ];
+
+            PagedResult<Station> expectedResult = new()
             {
-                Page = 0, // Invalid
-                PageSize = 10
+                Items = stations,
+                TotalCount = 10,
+                Page = 2,
+                PageSize = 5
             };
 
+            _ = _mockStationService
+                .Setup(s => s.SearchStationsAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>
+            {
+                { "page", new StringValues("2") },
+                { "pageSize", new StringValues("5") }
+            });
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    Request = { Query = queryCollection }
+                }
+            };
+
+            // Act
+            IActionResult result = await _controller.SearchStations(CancellationToken.None);
+
+            // Assert
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
+            PagedResult<Station> pagedResult = Assert.IsType<PagedResult<Station>>(okResult.Value);
+            Assert.Equal(2, pagedResult.Page);
+            Assert.Equal(5, pagedResult.PageSize);
+            Assert.Equal(10, pagedResult.TotalCount);
+        }
+
+        [Fact]
+        public async Task SearchStations_WithFilters_ReturnsFilteredResults()
+        {
+            // Arrange
+            List<Station> stations =
+            [
+                new Station { StationId = 1, StationName = "Central Station", City = "Buenos Aires", Province = "Buenos Aires", Country = "Argentina" }
+            ];
+
+            PagedResult<Station> expectedResult = new()
+            {
+                Items = stations,
+                TotalCount = 1,
+                Page = 1,
+                PageSize = 20
+            };
+
+            _ = _mockStationService
+                .Setup(s => s.SearchStationsAsync(It.Is<PagedSearchRequestDto>(dto =>
+                    dto.FilterClauses.Any()), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>
+            {
+                { "filters", new StringValues("[City|Contains|Buenos]") }
+            });
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    Request = { Query = queryCollection }
+                }
+            };
+
+            // Act
+            IActionResult result = await _controller.SearchStations(CancellationToken.None);
+
+            // Assert
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
+            PagedResult<Station> pagedResult = Assert.IsType<PagedResult<Station>>(okResult.Value);
+            Assert.Single(pagedResult.Items);
+        }
+
+        [Fact]
+        public async Task SearchStations_WithOrders_ReturnsSortedResults()
+        {
+            // Arrange
+            List<Station> stations =
+            [
+                new Station { StationId = 2, StationName = "B Station", City = "City B", Province = "Province B", Country = "Country B" },
+                new Station { StationId = 1, StationName = "A Station", City = "City A", Province = "Province A", Country = "Country A" }
+            ];
+
+            PagedResult<Station> expectedResult = new()
+            {
+                Items = stations,
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 20
+            };
+
+            _ = _mockStationService
+                .Setup(s => s.SearchStationsAsync(It.Is<PagedSearchRequestDto>(dto =>
+                    dto.Orders.Any()), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>
+            {
+                { "orders", new StringValues("StationName|Desc") }
+            });
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    Request = { Query = queryCollection }
+                }
+            };
+
+            // Act
+            IActionResult result = await _controller.SearchStations(CancellationToken.None);
+
+            // Assert
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
+            PagedResult<Station> pagedResult = Assert.IsType<PagedResult<Station>>(okResult.Value);
+            Assert.Equal(2, pagedResult.Items.Count());
+        }
+
+        [Fact]
+        public async Task SearchStations_ValidationFails_ReturnsBadRequest()
+        {
+            // Arrange
             List<ValidationFailure> validationFailures =
             [
                 new ValidationFailure("Page", "Page must be greater than 0")
             ];
 
             _ = _mockPagedSearchValidator
-                .Setup(v => v.ValidateAsync(searchDto, It.IsAny<CancellationToken>()))
+                .Setup(v => v.ValidateAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ValidationResult(validationFailures));
 
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>
+            {
+                { "page", new StringValues("0") }
+            });
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    Request = { Query = queryCollection }
+                }
+            };
+
             // Act
-            IActionResult result = await _controller.SearchStations(searchDto, CancellationToken.None);
+            IActionResult result = await _controller.SearchStations(CancellationToken.None);
 
             // Assert
             _ = Assert.IsType<BadRequestObjectResult>(result);
@@ -221,34 +365,30 @@ namespace GeneralReservationSystem.Tests.Controllers
                 Times.Never);
         }
 
-        #endregion
-
-        #region SearchStations (GET) Tests
-
         [Fact]
-        public async Task SearchStations_Get_ReturnsOkWithPagedResults()
+        public async Task SearchStations_EmptyResults_ReturnsEmptyPagedResult()
         {
             // Arrange
             PagedResult<Station> expectedResult = new()
             {
-                Items =
-                [
-                    new Station { StationId = 1 }
-                ],
-                TotalCount = 1,
+                Items = [],
+                TotalCount = 0,
                 Page = 1,
-                PageSize = 10
+                PageSize = 20
             };
 
             _ = _mockStationService
                 .Setup(s => s.SearchStationsAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedResult);
 
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>());
             _controller.ControllerContext = new ControllerContext
             {
-                HttpContext = new DefaultHttpContext()
+                HttpContext = new DefaultHttpContext
+                {
+                    Request = { Query = queryCollection }
+                }
             };
-            _controller.ControllerContext.HttpContext.Request.QueryString = new QueryString("?page=1&pageSize=10");
 
             // Act
             IActionResult result = await _controller.SearchStations(CancellationToken.None);
@@ -256,7 +396,30 @@ namespace GeneralReservationSystem.Tests.Controllers
             // Assert
             OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
             PagedResult<Station> pagedResult = Assert.IsType<PagedResult<Station>>(okResult.Value);
-            _ = Assert.Single(pagedResult.Items);
+            Assert.Empty(pagedResult.Items);
+            Assert.Equal(0, pagedResult.TotalCount);
+        }
+
+        [Fact]
+        public async Task SearchStations_ServiceError_ThrowsServiceException()
+        {
+            // Arrange
+            _ = _mockStationService
+                .Setup(s => s.SearchStationsAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new ServiceException("Database error"));
+
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>());
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    Request = { Query = queryCollection }
+                }
+            };
+
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<ServiceException>(
+                () => _controller.SearchStations(CancellationToken.None));
         }
 
         #endregion

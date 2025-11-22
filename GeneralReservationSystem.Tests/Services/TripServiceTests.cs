@@ -1,4 +1,4 @@
-using GeneralReservationSystem.Application.Common;
+﻿using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Exceptions.Repositories;
@@ -907,6 +907,820 @@ namespace GeneralReservationSystem.Tests.Services
             Assert.NotNull(result);
             Assert.Equal(0, result.TotalCount);
             Assert.Empty(result.Items);
+
+            _mockTripRepository.Verify(
+                repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchTripsAsync_WithFilterEquals_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("TripId", FilterOperator.Equals, 1)
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<TripWithDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, DepartureStationName = "Station A", ArrivalStationName = "Station B" }
+                ],
+                TotalCount = 1,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockTripRepository
+                .Setup(repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<TripWithDetailsDto> result = await _tripService.SearchTripsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(1, result.TotalCount);
+            Assert.All(result.Items, item => Assert.Equal(1, item.TripId));
+
+            _mockTripRepository.Verify(
+                repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchTripsAsync_WithFilterContains_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("DepartureCity", FilterOperator.Contains, "Buenos")
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<TripWithDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, DepartureCity = "Buenos Aires", ArrivalCity = "Córdoba" },
+                    new() { TripId = 2, DepartureCity = "Buenos Aires", ArrivalCity = "Rosario" }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockTripRepository
+                .Setup(repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<TripWithDetailsDto> result = await _tripService.SearchTripsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item => Assert.Contains("Buenos", item.DepartureCity));
+
+            _mockTripRepository.Verify(
+                repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchTripsAsync_WithFilterStartsWith_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("DepartureStationName", FilterOperator.StartsWith, "Central")
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<TripWithDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, DepartureStationName = "Central Station" },
+                    new() { TripId = 2, DepartureStationName = "Central Terminal" }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockTripRepository
+                .Setup(repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<TripWithDetailsDto> result = await _tripService.SearchTripsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item => Assert.StartsWith("Central", item.DepartureStationName));
+
+            _mockTripRepository.Verify(
+                repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchTripsAsync_WithFilterGreaterThan_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("AvailableSeats", FilterOperator.GreaterThan, 30)
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<TripWithDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, AvailableSeats = 50 },
+                    new() { TripId = 2, AvailableSeats = 40 }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockTripRepository
+                .Setup(repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<TripWithDetailsDto> result = await _tripService.SearchTripsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item => Assert.True(item.AvailableSeats > 30));
+
+            _mockTripRepository.Verify(
+                repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchTripsAsync_WithFilterLessThanOrEqual_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("ReservedSeats", FilterOperator.LessThanOrEqual, 10)
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<TripWithDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, ReservedSeats = 5 },
+                    new() { TripId = 2, ReservedSeats = 10 },
+                    new() { TripId = 3, ReservedSeats = 8 }
+                ],
+                TotalCount = 3,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockTripRepository
+                .Setup(repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<TripWithDetailsDto> result = await _tripService.SearchTripsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalCount);
+            Assert.All(result.Items, item => Assert.True(item.ReservedSeats <= 10));
+
+            _mockTripRepository.Verify(
+                repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchTripsAsync_WithFilterBetween_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("DepartureTime", FilterOperator.Between, new object[] { new DateTime(2024, 6, 1), new DateTime(2024, 6, 30) })
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<TripWithDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, DepartureTime = new DateTime(2024, 6, 5, 10, 0, 0) },
+                    new() { TripId = 2, DepartureTime = new DateTime(2024, 6, 15, 14, 0, 0) },
+                    new() { TripId = 3, DepartureTime = new DateTime(2024, 6, 25, 8, 0, 0) }
+                ],
+                TotalCount = 3,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockTripRepository
+                .Setup(repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<TripWithDetailsDto> result = await _tripService.SearchTripsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalCount);
+            Assert.All(result.Items, item =>
+            {
+                Assert.True(item.DepartureTime >= new DateTime(2024, 6, 1));
+                Assert.True(item.DepartureTime <= new DateTime(2024, 6, 30));
+            });
+
+            _mockTripRepository.Verify(
+                repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchTripsAsync_WithFilterNotEquals_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("DepartureStationId", FilterOperator.NotEquals, 1)
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<TripWithDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 2, DepartureStationId = 2 },
+                    new() { TripId = 3, DepartureStationId = 3 }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockTripRepository
+                .Setup(repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<TripWithDetailsDto> result = await _tripService.SearchTripsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item => Assert.NotEqual(1, item.DepartureStationId));
+
+            _mockTripRepository.Verify(
+                repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchTripsAsync_WithFilterEndsWith_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("ArrivalCountry", FilterOperator.EndsWith, "tina")
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<TripWithDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, ArrivalCountry = "Argentina" }
+                ],
+                TotalCount = 1,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockTripRepository
+                .Setup(repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<TripWithDetailsDto> result = await _tripService.SearchTripsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(1, result.TotalCount);
+            Assert.All(result.Items, item => Assert.EndsWith("tina", item.ArrivalCountry));
+
+            _mockTripRepository.Verify(
+                repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchTripsAsync_WithMultipleFiltersInSameClause_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("DepartureStationId", FilterOperator.Equals, 1),
+                        new Filter("DepartureStationId", FilterOperator.Equals, 2)
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<TripWithDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, DepartureStationId = 1 },
+                    new() { TripId = 2, DepartureStationId = 2 }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockTripRepository
+                .Setup(repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<TripWithDetailsDto> result = await _tripService.SearchTripsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item => Assert.True(item.DepartureStationId == 1 || item.DepartureStationId == 2));
+
+            _mockTripRepository.Verify(
+                repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchTripsAsync_WithMultipleFilterClauses_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("AvailableSeats", FilterOperator.GreaterThan, 20)
+                    ]),
+                    new FilterClause(
+                    [
+                        new Filter("ReservedSeats", FilterOperator.LessThan, 15)
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<TripWithDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, AvailableSeats = 50, ReservedSeats = 10 },
+                    new() { TripId = 2, AvailableSeats = 40, ReservedSeats = 12 }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockTripRepository
+                .Setup(repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<TripWithDetailsDto> result = await _tripService.SearchTripsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item =>
+            {
+                Assert.True(item.AvailableSeats > 20);
+                Assert.True(item.ReservedSeats < 15);
+            });
+
+            _mockTripRepository.Verify(
+                repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchTripsAsync_WithOrderByAscending_ReturnsOrderedResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses = [],
+                Orders =
+                [
+                    new SortOption("DepartureTime", SortDirection.Asc)
+                ]
+            };
+
+            PagedResult<TripWithDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, DepartureTime = new DateTime(2024, 6, 1, 8, 0, 0) },
+                    new() { TripId = 2, DepartureTime = new DateTime(2024, 6, 1, 10, 0, 0) },
+                    new() { TripId = 3, DepartureTime = new DateTime(2024, 6, 1, 14, 0, 0) }
+                ],
+                TotalCount = 3,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockTripRepository
+                .Setup(repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<TripWithDetailsDto> result = await _tripService.SearchTripsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalCount);
+            List<TripWithDetailsDto> items = [.. result.Items];
+            for (int i = 1; i < items.Count; i++)
+            {
+                Assert.True(items[i].DepartureTime >= items[i - 1].DepartureTime);
+            }
+
+            _mockTripRepository.Verify(
+                repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchTripsAsync_WithOrderByDescending_ReturnsOrderedResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses = [],
+                Orders =
+                [
+                    new SortOption("AvailableSeats", SortDirection.Desc)
+                ]
+            };
+
+            PagedResult<TripWithDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, AvailableSeats = 60 },
+                    new() { TripId = 2, AvailableSeats = 50 },
+                    new() { TripId = 3, AvailableSeats = 40 }
+                ],
+                TotalCount = 3,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockTripRepository
+                .Setup(repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<TripWithDetailsDto> result = await _tripService.SearchTripsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalCount);
+            List<TripWithDetailsDto> items = [.. result.Items];
+            for (int i = 1; i < items.Count; i++)
+            {
+                Assert.True(items[i].AvailableSeats <= items[i - 1].AvailableSeats);
+            }
+
+            _mockTripRepository.Verify(
+                repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchTripsAsync_WithMultipleOrders_ReturnsOrderedResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses = [],
+                Orders =
+                [
+                    new SortOption("DepartureStationId", SortDirection.Asc),
+                    new SortOption("DepartureTime", SortDirection.Asc)
+                ]
+            };
+
+            PagedResult<TripWithDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, DepartureStationId = 1, DepartureTime = new DateTime(2024, 6, 1, 8, 0, 0) },
+                    new() { TripId = 2, DepartureStationId = 1, DepartureTime = new DateTime(2024, 6, 1, 14, 0, 0) },
+                    new() { TripId = 3, DepartureStationId = 2, DepartureTime = new DateTime(2024, 6, 1, 10, 0, 0) }
+                ],
+                TotalCount = 3,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockTripRepository
+                .Setup(repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<TripWithDetailsDto> result = await _tripService.SearchTripsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalCount);
+            List<TripWithDetailsDto> items = [.. result.Items];
+            for (int i = 1; i < items.Count; i++)
+            {
+                Assert.True(items[i].DepartureStationId >= items[i - 1].DepartureStationId);
+                if (items[i].DepartureStationId == items[i - 1].DepartureStationId)
+                {
+                    Assert.True(items[i].DepartureTime >= items[i - 1].DepartureTime);
+                }
+            }
+
+            _mockTripRepository.Verify(
+                repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchTripsAsync_WithFiltersAndOrders_ReturnsFilteredAndOrderedResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("AvailableSeats", FilterOperator.GreaterThanOrEqual, 30)
+                    ])
+                ],
+                Orders =
+                [
+                    new SortOption("DepartureTime", SortDirection.Asc)
+                ]
+            };
+
+            PagedResult<TripWithDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, AvailableSeats = 50, DepartureTime = new DateTime(2024, 6, 1, 8, 0, 0) },
+                    new() { TripId = 2, AvailableSeats = 40, DepartureTime = new DateTime(2024, 6, 1, 10, 0, 0) },
+                    new() { TripId = 3, AvailableSeats = 30, DepartureTime = new DateTime(2024, 6, 1, 14, 0, 0) }
+                ],
+                TotalCount = 3,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockTripRepository
+                .Setup(repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<TripWithDetailsDto> result = await _tripService.SearchTripsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalCount);
+            Assert.All(result.Items, item => Assert.True(item.AvailableSeats >= 30));
+            List<TripWithDetailsDto> items = [.. result.Items];
+            for (int i = 1; i < items.Count; i++)
+            {
+                Assert.True(items[i].DepartureTime >= items[i - 1].DepartureTime);
+            }
+
+            _mockTripRepository.Verify(
+                repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchTripsAsync_WithComplexFilteringAndOrdering_ReturnsCorrectResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("DepartureCity", FilterOperator.Contains, "Buenos"),
+                        new Filter("DepartureCity", FilterOperator.Contains, "Córdoba")
+                    ]),
+                    new FilterClause(
+                    [
+                        new Filter("AvailableSeats", FilterOperator.GreaterThan, 25)
+                    ])
+                ],
+                Orders =
+                [
+                    new SortOption("DepartureCity", SortDirection.Asc),
+                    new SortOption("AvailableSeats", SortDirection.Desc)
+                ]
+            };
+
+            PagedResult<TripWithDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, DepartureCity = "Buenos Aires", AvailableSeats = 50 },
+                    new() { TripId = 2, DepartureCity = "Buenos Aires", AvailableSeats = 40 },
+                    new() { TripId = 3, DepartureCity = "Córdoba", AvailableSeats = 45 },
+                    new() { TripId = 4, DepartureCity = "Córdoba", AvailableSeats = 30 }
+                ],
+                TotalCount = 4,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockTripRepository
+                .Setup(repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<TripWithDetailsDto> result = await _tripService.SearchTripsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(4, result.TotalCount);
+            Assert.All(result.Items, item =>
+            {
+                Assert.True(item.DepartureCity.Contains("Buenos") || item.DepartureCity.Contains("Córdoba"));
+                Assert.True(item.AvailableSeats > 25);
+            });
+            List<TripWithDetailsDto> items = [.. result.Items];
+            for (int i = 1; i < items.Count; i++)
+            {
+                int cityComparison = string.Compare(items[i].DepartureCity, items[i - 1].DepartureCity, StringComparison.Ordinal);
+                Assert.True(cityComparison >= 0);
+                if (cityComparison == 0)
+                {
+                    Assert.True(items[i].AvailableSeats <= items[i - 1].AvailableSeats);
+                }
+            }
+
+            _mockTripRepository.Verify(
+                repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchTripsAsync_WithDateTimeFiltering_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("DepartureTime", FilterOperator.GreaterThanOrEqual, new DateTime(2024, 6, 1)),
+                        new Filter("DepartureTime", FilterOperator.LessThan, new DateTime(2024, 7, 1))
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<TripWithDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, DepartureTime = new DateTime(2024, 6, 5, 10, 0, 0) },
+                    new() { TripId = 2, DepartureTime = new DateTime(2024, 6, 15, 14, 0, 0) }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockTripRepository
+                .Setup(repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<TripWithDetailsDto> result = await _tripService.SearchTripsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item =>
+            {
+                Assert.True(item.DepartureTime >= new DateTime(2024, 6, 1) || item.DepartureTime < new DateTime(2024, 7, 1));
+            });
 
             _mockTripRepository.Verify(
                 repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),

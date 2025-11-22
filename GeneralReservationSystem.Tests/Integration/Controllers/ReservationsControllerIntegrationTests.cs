@@ -1,4 +1,4 @@
-using GeneralReservationSystem.Application.DTOs;
+﻿using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.Entities;
 using System.Net;
 using System.Net.Http.Json;
@@ -102,6 +102,463 @@ public class ReservationsControllerIntegrationTests : IntegrationTestBase
         }
         await base.DisposeAsync();
     }
+
+    #region SearchReservations Tests
+
+    [Fact]
+    public async Task SearchReservations_AsAdmin_ReturnsPagedResult()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+        HttpClient userClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _userToken);
+
+        CreateReservationDto reservation1 = new()
+        {
+            TripId = _tripId,
+            Seat = 1,
+            UserId = _userId
+        };
+
+        CreateReservationDto reservation2 = new()
+        {
+            TripId = _tripId,
+            Seat = 2,
+            UserId = _userId
+        };
+
+        _ = await userClient.PostAsJsonAsync("/api/reservations", reservation1);
+        _ = await userClient.PostAsJsonAsync("/api/reservations", reservation2);
+        userClient.Dispose();
+
+        // Act
+        HttpResponseMessage response = await adminClient.GetAsync("/api/reservations/search");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int totalCount = doc.RootElement.GetProperty("totalCount").GetInt32();
+        Assert.True(totalCount >= 2);
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchReservations_WithPagination_ReturnsCorrectPage()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+        HttpClient userClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _userToken);
+
+        for (int i = 10; i <= 25; i++)
+        {
+            CreateReservationDto reservation = new()
+            {
+                TripId = _tripId,
+                Seat = i,
+                UserId = _userId
+            };
+            _ = await userClient.PostAsJsonAsync("/api/reservations", reservation);
+        }
+        userClient.Dispose();
+
+        // Act
+        HttpResponseMessage response = await adminClient.GetAsync("/api/reservations/search?page=2&pageSize=5");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int page = doc.RootElement.GetProperty("page").GetInt32();
+        int pageSize = doc.RootElement.GetProperty("pageSize").GetInt32();
+        Assert.Equal(2, page);
+        Assert.Equal(5, pageSize);
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchReservations_WithFilters_ReturnsFilteredResults()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+        HttpClient userClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _userToken);
+
+        CreateReservationDto reservation = new()
+        {
+            TripId = _tripId,
+            Seat = 30,
+            UserId = _userId
+        };
+        _ = await userClient.PostAsJsonAsync("/api/reservations", reservation);
+        userClient.Dispose();
+
+        // Act
+        HttpResponseMessage response = await adminClient.GetAsync($"/api/reservations/search?filters=[TripId|Equals|{_tripId}]");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int totalCount = doc.RootElement.GetProperty("totalCount").GetInt32();
+        Assert.True(totalCount >= 1);
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchReservations_WithOrders_ReturnsSortedResults()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+        HttpClient userClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _userToken);
+
+        CreateReservationDto reservation1 = new()
+        {
+            TripId = _tripId,
+            Seat = 35,
+            UserId = _userId
+        };
+
+        CreateReservationDto reservation2 = new()
+        {
+            TripId = _tripId,
+            Seat = 36,
+            UserId = _userId
+        };
+
+        _ = await userClient.PostAsJsonAsync("/api/reservations", reservation1);
+        _ = await userClient.PostAsJsonAsync("/api/reservations", reservation2);
+        userClient.Dispose();
+
+        // Act
+        HttpResponseMessage response = await adminClient.GetAsync($"/api/reservations/search?filters=[TripId|Equals|{_tripId}]&orders=Seat|Desc");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        JsonElement items = doc.RootElement.GetProperty("items");
+        Assert.True(items.GetArrayLength() >= 2);
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchReservations_AsRegularUser_ReturnsForbidden()
+    {
+        // Arrange
+        HttpClient userClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _userToken);
+
+        // Act
+        HttpResponseMessage response = await userClient.GetAsync("/api/reservations/search");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+
+        userClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchReservations_Unauthenticated_ReturnsUnauthorized()
+    {
+        // Arrange
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync("/api/reservations/search");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task SearchReservations_NoMatchingFilters_ReturnsEmptyResults()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+
+        // Act
+        HttpResponseMessage response = await adminClient.GetAsync("/api/reservations/search?filters=[TripId|Equals|99999]");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int totalCount = doc.RootElement.GetProperty("totalCount").GetInt32();
+        Assert.Equal(0, totalCount);
+
+        adminClient.Dispose();
+    }
+
+    #endregion
+
+    #region SearchUserReservations Tests
+
+    [Fact]
+    public async Task SearchUserReservations_AsOwner_ReturnsPagedResult()
+    {
+        // Arrange
+        HttpClient userClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _userToken);
+
+        CreateReservationDto reservation1 = new()
+        {
+            TripId = _tripId,
+            Seat = 40,
+            UserId = _userId
+        };
+
+        CreateReservationDto reservation2 = new()
+        {
+            TripId = _tripId,
+            Seat = 41,
+            UserId = _userId
+        };
+
+        _ = await userClient.PostAsJsonAsync("/api/reservations", reservation1);
+        _ = await userClient.PostAsJsonAsync("/api/reservations", reservation2);
+
+        // Act
+        HttpResponseMessage response = await userClient.GetAsync($"/api/reservations/search/{_userId}");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int totalCount = doc.RootElement.GetProperty("totalCount").GetInt32();
+        Assert.True(totalCount >= 2);
+
+        userClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchUserReservations_AsAdmin_ReturnsPagedResult()
+    {
+        // Arrange
+        HttpClient userClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _userToken);
+
+        CreateReservationDto reservation = new()
+        {
+            TripId = _tripId,
+            Seat = 42,
+            UserId = _userId
+        };
+
+        _ = await userClient.PostAsJsonAsync("/api/reservations", reservation);
+        userClient.Dispose();
+
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+
+        // Act
+        HttpResponseMessage response = await adminClient.GetAsync($"/api/reservations/search/{_userId}");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int totalCount = doc.RootElement.GetProperty("totalCount").GetInt32();
+        Assert.True(totalCount >= 1);
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchUserReservations_AsNonAdminForOtherUser_ReturnsForbidden()
+    {
+        // Arrange
+        HttpClient userClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _userToken);
+
+        // Act
+        HttpResponseMessage response = await userClient.GetAsync("/api/reservations/search/999");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+
+        userClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchUserReservations_WithPagination_ReturnsCorrectPage()
+    {
+        // Arrange
+        HttpClient userClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _userToken);
+
+        for (int i = 43; i <= 50; i++)
+        {
+            CreateReservationDto reservation = new()
+            {
+                TripId = _tripId,
+                Seat = i,
+                UserId = _userId
+            };
+            _ = await userClient.PostAsJsonAsync("/api/reservations", reservation);
+        }
+
+        // Act
+        HttpResponseMessage response = await userClient.GetAsync($"/api/reservations/search/{_userId}?page=1&pageSize=5");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int page = doc.RootElement.GetProperty("page").GetInt32();
+        int pageSize = doc.RootElement.GetProperty("pageSize").GetInt32();
+        Assert.Equal(1, page);
+        Assert.Equal(5, pageSize);
+
+        userClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchUserReservations_WithFilters_ReturnsFilteredResults()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+
+        // Act
+        HttpResponseMessage response = await adminClient.GetAsync($"/api/reservations/search/{_userId}?filters=[Seat|GreaterThan|40]");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int totalCount = doc.RootElement.GetProperty("totalCount").GetInt32();
+        Assert.True(totalCount >= 0);
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchUserReservations_Unauthenticated_ReturnsUnauthorized()
+    {
+        // Arrange
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync($"/api/reservations/search/{_userId}");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    #endregion
+
+    #region SearchCurrentUserReservations Tests
+
+    [Fact]
+    public async Task SearchCurrentUserReservations_ValidUser_ReturnsPagedResult()
+    {
+        // Arrange
+        HttpClient userClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _userToken);
+
+        // Act
+        HttpResponseMessage response = await userClient.GetAsync("/api/reservations/search/me");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int totalCount = doc.RootElement.GetProperty("totalCount").GetInt32();
+        Assert.True(totalCount >= 0);
+
+        userClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchCurrentUserReservations_WithPagination_ReturnsCorrectPage()
+    {
+        // Arrange
+        HttpClient userClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _userToken);
+
+        // Act
+        HttpResponseMessage response = await userClient.GetAsync("/api/reservations/search/me?page=1&pageSize=10");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int page = doc.RootElement.GetProperty("page").GetInt32();
+        int pageSize = doc.RootElement.GetProperty("pageSize").GetInt32();
+        Assert.Equal(1, page);
+        Assert.Equal(10, pageSize);
+
+        userClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchCurrentUserReservations_WithFilters_ReturnsFilteredResults()
+    {
+        // Arrange
+        HttpClient userClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _userToken);
+
+        // Act
+        HttpResponseMessage response = await userClient.GetAsync($"/api/reservations/search/me?filters=[TripId|Equals|{_tripId}]");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int totalCount = doc.RootElement.GetProperty("totalCount").GetInt32();
+        Assert.True(totalCount >= 0);
+
+        userClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchCurrentUserReservations_WithOrders_ReturnsSortedResults()
+    {
+        // Arrange
+        HttpClient userClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _userToken);
+
+        // Act
+        HttpResponseMessage response = await userClient.GetAsync("/api/reservations/search/me?orders=Seat|Asc");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        JsonElement items = doc.RootElement.GetProperty("items");
+        Assert.True(items.GetArrayLength() >= 0);
+
+        userClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchCurrentUserReservations_Unauthenticated_ReturnsUnauthorized()
+    {
+        // Arrange
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync("/api/reservations/search/me");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task SearchCurrentUserReservations_NoReservations_ReturnsEmptyPagedResult()
+    {
+        // Arrange
+        string newUserToken = await IntegrationTestHelpers.RegisterUserAsync(
+            _client,
+            "emptyuser",
+            "empty@example.com",
+            "Password123!");
+
+        HttpClient emptyUserClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, newUserToken);
+
+        // Act
+        HttpResponseMessage response = await emptyUserClient.GetAsync("/api/reservations/search/me");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int totalCount = doc.RootElement.GetProperty("totalCount").GetInt32();
+        Assert.Equal(0, totalCount);
+
+        emptyUserClient.Dispose();
+    }
+
+    #endregion
 
     [Fact]
     public async Task CreateReservation_AsUser_ReturnsCreated()
@@ -280,30 +737,6 @@ public class ReservationsControllerIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task SearchCurrentUserReservations_ReturnsResults()
-    {
-        // Arrange
-        HttpClient userClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _userToken);
-
-        CreateReservationDto createDto = new()
-        {
-            TripId = _tripId,
-            Seat = 45,
-            UserId = _userId
-        };
-
-        _ = await userClient.PostAsJsonAsync("/api/reservations", createDto);
-
-        // Act
-        HttpResponseMessage response = await userClient.GetAsync("/api/reservations/search/me?page=1&pageSize=10");
-
-        // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        userClient.Dispose();
-    }
-
-    [Fact]
     public async Task GetUserReservations_AsAdmin_ReturnsOk()
     {
         // Arrange
@@ -328,36 +761,6 @@ public class ReservationsControllerIntegrationTests : IntegrationTestBase
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         adminClient.Dispose();
-    }
-
-    [Fact]
-    public async Task SearchReservations_AsAdmin_ReturnsOk()
-    {
-        // Arrange
-        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
-
-        // Act
-        HttpResponseMessage response = await adminClient.GetAsync("/api/reservations/search?page=1&pageSize=10");
-
-        // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        adminClient.Dispose();
-    }
-
-    [Fact]
-    public async Task SearchReservations_AsRegularUser_ReturnsForbidden()
-    {
-        // Arrange
-        HttpClient userClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _userToken);
-
-        // Act
-        HttpResponseMessage response = await userClient.GetAsync("/api/reservations/search?page=1&pageSize=10");
-
-        // Assert
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-
-        userClient.Dispose();
     }
 
     [Fact]
@@ -398,45 +801,6 @@ public class ReservationsControllerIntegrationTests : IntegrationTestBase
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-
-        userClient.Dispose();
-    }
-
-    [Fact]
-    public async Task SearchUserReservations_OwnReservations_ReturnsOk()
-    {
-        // Arrange
-        HttpClient userClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _userToken);
-
-        CreateReservationDto createDto = new()
-        {
-            TripId = _tripId,
-            Seat = 70,
-            UserId = _userId
-        };
-
-        _ = await userClient.PostAsJsonAsync("/api/reservations", createDto);
-
-        // Act
-        HttpResponseMessage response = await userClient.GetAsync($"/api/reservations/search/{_userId}?page=1&pageSize=10");
-
-        // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        userClient.Dispose();
-    }
-
-    [Fact]
-    public async Task SearchUserReservations_OtherUserAsRegular_ReturnsForbidden()
-    {
-        // Arrange
-        HttpClient userClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _userToken);
-
-        // Act
-        HttpResponseMessage response = await userClient.GetAsync("/api/reservations/search/999?page=1&pageSize=10");
-
-        // Assert
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
 
         userClient.Dispose();
     }

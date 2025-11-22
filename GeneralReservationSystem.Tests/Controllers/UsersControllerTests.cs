@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 using FluentValidation.Results;
 using GeneralReservationSystem.API.Controllers;
 using GeneralReservationSystem.Application.Common;
@@ -9,6 +9,7 @@ using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Services.Interfaces.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Primitives;
 using Moq;
 using System.Security.Claims;
 
@@ -74,62 +75,238 @@ namespace GeneralReservationSystem.Tests.Controllers
             };
         }
 
-        #region SearchUsers (POST) Tests
+        #region SearchUsers Tests
 
         [Fact]
-        public async Task SearchUsers_Post_AsAdmin_ReturnsOkWithResults()
+        public async Task SearchUsers_NoFiltersOrOrders_ReturnsPagedResult()
         {
             // Arrange
             SetupAuthenticatedUser(1, isAdmin: true);
 
-            PagedSearchRequestDto searchDto = new()
-            {
-                Page = 1,
-                PageSize = 10,
-                FilterClauses = [],
-                Orders = []
-            };
+            List<UserInfo> users =
+            [
+                new UserInfo
+                {
+                    UserId = 1,
+                    UserName = "user1",
+                    Email = "user1@example.com",
+                    IsAdmin = false
+                },
+                new UserInfo
+                {
+                    UserId = 2,
+                    UserName = "user2",
+                    Email = "user2@example.com",
+                    IsAdmin = false
+                }
+            ];
 
             PagedResult<UserInfo> expectedResult = new()
             {
-                Items =
-                [
-                    new() { UserId = 1, UserName = "user1", Email = "user1@example.com", IsAdmin = false }
-                ],
-                TotalCount = 1,
+                Items = users,
+                TotalCount = 2,
                 Page = 1,
-                PageSize = 10
+                PageSize = 20
             };
 
             _ = _mockUserService
-                .Setup(s => s.SearchUsersAsync(searchDto, It.IsAny<CancellationToken>()))
+                .Setup(s => s.SearchUsersAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedResult);
 
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>());
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = _controller.User,
+                    Request = { Query = queryCollection }
+                }
+            };
+
             // Act
-            IActionResult result = await _controller.SearchUsers(searchDto, CancellationToken.None);
+            IActionResult result = await _controller.SearchUsers(CancellationToken.None);
 
             // Assert
             OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
-            PagedResult<UserInfo> returnedResult = Assert.IsType<PagedResult<UserInfo>>(okResult.Value);
-            Assert.Equal(expectedResult.TotalCount, returnedResult.TotalCount);
-            _ = Assert.Single(returnedResult.Items);
+            PagedResult<UserInfo> pagedResult = Assert.IsType<PagedResult<UserInfo>>(okResult.Value);
+            Assert.Equal(2, pagedResult.TotalCount);
+            Assert.Equal(2, pagedResult.Items.Count());
 
             _mockUserService.Verify(
-                s => s.SearchUsersAsync(searchDto, It.IsAny<CancellationToken>()),
+                s => s.SearchUsersAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()),
                 Times.Once);
         }
 
         [Fact]
-        public async Task SearchUsers_Post_ValidationFails_ReturnsBadRequest()
+        public async Task SearchUsers_WithPagination_ReturnsCorrectPage()
         {
             // Arrange
             SetupAuthenticatedUser(1, isAdmin: true);
 
-            PagedSearchRequestDto searchDto = new()
+            List<UserInfo> users =
+            [
+                new UserInfo
+                {
+                    UserId = 3,
+                    UserName = "user3",
+                    Email = "user3@example.com",
+                    IsAdmin = false
+                }
+            ];
+
+            PagedResult<UserInfo> expectedResult = new()
             {
-                Page = 0, // Invalid
-                PageSize = 10
+                Items = users,
+                TotalCount = 10,
+                Page = 2,
+                PageSize = 5
             };
+
+            _ = _mockUserService
+                .Setup(s => s.SearchUsersAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>
+            {
+                { "page", new StringValues("2") },
+                { "pageSize", new StringValues("5") }
+            });
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = _controller.User,
+                    Request = { Query = queryCollection }
+                }
+            };
+
+            // Act
+            IActionResult result = await _controller.SearchUsers(CancellationToken.None);
+
+            // Assert
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
+            PagedResult<UserInfo> pagedResult = Assert.IsType<PagedResult<UserInfo>>(okResult.Value);
+            Assert.Equal(2, pagedResult.Page);
+            Assert.Equal(5, pagedResult.PageSize);
+            Assert.Equal(10, pagedResult.TotalCount);
+        }
+
+        [Fact]
+        public async Task SearchUsers_WithFilters_ReturnsFilteredResults()
+        {
+            // Arrange
+            SetupAuthenticatedUser(1, isAdmin: true);
+
+            List<UserInfo> users =
+            [
+                new UserInfo
+                {
+                    UserId = 1,
+                    UserName = "adminuser",
+                    Email = "admin@example.com",
+                    IsAdmin = true
+                }
+            ];
+
+            PagedResult<UserInfo> expectedResult = new()
+            {
+                Items = users,
+                TotalCount = 1,
+                Page = 1,
+                PageSize = 20
+            };
+
+            _ = _mockUserService
+                .Setup(s => s.SearchUsersAsync(It.Is<PagedSearchRequestDto>(dto =>
+                    dto.FilterClauses.Any()), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>
+            {
+                { "filters", new StringValues("[IsAdmin|Equals|true]") }
+            });
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = _controller.User,
+                    Request = { Query = queryCollection }
+                }
+            };
+
+            // Act
+            IActionResult result = await _controller.SearchUsers(CancellationToken.None);
+
+            // Assert
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
+            PagedResult<UserInfo> pagedResult = Assert.IsType<PagedResult<UserInfo>>(okResult.Value);
+            Assert.Single(pagedResult.Items);
+        }
+
+        [Fact]
+        public async Task SearchUsers_WithOrders_ReturnsSortedResults()
+        {
+            // Arrange
+            SetupAuthenticatedUser(1, isAdmin: true);
+
+            List<UserInfo> users =
+            [
+                new UserInfo
+                {
+                    UserId = 2,
+                    UserName = "userb",
+                    Email = "userb@example.com",
+                    IsAdmin = false
+                },
+                new UserInfo
+                {
+                    UserId = 1,
+                    UserName = "usera",
+                    Email = "usera@example.com",
+                    IsAdmin = false
+                }
+            ];
+
+            PagedResult<UserInfo> expectedResult = new()
+            {
+                Items = users,
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 20
+            };
+
+            _ = _mockUserService
+                .Setup(s => s.SearchUsersAsync(It.Is<PagedSearchRequestDto>(dto =>
+                    dto.Orders.Any()), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>
+            {
+                { "orders", new StringValues("UserName|Desc") }
+            });
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = _controller.User,
+                    Request = { Query = queryCollection }
+                }
+            };
+
+            // Act
+            IActionResult result = await _controller.SearchUsers(CancellationToken.None);
+
+            // Assert
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
+            PagedResult<UserInfo> pagedResult = Assert.IsType<PagedResult<UserInfo>>(okResult.Value);
+            Assert.Equal(2, pagedResult.Items.Count());
+        }
+
+        [Fact]
+        public async Task SearchUsers_ValidationFails_ReturnsBadRequest()
+        {
+            // Arrange
+            SetupAuthenticatedUser(1, isAdmin: true);
 
             List<ValidationFailure> validationFailures =
             [
@@ -137,11 +314,24 @@ namespace GeneralReservationSystem.Tests.Controllers
             ];
 
             _ = _mockPagedSearchValidator
-                .Setup(v => v.ValidateAsync(searchDto, It.IsAny<CancellationToken>()))
+                .Setup(v => v.ValidateAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ValidationResult(validationFailures));
 
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>
+            {
+                { "page", new StringValues("0") }
+            });
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = _controller.User,
+                    Request = { Query = queryCollection }
+                }
+            };
+
             // Act
-            IActionResult result = await _controller.SearchUsers(searchDto, CancellationToken.None);
+            IActionResult result = await _controller.SearchUsers(CancellationToken.None);
 
             // Assert
             _ = Assert.IsType<BadRequestObjectResult>(result);
@@ -151,45 +341,67 @@ namespace GeneralReservationSystem.Tests.Controllers
                 Times.Never);
         }
 
-        #endregion
-
-        #region SearchUsers (GET) Tests
-
         [Fact]
-        public async Task SearchUsers_Get_AsAdmin_ReturnsOkWithResults()
+        public async Task SearchUsers_EmptyResults_ReturnsEmptyPagedResult()
         {
             // Arrange
             SetupAuthenticatedUser(1, isAdmin: true);
 
             PagedResult<UserInfo> expectedResult = new()
             {
-                Items =
-                [
-                    new() { UserId = 1, UserName = "user1", Email = "user1@example.com", IsAdmin = false }
-                ],
-                TotalCount = 1,
+                Items = [],
+                TotalCount = 0,
                 Page = 1,
-                PageSize = 10
+                PageSize = 20
             };
 
             _ = _mockUserService
                 .Setup(s => s.SearchUsersAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedResult);
 
-            // Setup Request.Query
-            _controller.ControllerContext.HttpContext.Request.QueryString = new QueryString("?page=1&pageSize=10");
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>());
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = _controller.User,
+                    Request = { Query = queryCollection }
+                }
+            };
 
             // Act
             IActionResult result = await _controller.SearchUsers(CancellationToken.None);
 
             // Assert
             OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
-            PagedResult<UserInfo> returnedResult = Assert.IsType<PagedResult<UserInfo>>(okResult.Value);
-            Assert.Equal(expectedResult.TotalCount, returnedResult.TotalCount);
+            PagedResult<UserInfo> pagedResult = Assert.IsType<PagedResult<UserInfo>>(okResult.Value);
+            Assert.Empty(pagedResult.Items);
+            Assert.Equal(0, pagedResult.TotalCount);
+        }
 
-            _mockUserService.Verify(
-                s => s.SearchUsersAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()),
-                Times.Once);
+        [Fact]
+        public async Task SearchUsers_ServiceError_ThrowsServiceException()
+        {
+            // Arrange
+            SetupAuthenticatedUser(1, isAdmin: true);
+
+            _ = _mockUserService
+                .Setup(s => s.SearchUsersAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new ServiceException("Database error"));
+
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>());
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = _controller.User,
+                    Request = { Query = queryCollection }
+                }
+            };
+
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<ServiceException>(
+                () => _controller.SearchUsers(CancellationToken.None));
         }
 
         #endregion

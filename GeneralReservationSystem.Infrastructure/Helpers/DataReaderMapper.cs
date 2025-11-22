@@ -36,7 +36,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             }
         }
 
-        public static T MapReaderToEntityWithAliases<T>(
+        /*public static T MapReaderToEntityWithAliases<T>(
             DbDataReader reader,
             IReadOnlyList<(string Column, string Alias)> selectedColumns,
             bool selectAll)
@@ -143,6 +143,6 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             }
 
             return instance;
-        }
+        }*/
     }
 }

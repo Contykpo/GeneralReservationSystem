@@ -1,4 +1,4 @@
-using GeneralReservationSystem.Application.DTOs;
+﻿using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.DTOs.Authentication;
 using System.Net;
 using System.Net.Http.Json;
@@ -57,6 +57,317 @@ public class UsersControllerIntegrationTests : IntegrationTestBase
         }
         await base.DisposeAsync();
     }
+
+    #region SearchUsers Tests
+
+    [Fact]
+    public async Task SearchUsers_NoFiltersOrOrders_ReturnsPagedResult()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+
+        _ = await IntegrationTestHelpers.RegisterUserAsync(
+            _client,
+            "searchuser1",
+            "search1@example.com",
+            "Password123!");
+
+        _ = await IntegrationTestHelpers.RegisterUserAsync(
+            _client,
+            "searchuser2",
+            "search2@example.com",
+            "Password123!");
+
+        // Act
+        HttpResponseMessage response = await adminClient.GetAsync("/api/users/search");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int totalCount = doc.RootElement.GetProperty("totalCount").GetInt32();
+        int itemsCount = doc.RootElement.GetProperty("items").GetArrayLength();
+        Assert.True(totalCount >= 4);
+        Assert.True(itemsCount >= 4);
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchUsers_WithPagination_ReturnsCorrectPage()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+
+        for (int i = 1; i <= 25; i++)
+        {
+            _ = await IntegrationTestHelpers.RegisterUserAsync(
+                _client,
+                $"paginationuser{i}",
+                $"pagination{i}@example.com",
+                "Password123!");
+        }
+
+        // Act
+        HttpResponseMessage response = await adminClient.GetAsync("/api/users/search?page=2&pageSize=10");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int page = doc.RootElement.GetProperty("page").GetInt32();
+        int pageSize = doc.RootElement.GetProperty("pageSize").GetInt32();
+        int totalCount = doc.RootElement.GetProperty("totalCount").GetInt32();
+        int itemsCount = doc.RootElement.GetProperty("items").GetArrayLength();
+        Assert.Equal(2, page);
+        Assert.Equal(10, pageSize);
+        Assert.True(totalCount >= 25);
+        Assert.Equal(10, itemsCount);
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchUsers_WithFilters_ReturnsFilteredResults()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+
+        _ = await IntegrationTestHelpers.RegisterUserAsync(
+            _client,
+            "filteruser1",
+            "filter1@example.com",
+            "Password123!");
+
+        _ = await IntegrationTestHelpers.RegisterUserAsync(
+            _client,
+            "filteruser2",
+            "filter2@example.com",
+            "Password123!");
+
+        // Act
+        HttpResponseMessage response = await adminClient.GetAsync("/api/users/search?filters=[UserName|Contains|filteruser]");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int totalCount = doc.RootElement.GetProperty("totalCount").GetInt32();
+        Assert.True(totalCount >= 2);
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchUsers_WithMultipleFilters_ReturnsMatchingResults()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+
+        _ = await IntegrationTestHelpers.RegisterUserAsync(
+            _client,
+            "multifilter1",
+            "multi1@example.com",
+            "Password123!");
+
+        _ = await IntegrationTestHelpers.RegisterUserAsync(
+            _client,
+            "multifilter2",
+            "multi2@test.com",
+            "Password123!");
+
+        // Act
+        HttpResponseMessage response = await adminClient.GetAsync("/api/users/search?filters=[UserName|Contains|multifilter]&filters=[Email|Contains|example]");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int totalCount = doc.RootElement.GetProperty("totalCount").GetInt32();
+        Assert.True(totalCount >= 1);
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchUsers_WithOrders_ReturnsSortedResults()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+
+        _ = await IntegrationTestHelpers.RegisterUserAsync(
+            _client,
+            "orderuser_c",
+            "orderc@example.com",
+            "Password123!");
+
+        _ = await IntegrationTestHelpers.RegisterUserAsync(
+            _client,
+            "orderuser_a",
+            "ordera@example.com",
+            "Password123!");
+
+        _ = await IntegrationTestHelpers.RegisterUserAsync(
+            _client,
+            "orderuser_b",
+            "orderb@example.com",
+            "Password123!");
+
+        // Act
+        HttpResponseMessage response = await adminClient.GetAsync("/api/users/search?filters=[UserName|Contains|orderuser]&orders=UserName|Asc");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        JsonElement items = doc.RootElement.GetProperty("items");
+        Assert.True(items.GetArrayLength() >= 3);
+        
+        string firstName = items[0].GetProperty("userName").GetString()!;
+        string secondName = items[1].GetProperty("userName").GetString()!;
+        Assert.True(string.Compare(firstName, secondName, StringComparison.Ordinal) < 0);
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchUsers_WithDescendingOrder_ReturnsSortedResults()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+
+        _ = await IntegrationTestHelpers.RegisterUserAsync(
+            _client,
+            "descuser_a",
+            "desca@example.com",
+            "Password123!");
+
+        _ = await IntegrationTestHelpers.RegisterUserAsync(
+            _client,
+            "descuser_b",
+            "descb@example.com",
+            "Password123!");
+
+        _ = await IntegrationTestHelpers.RegisterUserAsync(
+            _client,
+            "descuser_c",
+            "descc@example.com",
+            "Password123!");
+
+        // Act
+        HttpResponseMessage response = await adminClient.GetAsync("/api/users/search?filters=[UserName|Contains|descuser]&orders=UserName|Desc");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        JsonElement items = doc.RootElement.GetProperty("items");
+        Assert.True(items.GetArrayLength() >= 3);
+
+        string firstName = items[0].GetProperty("userName").GetString()!;
+        string secondName = items[1].GetProperty("userName").GetString()!;
+        Assert.True(string.Compare(firstName, secondName, StringComparison.Ordinal) > 0);
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchUsers_NoMatchingFilters_ReturnsEmptyResults()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+
+        // Act
+        HttpResponseMessage response = await adminClient.GetAsync("/api/users/search?filters=[UserName|Equals|nonexistentuser99999]");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int totalCount = doc.RootElement.GetProperty("totalCount").GetInt32();
+        Assert.Equal(0, totalCount);
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchUsers_InvalidPageNumber_ReturnsEmptyPage()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+
+        // Act
+        HttpResponseMessage response = await adminClient.GetAsync("/api/users/search?page=100&pageSize=10");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int itemsCount = doc.RootElement.GetProperty("items").GetArrayLength();
+        Assert.Equal(0, itemsCount);
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchUsers_FilterByEmail_ReturnsMatchingUsers()
+    {
+        // Arrange
+        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
+
+        _ = await IntegrationTestHelpers.RegisterUserAsync(
+            _client,
+            "emailuser1",
+            "testemail@special.com",
+            "Password123!");
+
+        _ = await IntegrationTestHelpers.RegisterUserAsync(
+            _client,
+            "emailuser2",
+            "another@special.com",
+            "Password123!");
+
+        // Act
+        HttpResponseMessage response = await adminClient.GetAsync("/api/users/search?filters=[Email|Contains|special]");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string content = await response.Content.ReadAsStringAsync();
+        JsonDocument doc = JsonDocument.Parse(content);
+        int totalCount = doc.RootElement.GetProperty("totalCount").GetInt32();
+        Assert.True(totalCount >= 2);
+
+        adminClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchUsers_AsRegularUser_ReturnsForbidden()
+    {
+        // Arrange
+        HttpClient userClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _userToken);
+
+        // Act
+        HttpResponseMessage response = await userClient.GetAsync("/api/users/search");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+
+        userClient.Dispose();
+    }
+
+    [Fact]
+    public async Task SearchUsers_Unauthenticated_ReturnsUnauthorized()
+    {
+        // Arrange
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync("/api/users/search");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    #endregion
 
     [Fact]
     public async Task GetCurrentUser_Authenticated_ReturnsUserInfo()
@@ -251,63 +562,6 @@ public class UsersControllerIntegrationTests : IntegrationTestBase
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
 
         userClient.Dispose();
-    }
-
-    [Fact]
-    public async Task SearchUsers_AsAdmin_ReturnsResults()
-    {
-        // Arrange
-        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
-
-        PagedSearchRequestDto searchDto = new()
-        {
-            Page = 1,
-            PageSize = 10
-        };
-
-        // Act
-        HttpResponseMessage response = await adminClient.PostAsJsonAsync("/api/users/search", searchDto);
-
-        // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        adminClient.Dispose();
-    }
-
-    [Fact]
-    public async Task SearchUsers_AsRegularUser_ReturnsForbidden()
-    {
-        // Arrange
-        HttpClient userClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _userToken);
-
-        PagedSearchRequestDto searchDto = new()
-        {
-            Page = 1,
-            PageSize = 10
-        };
-
-        // Act
-        HttpResponseMessage response = await userClient.PostAsJsonAsync("/api/users/search", searchDto);
-
-        // Assert
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-
-        userClient.Dispose();
-    }
-
-    [Fact]
-    public async Task SearchUsers_GetMethod_AsAdmin_ReturnsOk()
-    {
-        // Arrange
-        HttpClient adminClient = IntegrationTestHelpers.CreateAuthenticatedClient(_factory, _adminToken);
-
-        // Act
-        HttpResponseMessage response = await adminClient.GetAsync("/api/users/search?page=1&pageSize=10");
-
-        // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        adminClient.Dispose();
     }
 
     [Fact]

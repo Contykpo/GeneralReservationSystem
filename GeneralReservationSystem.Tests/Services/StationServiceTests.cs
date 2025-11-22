@@ -1,4 +1,4 @@
-using GeneralReservationSystem.Application.Common;
+﻿using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Exceptions.Repositories;
@@ -629,6 +629,764 @@ namespace GeneralReservationSystem.Tests.Services
             Assert.NotNull(result);
             Assert.Equal(0, result.TotalCount);
             Assert.Empty(result.Items);
+
+            _mockStationRepository.Verify(
+                repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchStationsAsync_WithFilterEquals_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("StationId", FilterOperator.Equals, 1)
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<Station> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { StationId = 1, StationName = "Central Station", City = "Buenos Aires" }
+                ],
+                TotalCount = 1,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockStationRepository
+                .Setup(repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<Station> result = await _stationService.SearchStationsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(1, result.TotalCount);
+            Assert.All(result.Items, item => Assert.Equal(1, item.StationId));
+
+            _mockStationRepository.Verify(
+                repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchStationsAsync_WithFilterContains_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("City", FilterOperator.Contains, "Buenos")
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<Station> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { StationId = 1, StationName = "Station A", City = "Buenos Aires" },
+                    new() { StationId = 2, StationName = "Station B", City = "Buenos Aires" }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockStationRepository
+                .Setup(repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<Station> result = await _stationService.SearchStationsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item => Assert.Contains("Buenos", item.City));
+
+            _mockStationRepository.Verify(
+                repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchStationsAsync_WithFilterStartsWith_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("StationName", FilterOperator.StartsWith, "Central")
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<Station> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { StationId = 1, StationName = "Central Station", City = "Buenos Aires" },
+                    new() { StationId = 2, StationName = "Central Terminal", City = "Córdoba" }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockStationRepository
+                .Setup(repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<Station> result = await _stationService.SearchStationsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item => Assert.StartsWith("Central", item.StationName));
+
+            _mockStationRepository.Verify(
+                repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchStationsAsync_WithFilterEndsWith_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("Province", FilterOperator.EndsWith, "Aires")
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<Station> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { StationId = 1, StationName = "Station 1", Province = "Buenos Aires" }
+                ],
+                TotalCount = 1,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockStationRepository
+                .Setup(repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<Station> result = await _stationService.SearchStationsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(1, result.TotalCount);
+            Assert.All(result.Items, item => Assert.EndsWith("Aires", item.Province));
+
+            _mockStationRepository.Verify(
+                repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchStationsAsync_WithFilterNotEquals_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("Country", FilterOperator.NotEquals, "Argentina")
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<Station> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { StationId = 1, StationName = "Station 1", Country = "Brazil" },
+                    new() { StationId = 2, StationName = "Station 2", Country = "Chile" }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockStationRepository
+                .Setup(repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<Station> result = await _stationService.SearchStationsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item => Assert.NotEqual("Argentina", item.Country));
+
+            _mockStationRepository.Verify(
+                repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchStationsAsync_WithFilterGreaterThan_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("StationId", FilterOperator.GreaterThan, 5)
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<Station> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { StationId = 6, StationName = "Station 6" },
+                    new() { StationId = 7, StationName = "Station 7" }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockStationRepository
+                .Setup(repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<Station> result = await _stationService.SearchStationsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item => Assert.True(item.StationId > 5));
+
+            _mockStationRepository.Verify(
+                repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchStationsAsync_WithFilterLessThanOrEqual_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("StationId", FilterOperator.LessThanOrEqual, 3)
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<Station> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { StationId = 1, StationName = "Station 1" },
+                    new() { StationId = 2, StationName = "Station 2" },
+                    new() { StationId = 3, StationName = "Station 3" }
+                ],
+                TotalCount = 3,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockStationRepository
+                .Setup(repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<Station> result = await _stationService.SearchStationsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalCount);
+            Assert.All(result.Items, item => Assert.True(item.StationId <= 3));
+
+            _mockStationRepository.Verify(
+                repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchStationsAsync_WithFilterNotContains_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("City", FilterOperator.NotContains, "Aires")
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<Station> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { StationId = 1, StationName = "Station 1", City = "Córdoba" },
+                    new() { StationId = 2, StationName = "Station 2", City = "Rosario" }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockStationRepository
+                .Setup(repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<Station> result = await _stationService.SearchStationsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item => Assert.DoesNotContain("Aires", item.City));
+
+            _mockStationRepository.Verify(
+                repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchStationsAsync_WithMultipleFiltersInSameClause_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("Country", FilterOperator.Equals, "Argentina"),
+                        new Filter("Country", FilterOperator.Equals, "Brazil")
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<Station> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { StationId = 1, StationName = "Station 1", Country = "Argentina" },
+                    new() { StationId = 2, StationName = "Station 2", Country = "Brazil" }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockStationRepository
+                .Setup(repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<Station> result = await _stationService.SearchStationsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item => Assert.True(item.Country == "Argentina" || item.Country == "Brazil"));
+
+            _mockStationRepository.Verify(
+                repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchStationsAsync_WithMultipleFilterClauses_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("Country", FilterOperator.Equals, "Argentina")
+                    ]),
+                    new FilterClause(
+                    [
+                        new Filter("City", FilterOperator.Contains, "Buenos")
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<Station> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { StationId = 1, StationName = "Station 1", City = "Buenos Aires", Country = "Argentina" }
+                ],
+                TotalCount = 1,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockStationRepository
+                .Setup(repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<Station> result = await _stationService.SearchStationsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(1, result.TotalCount);
+            Assert.All(result.Items, item =>
+            {
+                Assert.Equal("Argentina", item.Country);
+                Assert.Contains("Buenos", item.City);
+            });
+
+            _mockStationRepository.Verify(
+                repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchStationsAsync_WithOrderByAscending_ReturnsOrderedResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses = [],
+                Orders =
+                [
+                    new SortOption("StationName", SortDirection.Asc)
+                ]
+            };
+
+            PagedResult<Station> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { StationId = 1, StationName = "A Station" },
+                    new() { StationId = 2, StationName = "B Station" },
+                    new() { StationId = 3, StationName = "C Station" }
+                ],
+                TotalCount = 3,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockStationRepository
+                .Setup(repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<Station> result = await _stationService.SearchStationsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalCount);
+            List<Station> items = [.. result.Items];
+            for (int i = 1; i < items.Count; i++)
+            {
+                Assert.True(string.Compare(items[i].StationName, items[i - 1].StationName, StringComparison.Ordinal) >= 0);
+            }
+
+            _mockStationRepository.Verify(
+                repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchStationsAsync_WithOrderByDescending_ReturnsOrderedResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses = [],
+                Orders =
+                [
+                    new SortOption("StationId", SortDirection.Desc)
+                ]
+            };
+
+            PagedResult<Station> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { StationId = 3, StationName = "Station 3" },
+                    new() { StationId = 2, StationName = "Station 2" },
+                    new() { StationId = 1, StationName = "Station 1" }
+                ],
+                TotalCount = 3,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockStationRepository
+                .Setup(repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<Station> result = await _stationService.SearchStationsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalCount);
+            List<Station> items = [.. result.Items];
+            for (int i = 1; i < items.Count; i++)
+            {
+                Assert.True(items[i].StationId <= items[i - 1].StationId);
+            }
+
+            _mockStationRepository.Verify(
+                repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchStationsAsync_WithMultipleOrders_ReturnsOrderedResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses = [],
+                Orders =
+                [
+                    new SortOption("Country", SortDirection.Asc),
+                    new SortOption("City", SortDirection.Asc)
+                ]
+            };
+
+            PagedResult<Station> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { StationId = 1, Country = "Argentina", City = "Buenos Aires" },
+                    new() { StationId = 2, Country = "Argentina", City = "Córdoba" },
+                    new() { StationId = 3, Country = "Brazil", City = "Rio de Janeiro" }
+                ],
+                TotalCount = 3,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockStationRepository
+                .Setup(repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<Station> result = await _stationService.SearchStationsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalCount);
+            List<Station> items = [.. result.Items];
+            for (int i = 1; i < items.Count; i++)
+            {
+                int countryComparison = string.Compare(items[i].Country, items[i - 1].Country, StringComparison.Ordinal);
+                Assert.True(countryComparison >= 0);
+                if (countryComparison == 0)
+                {
+                    Assert.True(string.Compare(items[i].City, items[i - 1].City, StringComparison.Ordinal) >= 0);
+                }
+            }
+
+            _mockStationRepository.Verify(
+                repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchStationsAsync_WithFiltersAndOrders_ReturnsFilteredAndOrderedResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("Country", FilterOperator.Equals, "Argentina")
+                    ])
+                ],
+                Orders =
+                [
+                    new SortOption("City", SortDirection.Asc)
+                ]
+            };
+
+            PagedResult<Station> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { StationId = 1, StationName = "Station 1", City = "Buenos Aires", Country = "Argentina" },
+                    new() { StationId = 2, StationName = "Station 2", City = "Córdoba", Country = "Argentina" },
+                    new() { StationId = 3, StationName = "Station 3", City = "Rosario", Country = "Argentina" }
+                ],
+                TotalCount = 3,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockStationRepository
+                .Setup(repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<Station> result = await _stationService.SearchStationsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalCount);
+            Assert.All(result.Items, item => Assert.Equal("Argentina", item.Country));
+            List<Station> items = [.. result.Items];
+            for (int i = 1; i < items.Count; i++)
+            {
+                Assert.True(string.Compare(items[i].City, items[i - 1].City, StringComparison.Ordinal) >= 0);
+            }
+
+            _mockStationRepository.Verify(
+                repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchStationsAsync_WithComplexFilteringAndOrdering_ReturnsCorrectResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("Country", FilterOperator.Equals, "Argentina"),
+                        new Filter("Country", FilterOperator.Equals, "Brazil")
+                    ]),
+                    new FilterClause(
+                    [
+                        new Filter("StationId", FilterOperator.GreaterThan, 0)
+                    ])
+                ],
+                Orders =
+                [
+                    new SortOption("Country", SortDirection.Desc),
+                    new SortOption("StationId", SortDirection.Asc)
+                ]
+            };
+
+            PagedResult<Station> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { StationId = 3, Country = "Brazil", City = "São Paulo" },
+                    new() { StationId = 4, Country = "Brazil", City = "Rio de Janeiro" },
+                    new() { StationId = 1, Country = "Argentina", City = "Buenos Aires" },
+                    new() { StationId = 2, Country = "Argentina", City = "Córdoba" }
+                ],
+                TotalCount = 4,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockStationRepository
+                .Setup(repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<Station> result = await _stationService.SearchStationsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(4, result.TotalCount);
+            Assert.All(result.Items, item =>
+            {
+                Assert.True(item.Country == "Argentina" || item.Country == "Brazil");
+                Assert.True(item.StationId > 0);
+            });
+            List<Station> items = [.. result.Items];
+            for (int i = 1; i < items.Count; i++)
+            {
+                int countryComparison = string.Compare(items[i].Country, items[i - 1].Country, StringComparison.Ordinal);
+                Assert.True(countryComparison <= 0);
+                if (countryComparison == 0)
+                {
+                    Assert.True(items[i].StationId >= items[i - 1].StationId);
+                }
+            }
 
             _mockStationRepository.Verify(
                 repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()),

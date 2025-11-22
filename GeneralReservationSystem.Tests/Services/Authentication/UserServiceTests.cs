@@ -1,4 +1,4 @@
-using GeneralReservationSystem.Application.Common;
+﻿using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.DTOs.Authentication;
 using GeneralReservationSystem.Application.Entities.Authentication;
@@ -583,6 +583,812 @@ namespace GeneralReservationSystem.Tests.Services.Authentication
             Assert.NotNull(result);
             Assert.Equal(0, result.TotalCount);
             Assert.Empty(result.Items);
+
+            _mockUserRepository.Verify(
+                repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchUsersAsync_WithFilterEquals_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("UserId", FilterOperator.Equals, 1)
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<UserInfo> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { UserId = 1, UserName = "user1", Email = "user1@example.com", IsAdmin = false }
+                ],
+                TotalCount = 1,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockUserRepository
+                .Setup(repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<UserInfo> result = await _userService.SearchUsersAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(1, result.TotalCount);
+            Assert.All(result.Items, item => Assert.Equal(1, item.UserId));
+
+            _mockUserRepository.Verify(
+                repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchUsersAsync_WithFilterContains_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("UserName", FilterOperator.Contains, "admin")
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<UserInfo> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { UserId = 1, UserName = "admin", Email = "admin@example.com", IsAdmin = true },
+                    new() { UserId = 2, UserName = "sysadmin", Email = "sysadmin@example.com", IsAdmin = true }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockUserRepository
+                .Setup(repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<UserInfo> result = await _userService.SearchUsersAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item => Assert.Contains("admin", item.UserName.ToLower()));
+
+            _mockUserRepository.Verify(
+                repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchUsersAsync_WithFilterStartsWith_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("Email", FilterOperator.StartsWith, "user")
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<UserInfo> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { UserId = 1, UserName = "john", Email = "user1@example.com", IsAdmin = false },
+                    new() { UserId = 2, UserName = "jane", Email = "user2@example.com", IsAdmin = false }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockUserRepository
+                .Setup(repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<UserInfo> result = await _userService.SearchUsersAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item => Assert.StartsWith("user", item.Email));
+
+            _mockUserRepository.Verify(
+                repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchUsersAsync_WithFilterEndsWith_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("Email", FilterOperator.EndsWith, "@company.com")
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<UserInfo> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { UserId = 1, UserName = "employee1", Email = "emp1@company.com", IsAdmin = false },
+                    new() { UserId = 2, UserName = "employee2", Email = "emp2@company.com", IsAdmin = false }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockUserRepository
+                .Setup(repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<UserInfo> result = await _userService.SearchUsersAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item => Assert.EndsWith("@company.com", item.Email));
+
+            _mockUserRepository.Verify(
+                repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchUsersAsync_WithFilterNotEquals_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("IsAdmin", FilterOperator.NotEquals, true)
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<UserInfo> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { UserId = 2, UserName = "user1", Email = "user1@example.com", IsAdmin = false },
+                    new() { UserId = 3, UserName = "user2", Email = "user2@example.com", IsAdmin = false }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockUserRepository
+                .Setup(repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<UserInfo> result = await _userService.SearchUsersAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item => Assert.False(item.IsAdmin));
+
+            _mockUserRepository.Verify(
+                repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchUsersAsync_WithFilterGreaterThan_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("UserId", FilterOperator.GreaterThan, 5)
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<UserInfo> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { UserId = 6, UserName = "user6", Email = "user6@example.com" },
+                    new() { UserId = 7, UserName = "user7", Email = "user7@example.com" }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockUserRepository
+                .Setup(repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<UserInfo> result = await _userService.SearchUsersAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item => Assert.True(item.UserId > 5));
+
+            _mockUserRepository.Verify(
+                repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchUsersAsync_WithFilterLessThanOrEqual_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("UserId", FilterOperator.LessThanOrEqual, 3)
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<UserInfo> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { UserId = 1, UserName = "user1", Email = "user1@example.com" },
+                    new() { UserId = 2, UserName = "user2", Email = "user2@example.com" },
+                    new() { UserId = 3, UserName = "user3", Email = "user3@example.com" }
+                ],
+                TotalCount = 3,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockUserRepository
+                .Setup(repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<UserInfo> result = await _userService.SearchUsersAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalCount);
+            Assert.All(result.Items, item => Assert.True(item.UserId <= 3));
+
+            _mockUserRepository.Verify(
+                repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchUsersAsync_WithFilterNotContains_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("Email", FilterOperator.NotContains, "example")
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<UserInfo> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { UserId = 1, UserName = "user1", Email = "user1@company.com" },
+                    new() { UserId = 2, UserName = "user2", Email = "user2@business.com" }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockUserRepository
+                .Setup(repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<UserInfo> result = await _userService.SearchUsersAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item => Assert.DoesNotContain("example", item.Email));
+
+            _mockUserRepository.Verify(
+                repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchUsersAsync_WithMultipleFiltersInSameClause_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("UserName", FilterOperator.Equals, "admin"),
+                        new Filter("UserName", FilterOperator.Equals, "superadmin")
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<UserInfo> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { UserId = 1, UserName = "admin", Email = "admin@example.com", IsAdmin = true },
+                    new() { UserId = 2, UserName = "superadmin", Email = "superadmin@example.com", IsAdmin = true }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockUserRepository
+                .Setup(repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<UserInfo> result = await _userService.SearchUsersAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item => Assert.True(item.UserName == "admin" || item.UserName == "superadmin"));
+
+            _mockUserRepository.Verify(
+                repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchUsersAsync_WithMultipleFilterClauses_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("IsAdmin", FilterOperator.Equals, true)
+                    ]),
+                    new FilterClause(
+                    [
+                        new Filter("Email", FilterOperator.Contains, "@example.com")
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<UserInfo> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { UserId = 1, UserName = "admin", Email = "admin@example.com", IsAdmin = true }
+                ],
+                TotalCount = 1,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockUserRepository
+                .Setup(repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<UserInfo> result = await _userService.SearchUsersAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(1, result.TotalCount);
+            Assert.All(result.Items, item =>
+            {
+                Assert.True(item.IsAdmin);
+                Assert.Contains("@example.com", item.Email);
+            });
+
+            _mockUserRepository.Verify(
+                repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchUsersAsync_WithOrderByAscending_ReturnsOrderedResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses = [],
+                Orders =
+                [
+                    new SortOption("UserName", SortDirection.Asc)
+                ]
+            };
+
+            PagedResult<UserInfo> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { UserId = 1, UserName = "alice", Email = "alice@example.com" },
+                    new() { UserId = 2, UserName = "bob", Email = "bob@example.com" },
+                    new() { UserId = 3, UserName = "charlie", Email = "charlie@example.com" }
+                ],
+                TotalCount = 3,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockUserRepository
+                .Setup(repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<UserInfo> result = await _userService.SearchUsersAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalCount);
+            List<UserInfo> items = [.. result.Items];
+            for (int i = 1; i < items.Count; i++)
+            {
+                Assert.True(string.Compare(items[i].UserName, items[i - 1].UserName, StringComparison.Ordinal) >= 0);
+            }
+
+            _mockUserRepository.Verify(
+                repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchUsersAsync_WithOrderByDescending_ReturnsOrderedResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses = [],
+                Orders =
+                [
+                    new SortOption("UserId", SortDirection.Desc)
+                ]
+            };
+
+            PagedResult<UserInfo> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { UserId = 3, UserName = "user3", Email = "user3@example.com" },
+                    new() { UserId = 2, UserName = "user2", Email = "user2@example.com" },
+                    new() { UserId = 1, UserName = "user1", Email = "user1@example.com" }
+                ],
+                TotalCount = 3,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockUserRepository
+                .Setup(repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<UserInfo> result = await _userService.SearchUsersAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalCount);
+            List<UserInfo> items = [.. result.Items];
+            for (int i = 1; i < items.Count; i++)
+            {
+                Assert.True(items[i].UserId <= items[i - 1].UserId);
+            }
+
+            _mockUserRepository.Verify(
+                repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchUsersAsync_WithMultipleOrders_ReturnsOrderedResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses = [],
+                Orders =
+                [
+                    new SortOption("IsAdmin", SortDirection.Desc),
+                    new SortOption("UserName", SortDirection.Asc)
+                ]
+            };
+
+            PagedResult<UserInfo> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { UserId = 1, UserName = "admin", Email = "admin@example.com", IsAdmin = true },
+                    new() { UserId = 2, UserName = "superadmin", Email = "superadmin@example.com", IsAdmin = true },
+                    new() { UserId = 3, UserName = "alice", Email = "alice@example.com", IsAdmin = false },
+                    new() { UserId = 4, UserName = "bob", Email = "bob@example.com", IsAdmin = false }
+                ],
+                TotalCount = 4,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockUserRepository
+                .Setup(repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<UserInfo> result = await _userService.SearchUsersAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(4, result.TotalCount);
+            List<UserInfo> items = [.. result.Items];
+            for (int i = 1; i < items.Count; i++)
+            {
+                if (items[i].IsAdmin && !items[i - 1].IsAdmin)
+                {
+                    Assert.Fail("IsAdmin should be ordered descending (true before false)");
+                }
+                if (items[i].IsAdmin == items[i - 1].IsAdmin)
+                {
+                    Assert.True(string.Compare(items[i].UserName, items[i - 1].UserName, StringComparison.Ordinal) >= 0);
+                }
+            }
+
+            _mockUserRepository.Verify(
+                repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchUsersAsync_WithFiltersAndOrders_ReturnsFilteredAndOrderedResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("Email", FilterOperator.Contains, "@example.com")
+                    ])
+                ],
+                Orders =
+                [
+                    new SortOption("UserName", SortDirection.Asc)
+                ]
+            };
+
+            PagedResult<UserInfo> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { UserId = 1, UserName = "alice", Email = "alice@example.com", IsAdmin = false },
+                    new() { UserId = 2, UserName = "bob", Email = "bob@example.com", IsAdmin = false },
+                    new() { UserId = 3, UserName = "charlie", Email = "charlie@example.com", IsAdmin = false }
+                ],
+                TotalCount = 3,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockUserRepository
+                .Setup(repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<UserInfo> result = await _userService.SearchUsersAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalCount);
+            Assert.All(result.Items, item => Assert.Contains("@example.com", item.Email));
+            List<UserInfo> items = [.. result.Items];
+            for (int i = 1; i < items.Count; i++)
+            {
+                Assert.True(string.Compare(items[i].UserName, items[i - 1].UserName, StringComparison.Ordinal) >= 0);
+            }
+
+            _mockUserRepository.Verify(
+                repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchUsersAsync_WithComplexFilteringAndOrdering_ReturnsCorrectResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("IsAdmin", FilterOperator.Equals, true),
+                        new Filter("IsAdmin", FilterOperator.Equals, false)
+                    ]),
+                    new FilterClause(
+                    [
+                        new Filter("UserId", FilterOperator.GreaterThan, 0)
+                    ])
+                ],
+                Orders =
+                [
+                    new SortOption("IsAdmin", SortDirection.Desc),
+                    new SortOption("Email", SortDirection.Asc)
+                ]
+            };
+
+            PagedResult<UserInfo> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { UserId = 1, UserName = "admin", Email = "admin@example.com", IsAdmin = true },
+                    new() { UserId = 2, UserName = "alice", Email = "alice@example.com", IsAdmin = false },
+                    new() { UserId = 3, UserName = "bob", Email = "bob@example.com", IsAdmin = false }
+                ],
+                TotalCount = 3,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockUserRepository
+                .Setup(repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<UserInfo> result = await _userService.SearchUsersAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalCount);
+            Assert.All(result.Items, item => Assert.True(item.UserId > 0));
+            List<UserInfo> items = [.. result.Items];
+            for (int i = 1; i < items.Count; i++)
+            {
+                if (items[i].IsAdmin && !items[i - 1].IsAdmin)
+                {
+                    Assert.Fail("IsAdmin should be ordered descending");
+                }
+                if (items[i].IsAdmin == items[i - 1].IsAdmin)
+                {
+                    Assert.True(string.Compare(items[i].Email, items[i - 1].Email, StringComparison.Ordinal) >= 0);
+                }
+            }
+
+            _mockUserRepository.Verify(
+                repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchUsersAsync_FilterByAdminStatus_ReturnsOnlyAdmins()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("IsAdmin", FilterOperator.Equals, true)
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<UserInfo> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { UserId = 1, UserName = "admin", Email = "admin@example.com", IsAdmin = true },
+                    new() { UserId = 2, UserName = "superadmin", Email = "superadmin@example.com", IsAdmin = true }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockUserRepository
+                .Setup(repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<UserInfo> result = await _userService.SearchUsersAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item => Assert.True(item.IsAdmin));
 
             _mockUserRepository.Verify(
                 repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()),

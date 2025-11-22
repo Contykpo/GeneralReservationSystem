@@ -1,4 +1,4 @@
-using GeneralReservationSystem.Application.Common;
+﻿using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.DTOs.Authentication;
 using GeneralReservationSystem.Application.Entities;
@@ -581,6 +581,508 @@ namespace GeneralReservationSystem.Tests.Services
         }
 
         [Fact]
+        public async Task SearchReservationsAsync_WithFilterEquals_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("TripId", FilterOperator.Equals, 1)
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<ReservationDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, UserId = 1, Seat = 5 }
+                ],
+                TotalCount = 1,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockReservationRepository
+                .Setup(repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<ReservationDetailsDto> result = await _reservationService.SearchReservationsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(1, result.TotalCount);
+            Assert.All(result.Items, item => Assert.Equal(1, item.TripId));
+
+            _mockReservationRepository.Verify(
+                repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchReservationsAsync_WithFilterContains_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("UserName", FilterOperator.Contains, "john")
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<ReservationDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { UserId = 1, UserName = "johnsmith", TripId = 1, Seat = 5 },
+                    new() { UserId = 2, UserName = "johndoe", TripId = 2, Seat = 10 }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockReservationRepository
+                .Setup(repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<ReservationDetailsDto> result = await _reservationService.SearchReservationsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item => Assert.Contains("john", item.UserName.ToLower()));
+
+            _mockReservationRepository.Verify(
+                repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchReservationsAsync_WithFilterGreaterThan_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("Seat", FilterOperator.GreaterThan, 5)
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<ReservationDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, Seat = 10 },
+                    new() { TripId = 2, Seat = 15 }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockReservationRepository
+                .Setup(repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<ReservationDetailsDto> result = await _reservationService.SearchReservationsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item => Assert.True(item.Seat > 5));
+
+            _mockReservationRepository.Verify(
+                repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchReservationsAsync_WithFilterBetween_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("DepartureTime", FilterOperator.Between, new object[] { new DateTime(2024, 6, 1), new DateTime(2024, 6, 30) })
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<ReservationDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, DepartureTime = new DateTime(2024, 6, 5), Seat = 5 },
+                    new() { TripId = 2, DepartureTime = new DateTime(2024, 6, 15), Seat = 10 }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockReservationRepository
+                .Setup(repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<ReservationDetailsDto> result = await _reservationService.SearchReservationsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item =>
+            {
+                Assert.True(item.DepartureTime >= new DateTime(2024, 6, 1));
+                Assert.True(item.DepartureTime <= new DateTime(2024, 6, 30));
+            });
+
+            _mockReservationRepository.Verify(
+                repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchReservationsAsync_WithMultipleFiltersInSameClause_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("TripId", FilterOperator.Equals, 1),
+                        new Filter("TripId", FilterOperator.Equals, 2)
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<ReservationDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, Seat = 5 },
+                    new() { TripId = 2, Seat = 10 }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockReservationRepository
+                .Setup(repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<ReservationDetailsDto> result = await _reservationService.SearchReservationsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item => Assert.True(item.TripId == 1 || item.TripId == 2));
+
+            _mockReservationRepository.Verify(
+                repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchReservationsAsync_WithMultipleFilterClauses_ReturnsFilteredResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("TripId", FilterOperator.GreaterThan, 0)
+                    ]),
+                    new FilterClause(
+                    [
+                        new Filter("Seat", FilterOperator.LessThan, 20)
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<ReservationDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, Seat = 5 },
+                    new() { TripId = 2, Seat = 10 }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockReservationRepository
+                .Setup(repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<ReservationDetailsDto> result = await _reservationService.SearchReservationsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item =>
+            {
+                Assert.True(item.TripId > 0);
+                Assert.True(item.Seat < 20);
+            });
+
+            _mockReservationRepository.Verify(
+                repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchReservationsAsync_WithOrderByAscending_ReturnsOrderedResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses = [],
+                Orders =
+                [
+                    new SortOption("Seat", SortDirection.Asc)
+                ]
+            };
+
+            PagedResult<ReservationDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, Seat = 5 },
+                    new() { TripId = 2, Seat = 10 },
+                    new() { TripId = 3, Seat = 15 }
+                ],
+                TotalCount = 3,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockReservationRepository
+                .Setup(repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<ReservationDetailsDto> result = await _reservationService.SearchReservationsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalCount);
+            List<ReservationDetailsDto> items = [.. result.Items];
+            for (int i = 1; i < items.Count; i++)
+            {
+                Assert.True(items[i].Seat >= items[i - 1].Seat);
+            }
+
+            _mockReservationRepository.Verify(
+                repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchReservationsAsync_WithOrderByDescending_ReturnsOrderedResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses = [],
+                Orders =
+                [
+                    new SortOption("Seat", SortDirection.Desc)
+                ]
+            };
+
+            PagedResult<ReservationDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 3, Seat = 15 },
+                    new() { TripId = 2, Seat = 10 },
+                    new() { TripId = 1, Seat = 5 }
+                ],
+                TotalCount = 3,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockReservationRepository
+                .Setup(repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<ReservationDetailsDto> result = await _reservationService.SearchReservationsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalCount);
+            List<ReservationDetailsDto> items = [.. result.Items];
+            for (int i = 1; i < items.Count; i++)
+            {
+                Assert.True(items[i].Seat <= items[i - 1].Seat);
+            }
+
+            _mockReservationRepository.Verify(
+                repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchReservationsAsync_WithMultipleOrders_ReturnsOrderedResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses = [],
+                Orders =
+                [
+                    new SortOption("TripId", SortDirection.Asc),
+                    new SortOption("Seat", SortDirection.Desc)
+                ]
+            };
+
+            PagedResult<ReservationDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, Seat = 10 },
+                    new() { TripId = 1, Seat = 5 },
+                    new() { TripId = 2, Seat = 15 }
+                ],
+                TotalCount = 3,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockReservationRepository
+                .Setup(repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<ReservationDetailsDto> result = await _reservationService.SearchReservationsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalCount);
+            List<ReservationDetailsDto> items = [.. result.Items];
+            for (int i = 1; i < items.Count; i++)
+            {
+                Assert.True(items[i].TripId >= items[i - 1].TripId);
+                if (items[i].TripId == items[i - 1].TripId)
+                {
+                    Assert.True(items[i].Seat <= items[i - 1].Seat);
+                }
+            }
+
+            _mockReservationRepository.Verify(
+                repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchReservationsAsync_WithFiltersAndOrders_ReturnsFilteredAndOrderedResults()
+        {
+            // Arrange
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("TripId", FilterOperator.LessThanOrEqual, 10)
+                    ])
+                ],
+                Orders =
+                [
+                    new SortOption("Seat", SortDirection.Asc)
+                ]
+            };
+
+            PagedResult<ReservationDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 5, Seat = 5 },
+                    new() { TripId = 3, Seat = 10 },
+                    new() { TripId = 8, Seat = 15 }
+                ],
+                TotalCount = 3,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockReservationRepository
+                .Setup(repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<ReservationDetailsDto> result = await _reservationService.SearchReservationsAsync(searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalCount);
+            Assert.All(result.Items, item => Assert.True(item.TripId <= 10));
+            List<ReservationDetailsDto> items = [.. result.Items];
+            for (int i = 1; i < items.Count; i++)
+            {
+                Assert.True(items[i].Seat >= items[i - 1].Seat);
+            }
+
+            _mockReservationRepository.Verify(
+                repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
         public async Task SearchReservationsAsync_RepositoryError_ThrowsServiceException()
         {
             // Arrange
@@ -777,6 +1279,614 @@ namespace GeneralReservationSystem.Tests.Services
             Assert.NotNull(result);
             Assert.Equal(3, result.TotalCount);
             Assert.Equal(3, result.Items.Count());
+
+            _mockReservationRepository.Verify(
+                repo => repo.SearchForUserIdWithDetailsAsync(1, searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchUserReservationsAsync_WithFilterEquals_ReturnsFilteredResults()
+        {
+            // Arrange
+            UserKeyDto keyDto = new() { UserId = 1 };
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("TripId", FilterOperator.Equals, 2)
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<UserReservationDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 2, Seat = 10 }
+                ],
+                TotalCount = 1,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockReservationRepository
+                .Setup(repo => repo.SearchForUserIdWithDetailsAsync(1, searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<UserReservationDetailsDto> result = await _reservationService.SearchUserReservationsAsync(keyDto, searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(1, result.TotalCount);
+            Assert.All(result.Items, item => Assert.Equal(2, item.TripId));
+
+            _mockReservationRepository.Verify(
+                repo => repo.SearchForUserIdWithDetailsAsync(1, searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchUserReservationsAsync_WithFilterContains_ReturnsFilteredResults()
+        {
+            // Arrange
+            UserKeyDto keyDto = new() { UserId = 1 };
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("DepartureCity", FilterOperator.Contains, "City")
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<UserReservationDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, DepartureCity = "City A", Seat = 5 },
+                    new() { TripId = 2, DepartureCity = "City B", Seat = 10 }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockReservationRepository
+                .Setup(repo => repo.SearchForUserIdWithDetailsAsync(1, searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<UserReservationDetailsDto> result = await _reservationService.SearchUserReservationsAsync(keyDto, searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item => Assert.Contains("City", item.DepartureCity));
+
+            _mockReservationRepository.Verify(
+                repo => repo.SearchForUserIdWithDetailsAsync(1, searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchUserReservationsAsync_WithFilterStartsWith_ReturnsFilteredResults()
+        {
+            // Arrange
+            UserKeyDto keyDto = new() { UserId = 1 };
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("DepartureStationName", FilterOperator.StartsWith, "Station")
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<UserReservationDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, DepartureStationName = "Station A", Seat = 5 },
+                    new() { TripId = 2, DepartureStationName = "Station B", Seat = 10 }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockReservationRepository
+                .Setup(repo => repo.SearchForUserIdWithDetailsAsync(1, searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<UserReservationDetailsDto> result = await _reservationService.SearchUserReservationsAsync(keyDto, searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item => Assert.StartsWith("Station", item.DepartureStationName));
+
+            _mockReservationRepository.Verify(
+                repo => repo.SearchForUserIdWithDetailsAsync(1, searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchUserReservationsAsync_WithFilterGreaterThanOrEqual_ReturnsFilteredResults()
+        {
+            // Arrange
+            UserKeyDto keyDto = new() { UserId = 1 };
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("Seat", FilterOperator.GreaterThanOrEqual, 10)
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<UserReservationDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 2, Seat = 10 },
+                    new() { TripId = 3, Seat = 15 }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockReservationRepository
+                .Setup(repo => repo.SearchForUserIdWithDetailsAsync(1, searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<UserReservationDetailsDto> result = await _reservationService.SearchUserReservationsAsync(keyDto, searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item => Assert.True(item.Seat >= 10));
+
+            _mockReservationRepository.Verify(
+                repo => repo.SearchForUserIdWithDetailsAsync(1, searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchUserReservationsAsync_WithFilterBetween_ReturnsFilteredResults()
+        {
+            // Arrange
+            UserKeyDto keyDto = new() { UserId = 1 };
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("DepartureTime", FilterOperator.Between, new object[] { new DateTime(2024, 6, 1), new DateTime(2024, 6, 30) })
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<UserReservationDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, DepartureTime = new DateTime(2024, 6, 5), Seat = 5 },
+                    new() { TripId = 2, DepartureTime = new DateTime(2024, 6, 20), Seat = 10 }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockReservationRepository
+                .Setup(repo => repo.SearchForUserIdWithDetailsAsync(1, searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<UserReservationDetailsDto> result = await _reservationService.SearchUserReservationsAsync(keyDto, searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item =>
+            {
+                Assert.True(item.DepartureTime >= new DateTime(2024, 6, 1));
+                Assert.True(item.DepartureTime <= new DateTime(2024, 6, 30));
+            });
+
+            _mockReservationRepository.Verify(
+                repo => repo.SearchForUserIdWithDetailsAsync(1, searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchUserReservationsAsync_WithFilterNotEquals_ReturnsFilteredResults()
+        {
+            // Arrange
+            UserKeyDto keyDto = new() { UserId = 1 };
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("DepartureStationId", FilterOperator.NotEquals, 1)
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<UserReservationDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 2, DepartureStationId = 2, Seat = 10 },
+                    new() { TripId = 3, DepartureStationId = 3, Seat = 15 }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockReservationRepository
+                .Setup(repo => repo.SearchForUserIdWithDetailsAsync(1, searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<UserReservationDetailsDto> result = await _reservationService.SearchUserReservationsAsync(keyDto, searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item => Assert.NotEqual(1, item.DepartureStationId));
+
+            _mockReservationRepository.Verify(
+                repo => repo.SearchForUserIdWithDetailsAsync(1, searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchUserReservationsAsync_WithMultipleFiltersInSameClause_ReturnsFilteredResults()
+        {
+            // Arrange
+            UserKeyDto keyDto = new() { UserId = 1 };
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("TripId", FilterOperator.Equals, 1),
+                        new Filter("TripId", FilterOperator.Equals, 2)
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<UserReservationDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, Seat = 5 },
+                    new() { TripId = 2, Seat = 10 }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockReservationRepository
+                .Setup(repo => repo.SearchForUserIdWithDetailsAsync(1, searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<UserReservationDetailsDto> result = await _reservationService.SearchUserReservationsAsync(keyDto, searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item => Assert.True(item.TripId == 1 || item.TripId == 2));
+
+            _mockReservationRepository.Verify(
+                repo => repo.SearchForUserIdWithDetailsAsync(1, searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchUserReservationsAsync_WithMultipleFilterClauses_ReturnsFilteredResults()
+        {
+            // Arrange
+            UserKeyDto keyDto = new() { UserId = 1 };
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("TripId", FilterOperator.GreaterThan, 0)
+                    ]),
+                    new FilterClause(
+                    [
+                        new Filter("Seat", FilterOperator.LessThan, 20)
+                    ])
+                ],
+                Orders = []
+            };
+
+            PagedResult<UserReservationDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, Seat = 5 },
+                    new() { TripId = 2, Seat = 10 }
+                ],
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockReservationRepository
+                .Setup(repo => repo.SearchForUserIdWithDetailsAsync(1, searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<UserReservationDetailsDto> result = await _reservationService.SearchUserReservationsAsync(keyDto, searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.TotalCount);
+            Assert.All(result.Items, item =>
+            {
+                Assert.True(item.TripId > 0);
+                Assert.True(item.Seat < 20);
+            });
+
+            _mockReservationRepository.Verify(
+                repo => repo.SearchForUserIdWithDetailsAsync(1, searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchUserReservationsAsync_WithOrderByAscending_ReturnsOrderedResults()
+        {
+            // Arrange
+            UserKeyDto keyDto = new() { UserId = 1 };
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses = [],
+                Orders =
+                [
+                    new SortOption("Seat", SortDirection.Asc)
+                ]
+            };
+
+            PagedResult<UserReservationDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, Seat = 5 },
+                    new() { TripId = 2, Seat = 10 },
+                    new() { TripId = 3, Seat = 15 }
+                ],
+                TotalCount = 3,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockReservationRepository
+                .Setup(repo => repo.SearchForUserIdWithDetailsAsync(1, searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<UserReservationDetailsDto> result = await _reservationService.SearchUserReservationsAsync(keyDto, searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalCount);
+            List<UserReservationDetailsDto> items = [.. result.Items];
+            for (int i = 1; i < items.Count; i++)
+            {
+                Assert.True(items[i].Seat >= items[i - 1].Seat);
+            }
+
+            _mockReservationRepository.Verify(
+                repo => repo.SearchForUserIdWithDetailsAsync(1, searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchUserReservationsAsync_WithOrderByDescending_ReturnsOrderedResults()
+        {
+            // Arrange
+            UserKeyDto keyDto = new() { UserId = 1 };
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses = [],
+                Orders =
+                [
+                    new SortOption("DepartureTime", SortDirection.Desc)
+                ]
+            };
+
+            PagedResult<UserReservationDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 3, DepartureTime = new DateTime(2024, 6, 15), Seat = 15 },
+                    new() { TripId = 2, DepartureTime = new DateTime(2024, 6, 10), Seat = 10 },
+                    new() { TripId = 1, DepartureTime = new DateTime(2024, 6, 5), Seat = 5 }
+                ],
+                TotalCount = 3,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockReservationRepository
+                .Setup(repo => repo.SearchForUserIdWithDetailsAsync(1, searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<UserReservationDetailsDto> result = await _reservationService.SearchUserReservationsAsync(keyDto, searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalCount);
+            List<UserReservationDetailsDto> items = [.. result.Items];
+            for (int i = 1; i < items.Count; i++)
+            {
+                Assert.True(items[i].DepartureTime <= items[i - 1].DepartureTime);
+            }
+
+            _mockReservationRepository.Verify(
+                repo => repo.SearchForUserIdWithDetailsAsync(1, searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchUserReservationsAsync_WithMultipleOrders_ReturnsOrderedResults()
+        {
+            // Arrange
+            UserKeyDto keyDto = new() { UserId = 1 };
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses = [],
+                Orders =
+                [
+                    new SortOption("TripId", SortDirection.Asc),
+                    new SortOption("Seat", SortDirection.Desc)
+                ]
+            };
+
+            PagedResult<UserReservationDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, Seat = 10 },
+                    new() { TripId = 1, Seat = 5 },
+                    new() { TripId = 2, Seat = 15 }
+                ],
+                TotalCount = 3,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockReservationRepository
+                .Setup(repo => repo.SearchForUserIdWithDetailsAsync(1, searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<UserReservationDetailsDto> result = await _reservationService.SearchUserReservationsAsync(keyDto, searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalCount);
+            List<UserReservationDetailsDto> items = [.. result.Items];
+            for (int i = 1; i < items.Count; i++)
+            {
+                Assert.True(items[i].TripId >= items[i - 1].TripId);
+                if (items[i].TripId == items[i - 1].TripId)
+                {
+                    Assert.True(items[i].Seat <= items[i - 1].Seat);
+                }
+            }
+
+            _mockReservationRepository.Verify(
+                repo => repo.SearchForUserIdWithDetailsAsync(1, searchDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchUserReservationsAsync_WithFiltersAndOrders_ReturnsFilteredAndOrderedResults()
+        {
+            // Arrange
+            UserKeyDto keyDto = new() { UserId = 1 };
+            PagedSearchRequestDto searchDto = new()
+            {
+                Page = 1,
+                PageSize = 10,
+                FilterClauses =
+                [
+                    new FilterClause(
+                    [
+                        new Filter("Seat", FilterOperator.LessThanOrEqual, 20)
+                    ])
+                ],
+                Orders =
+                [
+                    new SortOption("Seat", SortDirection.Asc)
+                ]
+            };
+
+            PagedResult<UserReservationDetailsDto> expectedResult = new()
+            {
+                Items =
+                [
+                    new() { TripId = 1, Seat = 5 },
+                    new() { TripId = 2, Seat = 10 },
+                    new() { TripId = 3, Seat = 15 }
+                ],
+                TotalCount = 3,
+                Page = 1,
+                PageSize = 10
+            };
+
+            _ = _mockReservationRepository
+                .Setup(repo => repo.SearchForUserIdWithDetailsAsync(1, searchDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            PagedResult<UserReservationDetailsDto> result = await _reservationService.SearchUserReservationsAsync(keyDto, searchDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalCount);
+            Assert.All(result.Items, item => Assert.True(item.Seat <= 20));
+            List<UserReservationDetailsDto> items = [.. result.Items];
+            for (int i = 1; i < items.Count; i++)
+            {
+                Assert.True(items[i].Seat >= items[i - 1].Seat);
+            }
 
             _mockReservationRepository.Verify(
                 repo => repo.SearchForUserIdWithDetailsAsync(1, searchDto, It.IsAny<CancellationToken>()),

@@ -12,11 +12,11 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
         {
             return await GetAsync<Trip>($"/api/trips/{keyDto.TripId}", cancellationToken);
         }
+
         public async Task<TripWithDetailsDto> GetTripWithDetailsAsync(TripKeyDto keyDto, CancellationToken cancellationToken = default)
         {
             return await GetAsync<TripWithDetailsDto>($"/api/trips/{keyDto.TripId}/details", cancellationToken);
         }
-
 
         public async Task<IEnumerable<Trip>> GetAllTripsAsync(CancellationToken cancellationToken = default)
         {

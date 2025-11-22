@@ -8,7 +8,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
 {
     public static class SqlCommandHelper
     {
-        public static string FormatQualifiedTableName(string tableName)
+        /*public static string FormatQualifiedTableName(string tableName)
         {
             if (string.IsNullOrWhiteSpace(tableName))
             {
@@ -17,7 +17,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
 
             string[] parts = tableName.Split(['.'], StringSplitOptions.RemoveEmptyEntries);
             return string.Join('.', parts.Select(p => $"\"{p}\""));
-        }
+        }*/
 
         public static void AddParameter(DbCommand cmd, string parameterName, object? value, Type propertyType)
         {
@@ -27,7 +27,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             _ = cmd.Parameters.Add(param);
         }
 
-        public static void AddParameters(DbCommand cmd, IEnumerable<KeyValuePair<string, object?>> parameters)
+        /*public static void AddParameters(DbCommand cmd, IEnumerable<KeyValuePair<string, object?>> parameters)
         {
             foreach (KeyValuePair<string, object?> p in parameters)
             {
@@ -36,7 +36,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
                 param.Value = p.Value ?? DBNull.Value;
                 _ = cmd.Parameters.Add(param);
             }
-        }
+        }*/
 
         public static async Task<DbConnection> CreateAndOpenConnectionAsync(
             Func<DbConnection> connectionFactory,
@@ -58,7 +58,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             }
         }
 
-        public static DbConnection CreateAndOpenConnection(
+        /*public static DbConnection CreateAndOpenConnection(
             Func<DbConnection> connectionFactory)
         {
             try
@@ -75,7 +75,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             {
                 throw SqlExceptionHelper.ToRepositoryException(ex);
             }
-        }
+        }*/
 
         public static async Task<DbTransaction> CreateTransactionAsync(
             DbConnection dbConnection,
@@ -91,7 +91,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             }
         }
 
-        public static DbTransaction CreateTransaction(
+        /*public static DbTransaction CreateTransaction(
             DbConnection dbConnection)
         {
             try
@@ -102,7 +102,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             {
                 throw SqlExceptionHelper.ToRepositoryException(ex);
             }
-        }
+        }*/
 
         public static DbCommand CreateCommand(DbConnection connection, DbTransaction? transaction = null)
         {
@@ -115,7 +115,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             return cmd;
         }
 
-        public static string BuildColumnList(IEnumerable<PropertyInfo> properties, string? tableAlias = null)
+        /*public static string BuildColumnList(IEnumerable<PropertyInfo> properties, string? tableAlias = null)
         {
             IEnumerable<string> columns = properties.Select(p =>
             {
@@ -132,9 +132,9 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
         {
             string qualifiedTable = FormatQualifiedTableName(tableName);
             return string.Join(", ", columns.Select(s => $"{qualifiedTable}.\"{s.Column}\" AS \"{s.Alias}\""));
-        }
+        }*/
 
-        public static async Task<object?> ExecuteScalarAsync(
+        /*public static async Task<object?> ExecuteScalarAsync(
             Func<DbConnection> connectionFactory,
             DbTransaction? transaction,
             string sql,
@@ -153,7 +153,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             {
                 throw SqlExceptionHelper.ToRepositoryException(ex);
             }
-        }
+        }*/
 
         public static async Task<object?> ExecuteScalarAsync(
             DbCommand cmd,
@@ -169,7 +169,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             }
         }
 
-        public static object? ExecuteScalar(
+        /*public static object? ExecuteScalar(
             Func<DbConnection> connectionFactory,
             DbTransaction? transaction,
             string sql,
@@ -204,7 +204,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             {
                 throw SqlExceptionHelper.ToRepositoryException(ex);
             }
-        }
+        }*/
 
         public static async Task<int> ExecuteNonQueryAsync(
             DbCommand cmd,
@@ -234,7 +234,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             }
         }
 
-        public static DbDataReader ExecuteReader(DbCommand cmd)
+        /*public static DbDataReader ExecuteReader(DbCommand cmd)
         {
             try
             {
@@ -244,13 +244,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             {
                 throw SqlExceptionHelper.ToRepositoryException(ex);
             }
-        }
-
-        public static string BuildOutputClause(IEnumerable<PropertyInfo> computedProperties)
-        {
-            IEnumerable<string> outputColumns = computedProperties.Select(p => $"INSERTED.[{EntityHelper.GetColumnName(p)}]");
-            return "OUTPUT " + string.Join(",", outputColumns);
-        }
+        }*/
 
         public static string BuildReturningClause(IEnumerable<PropertyInfo> computedProperties)
         {

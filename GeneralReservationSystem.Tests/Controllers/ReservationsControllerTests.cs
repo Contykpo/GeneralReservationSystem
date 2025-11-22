@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 using FluentValidation.Results;
 using GeneralReservationSystem.API.Controllers;
 using GeneralReservationSystem.Application.Common;
@@ -9,6 +9,7 @@ using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Primitives;
 using Moq;
 using System.Security.Claims;
 
@@ -84,27 +85,56 @@ namespace GeneralReservationSystem.Tests.Controllers
         #region SearchReservations Tests
 
         [Fact]
-        public async Task SearchReservations_AsAdmin_ReturnsOkWithPagedResults()
+        public async Task SearchReservations_NoFiltersOrOrders_ReturnsPagedResult()
         {
             // Arrange
             SetupAuthenticatedUser(1, isAdmin: true);
 
+            List<ReservationDetailsDto> reservations =
+            [
+                new ReservationDetailsDto
+                {
+                    TripId = 1,
+                    UserId = 1,
+                    UserName = "user1",
+                    Email = "user1@example.com",
+                    Seat = 5,
+                    DepartureStationName = "Station A",
+                    ArrivalStationName = "Station B"
+                },
+                new ReservationDetailsDto
+                {
+                    TripId = 2,
+                    UserId = 2,
+                    UserName = "user2",
+                    Email = "user2@example.com",
+                    Seat = 10,
+                    DepartureStationName = "Station C",
+                    ArrivalStationName = "Station D"
+                }
+            ];
+
             PagedResult<ReservationDetailsDto> expectedResult = new()
             {
-                Items =
-                [
-                    new ReservationDetailsDto { TripId = 1, Seat = 5, UserId = 2, UserName = "user2" }
-                ],
-                TotalCount = 1,
+                Items = reservations,
+                TotalCount = 2,
                 Page = 1,
-                PageSize = 10
+                PageSize = 20
             };
 
             _ = _mockReservationService
                 .Setup(s => s.SearchReservationsAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedResult);
 
-            _controller.ControllerContext.HttpContext.Request.QueryString = new QueryString("?page=1&pageSize=10");
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>());
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = _controller.User,
+                    Request = { Query = queryCollection }
+                }
+            };
 
             // Act
             IActionResult result = await _controller.SearchReservations(CancellationToken.None);
@@ -112,7 +142,276 @@ namespace GeneralReservationSystem.Tests.Controllers
             // Assert
             OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
             PagedResult<ReservationDetailsDto> pagedResult = Assert.IsType<PagedResult<ReservationDetailsDto>>(okResult.Value);
-            _ = Assert.Single(pagedResult.Items);
+            Assert.Equal(2, pagedResult.TotalCount);
+            Assert.Equal(2, pagedResult.Items.Count());
+
+            _mockReservationService.Verify(
+                s => s.SearchReservationsAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchReservations_WithPagination_ReturnsCorrectPage()
+        {
+            // Arrange
+            SetupAuthenticatedUser(1, isAdmin: true);
+
+            List<ReservationDetailsDto> reservations =
+            [
+                new ReservationDetailsDto
+                {
+                    TripId = 1,
+                    UserId = 1,
+                    Seat = 5
+                }
+            ];
+
+            PagedResult<ReservationDetailsDto> expectedResult = new()
+            {
+                Items = reservations,
+                TotalCount = 10,
+                Page = 2,
+                PageSize = 5
+            };
+
+            _ = _mockReservationService
+                .Setup(s => s.SearchReservationsAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>
+            {
+                { "page", new StringValues("2") },
+                { "pageSize", new StringValues("5") }
+            });
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = _controller.User,
+                    Request = { Query = queryCollection }
+                }
+            };
+
+            // Act
+            IActionResult result = await _controller.SearchReservations(CancellationToken.None);
+
+            // Assert
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
+            PagedResult<ReservationDetailsDto> pagedResult = Assert.IsType<PagedResult<ReservationDetailsDto>>(okResult.Value);
+            Assert.Equal(2, pagedResult.Page);
+            Assert.Equal(5, pagedResult.PageSize);
+            Assert.Equal(10, pagedResult.TotalCount);
+        }
+
+        [Fact]
+        public async Task SearchReservations_WithFilters_ReturnsFilteredResults()
+        {
+            // Arrange
+            SetupAuthenticatedUser(1, isAdmin: true);
+
+            List<ReservationDetailsDto> reservations =
+            [
+                new ReservationDetailsDto
+                {
+                    TripId = 1,
+                    UserId = 1,
+                    UserName = "testuser",
+                    Seat = 5
+                }
+            ];
+
+            PagedResult<ReservationDetailsDto> expectedResult = new()
+            {
+                Items = reservations,
+                TotalCount = 1,
+                Page = 1,
+                PageSize = 20
+            };
+
+            _ = _mockReservationService
+                .Setup(s => s.SearchReservationsAsync(It.Is<PagedSearchRequestDto>(dto =>
+                    dto.FilterClauses.Any()), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>
+            {
+                { "filters", new StringValues("[TripId|Equals|1]") }
+            });
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = _controller.User,
+                    Request = { Query = queryCollection }
+                }
+            };
+
+            // Act
+            IActionResult result = await _controller.SearchReservations(CancellationToken.None);
+
+            // Assert
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
+            PagedResult<ReservationDetailsDto> pagedResult = Assert.IsType<PagedResult<ReservationDetailsDto>>(okResult.Value);
+            Assert.Single(pagedResult.Items);
+        }
+
+        [Fact]
+        public async Task SearchReservations_WithOrders_ReturnsSortedResults()
+        {
+            // Arrange
+            SetupAuthenticatedUser(1, isAdmin: true);
+
+            List<ReservationDetailsDto> reservations =
+            [
+                new ReservationDetailsDto
+                {
+                    TripId = 1,
+                    UserId = 1,
+                    Seat = 10
+                },
+                new ReservationDetailsDto
+                {
+                    TripId = 1,
+                    UserId = 2,
+                    Seat = 5
+                }
+            ];
+
+            PagedResult<ReservationDetailsDto> expectedResult = new()
+            {
+                Items = reservations,
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 20
+            };
+
+            _ = _mockReservationService
+                .Setup(s => s.SearchReservationsAsync(It.Is<PagedSearchRequestDto>(dto =>
+                    dto.Orders.Any()), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>
+            {
+                { "orders", new StringValues("Seat|Desc") }
+            });
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = _controller.User,
+                    Request = { Query = queryCollection }
+                }
+            };
+
+            // Act
+            IActionResult result = await _controller.SearchReservations(CancellationToken.None);
+
+            // Assert
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
+            PagedResult<ReservationDetailsDto> pagedResult = Assert.IsType<PagedResult<ReservationDetailsDto>>(okResult.Value);
+            Assert.Equal(2, pagedResult.Items.Count());
+        }
+
+        [Fact]
+        public async Task SearchReservations_ValidationFails_ReturnsBadRequest()
+        {
+            // Arrange
+            SetupAuthenticatedUser(1, isAdmin: true);
+
+            List<ValidationFailure> validationFailures =
+            [
+                new ValidationFailure("Page", "Page must be greater than 0")
+            ];
+
+            _ = _mockPagedSearchValidator
+                .Setup(v => v.ValidateAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ValidationResult(validationFailures));
+
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>
+            {
+                { "page", new StringValues("0") }
+            });
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = _controller.User,
+                    Request = { Query = queryCollection }
+                }
+            };
+
+            // Act
+            IActionResult result = await _controller.SearchReservations(CancellationToken.None);
+
+            // Assert
+            _ = Assert.IsType<BadRequestObjectResult>(result);
+
+            _mockReservationService.Verify(
+                s => s.SearchReservationsAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()),
+                Times.Never);
+        }
+
+        [Fact]
+        public async Task SearchReservations_EmptyResults_ReturnsEmptyPagedResult()
+        {
+            // Arrange
+            SetupAuthenticatedUser(1, isAdmin: true);
+
+            PagedResult<ReservationDetailsDto> expectedResult = new()
+            {
+                Items = [],
+                TotalCount = 0,
+                Page = 1,
+                PageSize = 20
+            };
+
+            _ = _mockReservationService
+                .Setup(s => s.SearchReservationsAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>());
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = _controller.User,
+                    Request = { Query = queryCollection }
+                }
+            };
+
+            // Act
+            IActionResult result = await _controller.SearchReservations(CancellationToken.None);
+
+            // Assert
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
+            PagedResult<ReservationDetailsDto> pagedResult = Assert.IsType<PagedResult<ReservationDetailsDto>>(okResult.Value);
+            Assert.Empty(pagedResult.Items);
+            Assert.Equal(0, pagedResult.TotalCount);
+        }
+
+        [Fact]
+        public async Task SearchReservations_ServiceError_ThrowsServiceException()
+        {
+            // Arrange
+            SetupAuthenticatedUser(1, isAdmin: true);
+
+            _ = _mockReservationService
+                .Setup(s => s.SearchReservationsAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new ServiceException("Database error"));
+
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>());
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = _controller.User,
+                    Request = { Query = queryCollection }
+                }
+            };
+
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<ServiceException>(
+                () => _controller.SearchReservations(CancellationToken.None));
         }
 
         #endregion
@@ -120,30 +419,43 @@ namespace GeneralReservationSystem.Tests.Controllers
         #region SearchUserReservations Tests
 
         [Fact]
-        public async Task SearchUserReservations_AsSelf_ReturnsOkWithResults()
+        public async Task SearchUserReservations_AsOwner_ReturnsPagedResult()
         {
             // Arrange
             SetupAuthenticatedUser(1, isAdmin: false);
 
+            List<UserReservationDetailsDto> reservations =
+            [
+                new UserReservationDetailsDto
+                {
+                    TripId = 1,
+                    Seat = 5,
+                    DepartureStationName = "Station A",
+                    ArrivalStationName = "Station B"
+                }
+            ];
+
             PagedResult<UserReservationDetailsDto> expectedResult = new()
             {
-                Items =
-                [
-                    new UserReservationDetailsDto { TripId = 1, Seat = 5 }
-                ],
+                Items = reservations,
                 TotalCount = 1,
                 Page = 1,
-                PageSize = 10
+                PageSize = 20
             };
 
             _ = _mockReservationService
-                .Setup(s => s.SearchUserReservationsAsync(
-                    It.Is<UserKeyDto>(k => k.UserId == 1),
-                    It.IsAny<PagedSearchRequestDto>(),
-                    It.IsAny<CancellationToken>()))
+                .Setup(s => s.SearchUserReservationsAsync(It.Is<UserKeyDto>(k => k.UserId == 1), It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedResult);
 
-            _controller.ControllerContext.HttpContext.Request.QueryString = new QueryString("?page=1&pageSize=10");
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>());
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = _controller.User,
+                    Request = { Query = queryCollection }
+                }
+            };
 
             // Act
             IActionResult result = await _controller.SearchUserReservations(1, CancellationToken.None);
@@ -151,41 +463,53 @@ namespace GeneralReservationSystem.Tests.Controllers
             // Assert
             OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
             PagedResult<UserReservationDetailsDto> pagedResult = Assert.IsType<PagedResult<UserReservationDetailsDto>>(okResult.Value);
-            _ = Assert.Single(pagedResult.Items);
+            Assert.Single(pagedResult.Items);
         }
 
         [Fact]
-        public async Task SearchUserReservations_AsAdmin_ReturnsOkWithResults()
+        public async Task SearchUserReservations_AsAdmin_ReturnsPagedResult()
         {
             // Arrange
             SetupAuthenticatedUser(1, isAdmin: true);
 
+            List<UserReservationDetailsDto> reservations =
+            [
+                new UserReservationDetailsDto
+                {
+                    TripId = 1,
+                    Seat = 5
+                }
+            ];
+
             PagedResult<UserReservationDetailsDto> expectedResult = new()
             {
-                Items =
-                [
-                    new UserReservationDetailsDto { TripId = 1, Seat = 5 }
-                ],
+                Items = reservations,
                 TotalCount = 1,
                 Page = 1,
-                PageSize = 10
+                PageSize = 20
             };
 
             _ = _mockReservationService
-                .Setup(s => s.SearchUserReservationsAsync(
-                    It.Is<UserKeyDto>(k => k.UserId == 2),
-                    It.IsAny<PagedSearchRequestDto>(),
-                    It.IsAny<CancellationToken>()))
+                .Setup(s => s.SearchUserReservationsAsync(It.Is<UserKeyDto>(k => k.UserId == 2), It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedResult);
 
-            _controller.ControllerContext.HttpContext.Request.QueryString = new QueryString("?page=1&pageSize=10");
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>());
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = _controller.User,
+                    Request = { Query = queryCollection }
+                }
+            };
 
             // Act
             IActionResult result = await _controller.SearchUserReservations(2, CancellationToken.None);
 
             // Assert
             OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
-            _ = Assert.IsType<PagedResult<UserReservationDetailsDto>>(okResult.Value);
+            PagedResult<UserReservationDetailsDto> pagedResult = Assert.IsType<PagedResult<UserReservationDetailsDto>>(okResult.Value);
+            Assert.Single(pagedResult.Items);
         }
 
         [Fact]
@@ -194,7 +518,15 @@ namespace GeneralReservationSystem.Tests.Controllers
             // Arrange
             SetupAuthenticatedUser(1, isAdmin: false);
 
-            _controller.ControllerContext.HttpContext.Request.QueryString = new QueryString("?page=1&pageSize=10");
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>());
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = _controller.User,
+                    Request = { Query = queryCollection }
+                }
+            };
 
             // Act
             IActionResult result = await _controller.SearchUserReservations(2, CancellationToken.None);
@@ -208,17 +540,70 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
+        public async Task SearchUserReservations_WithPagination_ReturnsCorrectPage()
+        {
+            // Arrange
+            SetupAuthenticatedUser(1, isAdmin: false);
+
+            List<UserReservationDetailsDto> reservations =
+            [
+                new UserReservationDetailsDto
+                {
+                    TripId = 1,
+                    Seat = 5
+                }
+            ];
+
+            PagedResult<UserReservationDetailsDto> expectedResult = new()
+            {
+                Items = reservations,
+                TotalCount = 10,
+                Page = 2,
+                PageSize = 5
+            };
+
+            _ = _mockReservationService
+                .Setup(s => s.SearchUserReservationsAsync(It.IsAny<UserKeyDto>(), It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>
+            {
+                { "page", new StringValues("2") },
+                { "pageSize", new StringValues("5") }
+            });
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = _controller.User,
+                    Request = { Query = queryCollection }
+                }
+            };
+
+            // Act
+            IActionResult result = await _controller.SearchUserReservations(1, CancellationToken.None);
+
+            // Assert
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
+            PagedResult<UserReservationDetailsDto> pagedResult = Assert.IsType<PagedResult<UserReservationDetailsDto>>(okResult.Value);
+            Assert.Equal(2, pagedResult.Page);
+            Assert.Equal(5, pagedResult.PageSize);
+        }
+
+        [Fact]
         public async Task SearchUserReservations_NoUserIdClaim_ReturnsUnauthorized()
         {
             // Arrange
             ClaimsIdentity identity = new();
             ClaimsPrincipal claimsPrincipal = new(identity);
 
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>());
             _controller.ControllerContext = new ControllerContext
             {
                 HttpContext = new DefaultHttpContext
                 {
-                    User = claimsPrincipal
+                    User = claimsPrincipal,
+                    Request = { Query = queryCollection }
                 }
             };
 
@@ -234,30 +619,50 @@ namespace GeneralReservationSystem.Tests.Controllers
         #region SearchCurrentUserReservations Tests
 
         [Fact]
-        public async Task SearchCurrentUserReservations_ValidUser_ReturnsOkWithResults()
+        public async Task SearchCurrentUserReservations_ValidUser_ReturnsPagedResult()
         {
             // Arrange
-            SetupAuthenticatedUser(1);
+            SetupAuthenticatedUser(1, isAdmin: false);
+
+            List<UserReservationDetailsDto> reservations =
+            [
+                new UserReservationDetailsDto
+                {
+                    TripId = 1,
+                    Seat = 5,
+                    DepartureStationName = "Station A",
+                    ArrivalStationName = "Station B"
+                },
+                new UserReservationDetailsDto
+                {
+                    TripId = 2,
+                    Seat = 10,
+                    DepartureStationName = "Station C",
+                    ArrivalStationName = "Station D"
+                }
+            ];
 
             PagedResult<UserReservationDetailsDto> expectedResult = new()
             {
-                Items =
-                [
-                    new UserReservationDetailsDto { TripId = 1, Seat = 5 }
-                ],
-                TotalCount = 1,
+                Items = reservations,
+                TotalCount = 2,
                 Page = 1,
-                PageSize = 10
+                PageSize = 20
             };
 
             _ = _mockReservationService
-                .Setup(s => s.SearchUserReservationsAsync(
-                    It.Is<UserKeyDto>(k => k.UserId == 1),
-                    It.IsAny<PagedSearchRequestDto>(),
-                    It.IsAny<CancellationToken>()))
+                .Setup(s => s.SearchUserReservationsAsync(It.Is<UserKeyDto>(k => k.UserId == 1), It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedResult);
 
-            _controller.ControllerContext.HttpContext.Request.QueryString = new QueryString("?page=1&pageSize=10");
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>());
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = _controller.User,
+                    Request = { Query = queryCollection }
+                }
+            };
 
             // Act
             IActionResult result = await _controller.SearchCurrentUserReservations(CancellationToken.None);
@@ -265,7 +670,204 @@ namespace GeneralReservationSystem.Tests.Controllers
             // Assert
             OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
             PagedResult<UserReservationDetailsDto> pagedResult = Assert.IsType<PagedResult<UserReservationDetailsDto>>(okResult.Value);
-            _ = Assert.Single(pagedResult.Items);
+            Assert.Equal(2, pagedResult.TotalCount);
+            Assert.Equal(2, pagedResult.Items.Count());
+        }
+
+        [Fact]
+        public async Task SearchCurrentUserReservations_WithPagination_ReturnsCorrectPage()
+        {
+            // Arrange
+            SetupAuthenticatedUser(1, isAdmin: false);
+
+            List<UserReservationDetailsDto> reservations =
+            [
+                new UserReservationDetailsDto
+                {
+                    TripId = 1,
+                    Seat = 5
+                }
+            ];
+
+            PagedResult<UserReservationDetailsDto> expectedResult = new()
+            {
+                Items = reservations,
+                TotalCount = 10,
+                Page = 2,
+                PageSize = 5
+            };
+
+            _ = _mockReservationService
+                .Setup(s => s.SearchUserReservationsAsync(It.IsAny<UserKeyDto>(), It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>
+            {
+                { "page", new StringValues("2") },
+                { "pageSize", new StringValues("5") }
+            });
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = _controller.User,
+                    Request = { Query = queryCollection }
+                }
+            };
+
+            // Act
+            IActionResult result = await _controller.SearchCurrentUserReservations(CancellationToken.None);
+
+            // Assert
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
+            PagedResult<UserReservationDetailsDto> pagedResult = Assert.IsType<PagedResult<UserReservationDetailsDto>>(okResult.Value);
+            Assert.Equal(2, pagedResult.Page);
+            Assert.Equal(5, pagedResult.PageSize);
+            Assert.Equal(10, pagedResult.TotalCount);
+        }
+
+        [Fact]
+        public async Task SearchCurrentUserReservations_WithFilters_ReturnsFilteredResults()
+        {
+            // Arrange
+            SetupAuthenticatedUser(1, isAdmin: false);
+
+            List<UserReservationDetailsDto> reservations =
+            [
+                new UserReservationDetailsDto
+                {
+                    TripId = 1,
+                    Seat = 5
+                }
+            ];
+
+            PagedResult<UserReservationDetailsDto> expectedResult = new()
+            {
+                Items = reservations,
+                TotalCount = 1,
+                Page = 1,
+                PageSize = 20
+            };
+
+            _ = _mockReservationService
+                .Setup(s => s.SearchUserReservationsAsync(It.IsAny<UserKeyDto>(), It.Is<PagedSearchRequestDto>(dto =>
+                    dto.FilterClauses.Any()), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>
+            {
+                { "filters", new StringValues("[TripId|Equals|1]") }
+            });
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = _controller.User,
+                    Request = { Query = queryCollection }
+                }
+            };
+
+            // Act
+            IActionResult result = await _controller.SearchCurrentUserReservations(CancellationToken.None);
+
+            // Assert
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
+            PagedResult<UserReservationDetailsDto> pagedResult = Assert.IsType<PagedResult<UserReservationDetailsDto>>(okResult.Value);
+            Assert.Single(pagedResult.Items);
+        }
+
+        [Fact]
+        public async Task SearchCurrentUserReservations_WithOrders_ReturnsSortedResults()
+        {
+            // Arrange
+            SetupAuthenticatedUser(1, isAdmin: false);
+
+            List<UserReservationDetailsDto> reservations =
+            [
+                new UserReservationDetailsDto
+                {
+                    TripId = 1,
+                    Seat = 10
+                },
+                new UserReservationDetailsDto
+                {
+                    TripId = 2,
+                    Seat = 5
+                }
+            ];
+
+            PagedResult<UserReservationDetailsDto> expectedResult = new()
+            {
+                Items = reservations,
+                TotalCount = 2,
+                Page = 1,
+                PageSize = 20
+            };
+
+            _ = _mockReservationService
+                .Setup(s => s.SearchUserReservationsAsync(It.IsAny<UserKeyDto>(), It.Is<PagedSearchRequestDto>(dto =>
+                    dto.Orders.Any()), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>
+            {
+                { "orders", new StringValues("Seat|Desc") }
+            });
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = _controller.User,
+                    Request = { Query = queryCollection }
+                }
+            };
+
+            // Act
+            IActionResult result = await _controller.SearchCurrentUserReservations(CancellationToken.None);
+
+            // Assert
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
+            PagedResult<UserReservationDetailsDto> pagedResult = Assert.IsType<PagedResult<UserReservationDetailsDto>>(okResult.Value);
+            Assert.Equal(2, pagedResult.Items.Count());
+        }
+
+        [Fact]
+        public async Task SearchCurrentUserReservations_ValidationFails_ReturnsBadRequest()
+        {
+            // Arrange
+            SetupAuthenticatedUser(1, isAdmin: false);
+
+            List<ValidationFailure> validationFailures =
+            [
+                new ValidationFailure("Page", "Page must be greater than 0")
+            ];
+
+            _ = _mockPagedSearchValidator
+                .Setup(v => v.ValidateAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ValidationResult(validationFailures));
+
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>
+            {
+                { "page", new StringValues("0") }
+            });
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = _controller.User,
+                    Request = { Query = queryCollection }
+                }
+            };
+
+            // Act
+            IActionResult result = await _controller.SearchCurrentUserReservations(CancellationToken.None);
+
+            // Assert
+            _ = Assert.IsType<BadRequestObjectResult>(result);
+
+            _mockReservationService.Verify(
+                s => s.SearchUserReservationsAsync(It.IsAny<UserKeyDto>(), It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()),
+                Times.Never);
         }
 
         [Fact]
@@ -275,11 +877,13 @@ namespace GeneralReservationSystem.Tests.Controllers
             ClaimsIdentity identity = new();
             ClaimsPrincipal claimsPrincipal = new(identity);
 
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>());
             _controller.ControllerContext = new ControllerContext
             {
                 HttpContext = new DefaultHttpContext
                 {
-                    User = claimsPrincipal
+                    User = claimsPrincipal,
+                    Request = { Query = queryCollection }
                 }
             };
 
@@ -288,6 +892,44 @@ namespace GeneralReservationSystem.Tests.Controllers
 
             // Assert
             _ = Assert.IsType<UnauthorizedResult>(result);
+        }
+
+        [Fact]
+        public async Task SearchCurrentUserReservations_EmptyResults_ReturnsEmptyPagedResult()
+        {
+            // Arrange
+            SetupAuthenticatedUser(1, isAdmin: false);
+
+            PagedResult<UserReservationDetailsDto> expectedResult = new()
+            {
+                Items = [],
+                TotalCount = 0,
+                Page = 1,
+                PageSize = 20
+            };
+
+            _ = _mockReservationService
+                .Setup(s => s.SearchUserReservationsAsync(It.IsAny<UserKeyDto>(), It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            QueryCollection queryCollection = new(new Dictionary<string, StringValues>());
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = _controller.User,
+                    Request = { Query = queryCollection }
+                }
+            };
+
+            // Act
+            IActionResult result = await _controller.SearchCurrentUserReservations(CancellationToken.None);
+
+            // Assert
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
+            PagedResult<UserReservationDetailsDto> pagedResult = Assert.IsType<PagedResult<UserReservationDetailsDto>>(okResult.Value);
+            Assert.Empty(pagedResult.Items);
+            Assert.Equal(0, pagedResult.TotalCount);
         }
 
         #endregion
