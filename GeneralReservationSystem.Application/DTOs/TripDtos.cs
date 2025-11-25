@@ -9,15 +9,7 @@
         public int AvailableSeats { get; set; }
     }
 
-    public class UpdateTripDto
-    {
-        public int TripId { get; set; }
-        public int? DepartureStationId { get; set; }
-        public DateTime? DepartureTime { get; set; }
-        public int? ArrivalStationId { get; set; }
-        public DateTime? ArrivalTime { get; set; }
-        public int? AvailableSeats { get; set; }
-    }
+    // Trips shouldn't be updated, so no UpdateTripDto is needed
 
     public class TripKeyDto
     {

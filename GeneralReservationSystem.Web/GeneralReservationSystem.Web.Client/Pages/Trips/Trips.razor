@@ -211,8 +211,6 @@
                         </MudButton>
                         <AuthorizeView Roles="Admin" Context="authContext">
                             <Authorized>
-                                <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Filled.Edit"
-                                    OnClick="@(() => OpenEditDialog(context))" />
                                 <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Filled.Delete"
                                     Color="Color.Error" OnClick="@(() => HandleDelete(context))" />
                             </Authorized>
@@ -232,64 +230,6 @@
         </MudCardContent>
     </MudCard>
 </MudContainer>
-
-<MudDialog @bind-Visible="_editDialogVisible" Options="_editDialogOptions">
-    <TitleContent>
-        <MudText Typo="Typo.h6">
-            <MudIcon Icon="@Icons.Material.Filled.Edit" Class="mr-3" /> Editar Viaje
-        </MudText>
-    </TitleContent>
-    <DialogContent>
-        <MudForm Model="@_editTripDto" @ref="_updateForm" Validation="@(_updateTripDtoValidator.ValidateValue)"
-            ValidationDelay="0">
-            <MudSelect T="int?" Label="Estación de salida" @bind-Value="_editTripDto.DepartureStationId"
-                For="@(() => _editTripDto.DepartureStationId)" Variant="Variant.Outlined" Margin="Margin.Dense"
-                Immediate="true">
-                <MudSelectItem T="int?" Value="null" Disabled="true">Seleccione una estación</MudSelectItem>
-                @foreach (var station in _stations)
-                {
-                    <MudSelectItem T="int?" Value="@station.StationId">
-                        @station.StationName, @station.City, @station.Province, @station.Country
-                    </MudSelectItem>
-                }
-            </MudSelect>
-            <MudDatePicker Label="Fecha de salida" Date="_editTripDto.DepartureTime"
-                DateChanged="@(date => OnDateChanged(() => _editTripDto.DepartureTime, v => _editTripDto.DepartureTime = v, _updateForm, date))"
-                DateFormat="dd/MM/yyyy" Variant="Variant.Outlined"
-                Margin="Margin.Dense" />
-            <MudTimePicker Label="Hora de salida" Time="_editTripDto.DepartureTime?.TimeOfDay"
-                TimeChanged="@(time => OnTimeChanged(() => _editTripDto.DepartureTime, v => _editTripDto.DepartureTime = v, _updateForm, time))"
-                TimeFormat="HH:mm" Variant="Variant.Outlined"
-                Margin="Margin.Dense" />
-            <MudSelect T="int?" Label="Estación de llegada" @bind-Value="_editTripDto.ArrivalStationId"
-                For="@(() => _editTripDto.ArrivalStationId)" Variant="Variant.Outlined" Margin="Margin.Dense"
-                Immediate="true">
-                <MudSelectItem T="int?" Value="null" Disabled="true">Seleccione una estación</MudSelectItem>
-                @foreach (var station in _stations)
-                {
-                    <MudSelectItem T="int?" Value="@station.StationId">
-                        @station.StationName, @station.City, @station.Province, @station.Country
-                    </MudSelectItem>
-                }
-            </MudSelect>
-            <MudDatePicker Label="Fecha de llegada" Date="_editTripDto.ArrivalTime"
-                DateChanged="@(date => OnDateChanged(() => _editTripDto.ArrivalTime, v => _editTripDto.ArrivalTime = v, _updateForm, date))"
-                DateFormat="dd/MM/yyyy" Variant="Variant.Outlined"
-                Margin="Margin.Dense" />
-            <MudTimePicker Label="Hora de llegada" Time="_editTripDto.ArrivalTime?.TimeOfDay"
-                TimeChanged="@(time => OnTimeChanged(() => _editTripDto.ArrivalTime, v => _editTripDto.ArrivalTime = v, _updateForm, time))"
-                TimeFormat="HH:mm" Variant="Variant.Outlined"
-                Margin="Margin.Dense" />
-            <MudNumericField Label="Asientos disponibles" @bind-Value="_editTripDto.AvailableSeats"
-                For="@(() => _editTripDto.AvailableSeats)" Variant="Variant.Outlined" Margin="Margin.Dense"
-                Immediate="true" />
-        </MudForm>
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="CloseEditDialog" Variant="Variant.Outlined">Cancelar</MudButton>
-        <MudButton OnClick="HandleUpdate" Variant="Variant.Filled" Color="Color.Primary">Guardar</MudButton>
-    </DialogActions>
-</MudDialog>
 
 @code
 {
@@ -313,30 +253,11 @@
     };
     private CreateTripDtoValidator _createTripDtoValidator = new();
 
-    private MudForm _updateForm = null!;
-    private UpdateTripDto _editTripDto = new()
-    {
-        DepartureTime = DefaultDepartureDate,
-        ArrivalTime = DefaultArrivalDate
-    };
-    private UpdateTripDtoValidator _updateTripDtoValidator = new();
-
-    private bool _editDialogVisible = false;
-    private DialogOptions _editDialogOptions = new()
-    {
-        MaxWidth = MaxWidth.Medium,
-        FullWidth = true,
-        CloseButton = true,
-        Position = DialogPosition.Center,
-        CloseOnEscapeKey = true
-    };
-
     private List<Station> _stations = new();
 
-    // Flags de control de validacion.
+    // Flag de control de validacion.
     // De esta manera solo validamos cuando el usuario intenta enviar el formulario.
     private bool _shouldValidateCreate = false;
-    private bool _shouldValidateUpdate = false;
 
     // Delegado que MudForm espera para aplicar la validacion.
     private Func<object, string, Task<IEnumerable<string>>> CreateValidationDelegate()
@@ -527,86 +448,6 @@
         }
     }
 
-    private async void OpenEditDialog(TripWithDetailsDto trip)
-    {
-        _editTripDto = new UpdateTripDto
-        {
-            TripId = trip.TripId,
-            DepartureStationId = trip.DepartureStationId,
-            DepartureTime = trip.DepartureTime,
-            ArrivalStationId = trip.ArrivalStationId,
-            ArrivalTime = trip.ArrivalTime,
-        };
-
-        var reservation = await ReservationService.GetReservationAsync(new ReservationKeyDto { TripId = trip.TripId, Seat = trip.AvailableSeats });
-
-        if (reservation != null)
-        {
-            _editTripDto.AvailableSeats = trip.AvailableSeats;
-        }
-        else
-        {
-            Snackbar.Add("No se puede editar el número de asientos disponibles porque ya hay reservas para este viaje.", Severity.Warning);
-        }
-
-        _updateForm?.ResetValidation();
-        _editDialogVisible = true;
-    }
-
-    private void CloseEditDialog()
-    {
-        _editDialogVisible = false;
-        _editTripDto = new UpdateTripDto()
-        {
-            DepartureTime = DefaultDepartureDate,
-            ArrivalTime = DefaultArrivalDate
-        };
-        _updateForm?.ResetValidation();
-    }
-
-    private async Task HandleUpdate()
-    {
-        try
-        {
-            if (_updateForm is not null)
-            {
-                await _updateForm.Validate();
-                if (!_updateForm.IsValid)
-                    return;
-            }
-
-            await TripService.UpdateTripAsync(_editTripDto);
-            Snackbar.Add("Viaje actualizado correctamente.", Severity.Success);
-            CloseEditDialog();
-            await _table.ReloadServerData();
-        }
-        catch (ServiceNotFoundException ex)
-        {
-            Snackbar.Add(ex.Message, Severity.Warning);
-            CloseEditDialog();
-            await _table.ReloadServerData();
-        }
-        catch (ServiceValidationException ex)
-        {
-            foreach (var error in ex.Errors)
-            {
-                Snackbar.Add(error.Error, Severity.Error);
-            }
-        }
-        catch (ServiceBusinessException ex)
-        {
-            Snackbar.Add(ex.Message, Severity.Error);
-        }
-        catch (ServiceException ex)
-        {
-            Snackbar.Add(ex.Message, Severity.Error);
-        }
-        catch (Exception)
-        {
-            Snackbar.Add("Error inesperado al actualizar el viaje.", Severity.Error);
-        }
-    }
-
     private async Task HandleDelete(TripWithDetailsDto item)
     {
         try
@@ -649,7 +490,7 @@
         StateHasChanged();
     }
 
-    // Unified date/time handlers to replace duplicated handlers
+    // Unified date/time handlers
     private async Task OnDateChanged(Func<DateTime?> currentGetter, Action<DateTime?> setter, MudForm? form, DateTime? date)
     {
         var newValue = Combine(date, currentGetter()?.TimeOfDay);
@@ -678,9 +519,4 @@
         var t = time ?? TimeSpan.Zero;
         return d.Date + t;
     }
-
-    /*private void ReserveTrip(int tripId)
-    {
-        Navigation.NavigateTo($"/trips/reserve/{tripId}");
-    }*/
 }

@@ -24,7 +24,6 @@ namespace GeneralReservationSystem.Application
             _ = services.AddValidatorsFromAssemblyContaining<StationKeyDtoValidator>();
 
             _ = services.AddValidatorsFromAssemblyContaining<CreateTripDtoValidator>();
-            _ = services.AddValidatorsFromAssemblyContaining<UpdateTripDtoValidator>();
             _ = services.AddValidatorsFromAssemblyContaining<TripKeyDtoValidator>();
 
             return services;

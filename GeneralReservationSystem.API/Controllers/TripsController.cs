@@ -12,7 +12,7 @@ namespace GeneralReservationSystem.API.Controllers
 {
     [Route("api/trips")]
     [ApiController]
-    public class TripsController(ITripService tripService, IValidator<PagedSearchRequestDto> pagedSearchValidator, IValidator<CreateTripDto> createTripValidator, IValidator<UpdateTripDto> updateTripValidator, IValidator<TripKeyDto> tripKeyValidator) : ControllerBase
+    public class TripsController(ITripService tripService, IValidator<PagedSearchRequestDto> pagedSearchValidator, IValidator<CreateTripDto> createTripValidator, IValidator<TripKeyDto> tripKeyValidator) : ControllerBase
     {
         [HttpGet]
         public async Task<IActionResult> GetAllTrips(CancellationToken cancellationToken)
@@ -92,32 +92,6 @@ namespace GeneralReservationSystem.API.Controllers
             {
                 Trip trip = await tripService.CreateTripAsync(dto, cancellationToken);
                 return CreatedAtAction(nameof(GetTrip), new { tripId = trip.TripId }, trip);
-            }
-            catch (ServiceBusinessException ex)
-            {
-                return Conflict(new { error = ex.Message });
-            }
-        }
-
-        [HttpPut("{tripId:int}")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> UpdateTrip([FromRoute] int tripId, [FromBody] UpdateTripDto dto, CancellationToken cancellationToken)
-        {
-            dto.TripId = tripId;
-            IActionResult? validationResult = await ValidationHelper.ValidateAsync(updateTripValidator, dto, cancellationToken);
-            if (validationResult != null)
-            {
-                return validationResult;
-            }
-
-            try
-            {
-                Trip trip = await tripService.UpdateTripAsync(dto, cancellationToken);
-                return Ok(trip);
-            }
-            catch (ServiceNotFoundException ex)
-            {
-                return NotFound(new { error = ex.Message });
             }
             catch (ServiceBusinessException ex)
             {

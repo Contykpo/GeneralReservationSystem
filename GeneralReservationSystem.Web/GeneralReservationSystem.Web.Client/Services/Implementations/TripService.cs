@@ -34,11 +34,6 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
             return await PostAsync<Trip>("/api/trips", dto, cancellationToken);
         }
 
-        public async Task<Trip> UpdateTripAsync(UpdateTripDto dto, CancellationToken cancellationToken = default)
-        {
-            return await PutAsync<Trip>($"/api/trips/{dto.TripId}", dto, cancellationToken);
-        }
-
         public async Task DeleteTripAsync(TripKeyDto keyDto, CancellationToken cancellationToken = default)
         {
             await DeleteAsync($"/api/trips/{keyDto.TripId}", cancellationToken);

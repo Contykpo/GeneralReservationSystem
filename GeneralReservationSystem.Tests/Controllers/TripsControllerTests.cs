@@ -19,7 +19,6 @@ namespace GeneralReservationSystem.Tests.Controllers
         private readonly Mock<ITripService> _mockTripService;
         private readonly Mock<IValidator<PagedSearchRequestDto>> _mockPagedSearchValidator;
         private readonly Mock<IValidator<CreateTripDto>> _mockCreateTripValidator;
-        private readonly Mock<IValidator<UpdateTripDto>> _mockUpdateTripValidator;
         private readonly Mock<IValidator<TripKeyDto>> _mockTripKeyValidator;
         private readonly TripsController _controller;
 
@@ -28,14 +27,12 @@ namespace GeneralReservationSystem.Tests.Controllers
             _mockTripService = new Mock<ITripService>();
             _mockPagedSearchValidator = new Mock<IValidator<PagedSearchRequestDto>>();
             _mockCreateTripValidator = new Mock<IValidator<CreateTripDto>>();
-            _mockUpdateTripValidator = new Mock<IValidator<UpdateTripDto>>();
             _mockTripKeyValidator = new Mock<IValidator<TripKeyDto>>();
 
             _controller = new TripsController(
                 _mockTripService.Object,
                 _mockPagedSearchValidator.Object,
                 _mockCreateTripValidator.Object,
-                _mockUpdateTripValidator.Object,
                 _mockTripKeyValidator.Object);
 
             // Setup validators to return valid by default
@@ -45,10 +42,6 @@ namespace GeneralReservationSystem.Tests.Controllers
 
             _ = _mockCreateTripValidator
                 .Setup(v => v.ValidateAsync(It.IsAny<CreateTripDto>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new ValidationResult());
-
-            _ = _mockUpdateTripValidator
-                .Setup(v => v.ValidateAsync(It.IsAny<UpdateTripDto>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ValidationResult());
 
             _ = _mockTripKeyValidator
@@ -342,88 +335,6 @@ namespace GeneralReservationSystem.Tests.Controllers
             _mockTripService.Verify(
                 s => s.CreateTripAsync(It.IsAny<CreateTripDto>(), It.IsAny<CancellationToken>()),
                 Times.Never);
-        }
-
-        #endregion
-
-        #region UpdateTrip Tests
-
-        [Fact]
-        public async Task UpdateTrip_ValidDto_ReturnsOkWithUpdatedTrip()
-        {
-            // Arrange
-            SetupAdminUser();
-
-            UpdateTripDto updateDto = new()
-            {
-                AvailableSeats = 60
-            };
-
-            Trip updatedTrip = new()
-            {
-                TripId = 1,
-                DepartureStationId = 1,
-                ArrivalStationId = 2,
-                AvailableSeats = 60
-            };
-
-            _ = _mockTripService
-                .Setup(s => s.UpdateTripAsync(It.Is<UpdateTripDto>(d => d.TripId == 1), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(updatedTrip);
-
-            // Act
-            IActionResult result = await _controller.UpdateTrip(1, updateDto, CancellationToken.None);
-
-            // Assert
-            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
-            Trip trip = Assert.IsType<Trip>(okResult.Value);
-            Assert.Equal(updatedTrip.TripId, trip.TripId);
-            Assert.Equal(60, trip.AvailableSeats);
-        }
-
-        [Fact]
-        public async Task UpdateTrip_TripNotFound_ReturnsNotFound()
-        {
-            // Arrange
-            SetupAdminUser();
-
-            UpdateTripDto updateDto = new()
-            {
-                AvailableSeats = 60
-            };
-
-            _ = _mockTripService
-                .Setup(s => s.UpdateTripAsync(It.IsAny<UpdateTripDto>(), It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new ServiceNotFoundException("Trip not found"));
-
-            // Act
-            IActionResult result = await _controller.UpdateTrip(999, updateDto, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<NotFoundObjectResult>(result);
-        }
-
-        [Fact]
-        public async Task UpdateTrip_BusinessRuleViolation_ReturnsConflict()
-        {
-            // Arrange
-            SetupAdminUser();
-
-            UpdateTripDto updateDto = new()
-            {
-                DepartureStationId = 1,
-                ArrivalStationId = 1 // Same as departure
-            };
-
-            _ = _mockTripService
-                .Setup(s => s.UpdateTripAsync(It.IsAny<UpdateTripDto>(), It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new ServiceBusinessException("Departure and arrival stations must be different"));
-
-            // Act
-            IActionResult result = await _controller.UpdateTrip(1, updateDto, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<ConflictObjectResult>(result);
         }
 
         #endregion
