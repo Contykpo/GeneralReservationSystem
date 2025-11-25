@@ -35,5 +35,19 @@ namespace GeneralReservationSystem.Web.Authentication
                 return AuthenticateResult.Fail("Authentication failed");
             }
         }
+
+        protected override Task HandleChallengeAsync(AuthenticationProperties properties)
+        {
+            // Redirect to login when not authenticated
+            Response.Redirect("/login");
+            return Task.CompletedTask;
+        }
+
+        protected override Task HandleForbiddenAsync(AuthenticationProperties properties)
+        {
+            // Redirect to 403 page when authenticated but not authorized
+            Response.Redirect("/status/403");
+            return Task.CompletedTask;
+        }
     }
 }
