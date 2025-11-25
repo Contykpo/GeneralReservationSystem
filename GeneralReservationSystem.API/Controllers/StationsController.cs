@@ -181,7 +181,7 @@ namespace GeneralReservationSystem.API.Controllers
         {
             IEnumerable<Station> stations = await stationService.GetAllStationsAsync(cancellationToken);
             byte[] bytes = CsvHelper.ExportToCsv(stations);
-            return File(bytes, "text/csv;charset=utf-8", $"estaciones_{DateTime.UtcNow:yyyyMMddHHmmss}.csv");
+            return File(bytes, "text/csv;charset=utf-8", $"stations_{DateTime.UtcNow:yyyyMMddHHmmss}.csv");
         }
     }
 }

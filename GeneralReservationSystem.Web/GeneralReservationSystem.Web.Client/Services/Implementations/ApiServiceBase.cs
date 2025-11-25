@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components.WebAssembly.Http;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace GeneralReservationSystem.Web.Client.Services.Implementations
 {
@@ -75,6 +76,43 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
                 ?? throw new ServiceException("La respuesta del servidor está vacía.");
         }
 
+        protected async Task<(byte[] FileContent, string FileName)> GetFileAsync(string url, CancellationToken cancellationToken = default)
+        {
+            HttpRequestMessage request = CreateRequestWithCredentials(HttpMethod.Get, url);
+            HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
+            await EnsureSuccessOrThrow(response);
+
+            byte[] fileContent = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+
+            string fileName = ExtractFileName(response);
+
+            return (fileContent, fileName);
+        }
+
+        private static string ExtractFileName(HttpResponseMessage response)
+        {
+            if (response.Content.Headers.ContentDisposition?.FileName != null)
+            {
+                string fileName = response.Content.Headers.ContentDisposition.FileName;
+                return fileName.Trim('"', '\'');
+            }
+
+            if (response.Content.Headers.TryGetValues("Content-Disposition", out var values))
+            {
+                string? contentDisposition = values.FirstOrDefault();
+                if (!string.IsNullOrEmpty(contentDisposition))
+                {
+                    var match = Regex.Match(contentDisposition, @"filename[*]?=[""']?([^""';]+)[""']?", RegexOptions.IgnoreCase);
+                    if (match.Success && match.Groups.Count > 1)
+                    {
+                        return match.Groups[1].Value.Trim();
+                    }
+                }
+            }
+
+            return "download";
+        }
+
         private static async Task EnsureSuccessOrThrow(HttpResponseMessage response)
         {
             if (response.IsSuccessStatusCode)
@@ -98,7 +136,7 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
 
         private static bool CheckBadRequestForValidationErrors(string errorObj)
         {
-            return !string.IsNullOrWhiteSpace(errorObj); // Assuming any content indicates validation errors.
+            return !string.IsNullOrWhiteSpace(errorObj);
         }
 
         private class ErrorResponse

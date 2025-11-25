@@ -14,5 +14,10 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
             content.Add(fileContent, "file", fileName);
             return await PostMultipartAsync<ImportResult>("/api/stations/import", content, cancellationToken);
         }
+
+        public async Task<(byte[] FileContent, string FileName)> ExportStationsToCsvAsync(CancellationToken cancellationToken = default)
+        {
+            return await GetFileAsync("/api/stations/export", cancellationToken);
+        }
     }
 }

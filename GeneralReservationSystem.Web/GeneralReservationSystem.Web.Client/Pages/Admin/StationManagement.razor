@@ -15,6 +15,7 @@
 @using GeneralReservationSystem.Web.Client.Helpers
 @using GeneralReservationSystem.Web.Client.Services.Interfaces
 @using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
 
 @using AppFilterOperator = GeneralReservationSystem.Application.Common.FilterOperator
 @using AppSortDirection = GeneralReservationSystem.Application.Common.SortDirection
@@ -23,7 +24,7 @@
 @inject IClientStationService StationService
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
-@inject IApiBaseUrlProvider ApiBaseUrlProvider
+@inject IJSRuntime JSRuntime
 
 
 <PageTitle>Gestión de Estaciones</PageTitle>
@@ -77,8 +78,8 @@
                                Disabled="@(_selectedFile == null)" StartIcon="@Icons.Material.Filled.Upload">
                         Importar
                     </MudButton>
-                    <MudButton Component="a" Href="@(ApiBaseUrlProvider.BaseUrl + "/api/stations/export")"
-                               Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Download">
+                    <MudButton Variant="Variant.Filled" Color="Color.Info" OnClick="HandleExportStations"
+                               StartIcon="@Icons.Material.Filled.Download">
                         Exportar
                     </MudButton>
                 </MudCardActions>
@@ -234,7 +235,6 @@
     protected override void OnInitialized()
     {
         base.OnInitialized();
-        // Initialize filter dictionary entries
         _filters = _filterDefinitions.ToDictionary(f => f.Key, _ => string.Empty);
     }
 
@@ -372,7 +372,6 @@
         }
         catch (Exception ex)
         {
-            // Specific handling for not-found to preserve previous behavior.
             if (ex is ServiceNotFoundException)
             {
                 Snackbar.Add(ex.Message, Severity.Warning);
@@ -435,7 +434,7 @@
 
         try
         {
-            using var stream = _selectedFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024); // 10MB max
+            using var stream = _selectedFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
             int count = (await StationService.ImportStationsFromCsvAsync(stream, _selectedFile.Name)).Count;
             Snackbar.Add($"Se importaron {count} estaciones exitosamente.", Severity.Success);
             ClearSelectedFile();
@@ -444,6 +443,21 @@
         catch (Exception ex)
         {
             HandleServiceException(ex, $"Error inesperado al importar estaciones: {ex.Message}");
+        }
+    }
+
+    private async Task HandleExportStations()
+    {
+        try
+        {
+            var (fileContent, fileName) = await StationService.ExportStationsToCsvAsync();
+            var base64 = Convert.ToBase64String(fileContent);
+            await JSRuntime.InvokeVoidAsync("downloadFileFromBase64", base64, fileName, "text/csv");
+            Snackbar.Add("Estaciones exportadas correctamente.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            HandleServiceException(ex, "Error inesperado al exportar estaciones.");
         }
     }
 
@@ -488,7 +502,6 @@
 
     private void SetExpressionValue(Expression<Func<string?>> expr, string? value)
     {
-        // This way we support expressions like () => _dto.Property
         if (expr.Body is UnaryExpression ue && ue.Operand is MemberExpression meUnary)
             SetMemberValue(meUnary, value);
         else if (expr.Body is MemberExpression me)
