@@ -19,11 +19,11 @@ Console.WriteLine($"Configured API Base URL for client: {clientApiBaseUrl}");
 Console.WriteLine($"Configured API Base URL for server: {serverApiBaseUrl}");
 
 // Register API base URL provider as singleton
-_ = builder.Services.AddSingleton<IApiBaseUrlProvider>(new ApiBaseUrlProvider(serverApiBaseUrl));
+builder.Services.AddSingleton<IApiBaseUrlProvider>(new ApiBaseUrlProvider(serverApiBaseUrl));
 
 // HttpClient for API calls
 // Credentials (cookies) are configured per-request in ApiServiceBase
-_ = builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(serverApiBaseUrl) });
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(serverApiBaseUrl) });
 
 builder.Services.AddClientServices();
 

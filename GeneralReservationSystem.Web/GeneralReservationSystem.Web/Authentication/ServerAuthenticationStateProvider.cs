@@ -54,8 +54,10 @@ namespace GeneralReservationSystem.Web.Authentication
                 ClaimsPrincipal principal = new(identity);
                 return new AuthenticationState(principal);
             }
-            catch
+            catch(Exception ex)
             {
+                Console.WriteLine($"Error retrieving authentication state from API: {ex}");
+
                 return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
             }
         }
