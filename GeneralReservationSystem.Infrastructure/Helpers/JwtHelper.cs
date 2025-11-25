@@ -13,6 +13,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
         public string Issuer { get; set; } = string.Empty;
         public string Audience { get; set; } = string.Empty;
         public int ExpirationDays { get; set; } = 7;
+        public string? Domain { get; set; }
     }
 
     public static class JwtHelper
@@ -58,12 +59,15 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             {
                 HttpOnly = true,
                 Secure = true,
-
                 SameSite = SameSiteMode.None,
                 Path = CookiePath,
-
                 Expires = DateTimeOffset.UtcNow.AddDays(settings.ExpirationDays)
             };
+
+            if (!string.IsNullOrEmpty(settings.Domain))
+            {
+                options.Domain = settings.Domain;
+            }
 
             response.Cookies.Append(CookieName, token, options);
         }
@@ -81,13 +85,15 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
 
 		public static void ClearJwtCookie(this HttpResponse response)
 		{
-			response.Cookies.Delete(CookieName, new()
+			CookieOptions options = new()
 			{
 				HttpOnly = true,
 				Secure = true,
 				SameSite = SameSiteMode.None,
 				Path = CookiePath,
-			});
+			};
+
+			response.Cookies.Delete(CookieName, options);
 		}
 
 		public static void ClearJwtCookie(this HttpContext context) 

@@ -21,7 +21,8 @@ JwtSettings jwtSettings = new()
     SecretKey = builder.Configuration["Jwt:SecretKey"] ?? "YourSuperSecretKeyThatIsAtLeast32CharactersLong!",
     Issuer = builder.Configuration["Jwt:Issuer"] ?? "GeneralReservationSystemAPI",
     Audience = builder.Configuration["Jwt:Audience"] ?? "GeneralReservationSystemClient",
-    ExpirationDays = int.Parse(builder.Configuration["Jwt:ExpirationDays"] ?? "7")
+    ExpirationDays = int.Parse(builder.Configuration["Jwt:ExpirationDays"] ?? "7"),
+    Domain = builder.Configuration["Jwt:Domain"]
 };
 builder.Services.AddSingleton(jwtSettings);
 
