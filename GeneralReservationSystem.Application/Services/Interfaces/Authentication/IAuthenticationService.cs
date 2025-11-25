@@ -6,7 +6,7 @@ namespace GeneralReservationSystem.Application.Services.Interfaces.Authenticatio
     {
         Task<UserInfo> RegisterUserAsync(RegisterUserDto dto, CancellationToken cancellationToken = default);
         Task<UserInfo> RegisterAdminAsync(RegisterUserDto dto, CancellationToken cancellationToken = default);
-		Task<UserInfo> AuthenticateAsync(LoginDto dto, CancellationToken cancellationToken = default);
+        Task<UserInfo> AuthenticateAsync(LoginDto dto, CancellationToken cancellationToken = default);
         Task ChangePasswordAsync(ChangePasswordDto dto, CancellationToken cancellationToken = default);
     }
 }

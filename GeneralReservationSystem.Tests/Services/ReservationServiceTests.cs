@@ -812,7 +812,7 @@ namespace GeneralReservationSystem.Tests.Services
             // Assert
             Assert.NotNull(result);
             Assert.Equal(2, result.TotalCount);
-            Assert.All(result.Items, item => Assert.True(item.TripId == 1 || item.TripId == 2));
+            Assert.All(result.Items, item => Assert.True(item.TripId is 1 or 2));
 
             _mockReservationRepository.Verify(
                 repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),
@@ -1618,7 +1618,7 @@ namespace GeneralReservationSystem.Tests.Services
             // Assert
             Assert.NotNull(result);
             Assert.Equal(2, result.TotalCount);
-            Assert.All(result.Items, item => Assert.True(item.TripId == 1 || item.TripId == 2));
+            Assert.All(result.Items, item => Assert.True(item.TripId is 1 or 2));
 
             _mockReservationRepository.Verify(
                 repo => repo.SearchForUserIdWithDetailsAsync(1, searchDto, It.IsAny<CancellationToken>()),

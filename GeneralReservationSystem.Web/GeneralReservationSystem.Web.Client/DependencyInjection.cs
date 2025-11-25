@@ -1,13 +1,10 @@
 ﻿using GeneralReservationSystem.Application;
 using GeneralReservationSystem.Application.Services.Interfaces;
 using GeneralReservationSystem.Application.Services.Interfaces.Authentication;
-using GeneralReservationSystem.Web.Client.Authentication;
-using GeneralReservationSystem.Web.Client.Helpers;
 using GeneralReservationSystem.Web.Client.Services.Implementations;
 using GeneralReservationSystem.Web.Client.Services.Implementations.Authentication;
 using GeneralReservationSystem.Web.Client.Services.Interfaces;
 using GeneralReservationSystem.Web.Client.Services.Interfaces.Authentication;
-using Microsoft.AspNetCore.Components.Authorization;
 using MudBlazor.Services;
 
 namespace GeneralReservationSystem.Web.Client

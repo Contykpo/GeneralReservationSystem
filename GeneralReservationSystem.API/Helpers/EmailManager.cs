@@ -2,10 +2,8 @@
 using MailKit.Security;
 using MimeKit;
 using MimeKit.Text;
-using System;
-using System.Threading.Tasks;
 
-namespace GeneralReservationSystem.Application.Helpers
+namespace GeneralReservationSystem.API.Helpers
 {
     /// <summary>
     /// Helper estatico para enviar correos electronicos utilizando MailKit.
@@ -35,7 +33,7 @@ namespace GeneralReservationSystem.Application.Helpers
         /// </summary>
         public static async Task SendEmailAsync(string recipientEmail, string subject, string bodyHtml, bool isHtml = true)
         {
-            var email = new MimeMessage();
+            MimeMessage email = new();
             email.From.Add(new MailboxAddress(SenderName, SenderEmail));
             email.To.Add(MailboxAddress.Parse(recipientEmail));
             email.Subject = subject;
@@ -44,12 +42,12 @@ namespace GeneralReservationSystem.Application.Helpers
                 Text = bodyHtml
             };
 
-            using var smtp = new SmtpClient();
+            using SmtpClient smtp = new();
             try
             {
                 await smtp.ConnectAsync(SmtpServer, SmtpPort, SecureSocketOptions.StartTls);
                 await smtp.AuthenticateAsync(SmtpUsername, SmtpPassword);
-                await smtp.SendAsync(email);
+                _ = await smtp.SendAsync(email);
             }
             catch (Exception ex)
             {

@@ -1,4 +1,4 @@
-using FluentValidation;
+ï»¿using FluentValidation;
 using FluentValidation.Results;
 using GeneralReservationSystem.API.Controllers;
 using GeneralReservationSystem.Application.DTOs.Authentication;
@@ -204,182 +204,182 @@ namespace GeneralReservationSystem.Tests.Controllers
             Assert.Equal(500, statusResult.StatusCode);
         }
 
-		#endregion
+        #endregion
 
-		#region Register Admin Tets
+        #region Register Admin Tets
 
-		[Fact]
-		public async Task RegisterAdmin_ValidDto_ReturnsOkWithUserId()
-		{
-			// Arrange
-			RegisterUserDto registerDto = new()
-			{
-				UserName = "adminuser",
-				Email = "adminuser@example.com",
-				Password = "SecurePassword123!",
-				ConfirmPassword = "SecurePassword123!"
-			};
+        [Fact]
+        public async Task RegisterAdmin_ValidDto_ReturnsOkWithUserId()
+        {
+            // Arrange
+            RegisterUserDto registerDto = new()
+            {
+                UserName = "adminuser",
+                Email = "adminuser@example.com",
+                Password = "SecurePassword123!",
+                ConfirmPassword = "SecurePassword123!"
+            };
 
-			UserInfo userInfo = new()
-			{
-				UserId = 42,
-				UserName = registerDto.UserName,
-				Email = registerDto.Email,
-				IsAdmin = true
-			};
+            UserInfo userInfo = new()
+            {
+                UserId = 42,
+                UserName = registerDto.UserName,
+                Email = registerDto.Email,
+                IsAdmin = true
+            };
 
-			_ = _mockAuthenticationService
-				.Setup(s => s.RegisterAdminAsync(registerDto, It.IsAny<CancellationToken>()))
-				.ReturnsAsync(userInfo);
+            _ = _mockAuthenticationService
+                .Setup(s => s.RegisterAdminAsync(registerDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(userInfo);
 
-			// Act
-			IActionResult result = await _controller.RegisterAdmin(registerDto, CancellationToken.None);
+            // Act
+            IActionResult result = await _controller.RegisterAdmin(registerDto, CancellationToken.None);
 
-			// Assert
-			OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
-			var response = okResult.Value as dynamic;
-			Assert.NotNull(response);
-			Assert.Contains("Administrador registrado exitosamente", response.message.ToString());
-			Assert.Equal(42, (int)response.userId);
+            // Assert
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
+            dynamic? response = okResult.Value;
+            Assert.NotNull(response);
+            Assert.Contains("Administrador registrado exitosamente", response.message.ToString());
+            Assert.Equal(42, (int)response.userId);
 
-			_mockAuthenticationService.Verify(
-				s => s.RegisterAdminAsync(registerDto, It.IsAny<CancellationToken>()),
-				Times.Once);
-		}
+            _mockAuthenticationService.Verify(
+                s => s.RegisterAdminAsync(registerDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
 
-		[Fact]
-		public async Task RegisterAdmin_DuplicateUsernameOrEmail_ReturnsConflict()
-		{
-			// Arrange
-			RegisterUserDto registerDto = new()
-			{
-				UserName = "duplicateadmin",
-				Email = "dup@example.com",
-				Password = "SecurePassword123!",
-				ConfirmPassword = "SecurePassword123!"
-			};
+        [Fact]
+        public async Task RegisterAdmin_DuplicateUsernameOrEmail_ReturnsConflict()
+        {
+            // Arrange
+            RegisterUserDto registerDto = new()
+            {
+                UserName = "duplicateadmin",
+                Email = "dup@example.com",
+                Password = "SecurePassword123!",
+                ConfirmPassword = "SecurePassword123!"
+            };
 
-			_ = _mockAuthenticationService
-				.Setup(s => s.RegisterAdminAsync(registerDto, It.IsAny<CancellationToken>()))
-				.ThrowsAsync(new ServiceBusinessException("Ya existe un usuario con el mismo nombre o correo electrónico."));
+            _ = _mockAuthenticationService
+                .Setup(s => s.RegisterAdminAsync(registerDto, It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new ServiceBusinessException("Ya existe un usuario con el mismo nombre o correo electrÃ³nico."));
 
-			// Act
-			IActionResult result = await _controller.RegisterAdmin(registerDto, CancellationToken.None);
+            // Act
+            IActionResult result = await _controller.RegisterAdmin(registerDto, CancellationToken.None);
 
-			// Assert
-			ConflictObjectResult conflictResult = Assert.IsType<ConflictObjectResult>(result);
-			var response = conflictResult.Value as dynamic;
-			Assert.Contains("Ya existe un usuario", response.error.ToString());
+            // Assert
+            ConflictObjectResult conflictResult = Assert.IsType<ConflictObjectResult>(result);
+            dynamic? response = conflictResult.Value;
+            Assert.Contains("Ya existe un usuario", response.error.ToString());
 
-			_mockAuthenticationService.Verify(
-				s => s.RegisterAdminAsync(registerDto, It.IsAny<CancellationToken>()),
-				Times.Once);
-		}
+            _mockAuthenticationService.Verify(
+                s => s.RegisterAdminAsync(registerDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
 
-		[Fact]
-		public async Task RegisterAdmin_ValidationFails_ReturnsBadRequest()
-		{
-			// Arrange
-			RegisterUserDto registerDto = new()
-			{
-				UserName        = "a",
-				Email           = "invalid-email",
-				Password        = "123",
-				ConfirmPassword = "456"
-			};
+        [Fact]
+        public async Task RegisterAdmin_ValidationFails_ReturnsBadRequest()
+        {
+            // Arrange
+            RegisterUserDto registerDto = new()
+            {
+                UserName = "a",
+                Email = "invalid-email",
+                Password = "123",
+                ConfirmPassword = "456"
+            };
 
-			List<ValidationFailure> validationFailures =
-			[
-				new ValidationFailure("Email",      "Formato de email inválido"),
-				new ValidationFailure("Password",   "Las contraseñas no coinciden")
-			];
+            List<ValidationFailure> validationFailures =
+            [
+                new ValidationFailure("Email",      "Formato de email invÃ¡lido"),
+                new ValidationFailure("Password",   "Las contraseÃ±as no coinciden")
+            ];
 
-			_ = _mockRegisterValidator
-				.Setup(v => v.ValidateAsync(registerDto, It.IsAny<CancellationToken>()))
-				.ReturnsAsync(new ValidationResult(validationFailures));
+            _ = _mockRegisterValidator
+                .Setup(v => v.ValidateAsync(registerDto, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ValidationResult(validationFailures));
 
-			// Act
-			IActionResult result = await _controller.RegisterAdmin(registerDto, CancellationToken.None);
+            // Act
+            IActionResult result = await _controller.RegisterAdmin(registerDto, CancellationToken.None);
 
-			BadRequestObjectResult badRequest = Assert.IsType<BadRequestObjectResult>(result);
+            BadRequestObjectResult badRequest = Assert.IsType<BadRequestObjectResult>(result);
 
-            var errors = Assert.IsAssignableFrom<IEnumerable<object>>(badRequest.Value);
+            IEnumerable<object> errors = Assert.IsAssignableFrom<IEnumerable<object>>(badRequest.Value);
 
-			var errorFieldsList = errors.Select(e => ReflectionHelpers.GetProperty(e.GetType(), "field").GetValue(e).ToString()).ToList();
-			var errorList       = errors.Select(e => ReflectionHelpers.GetProperty(e.GetType(), "error").GetValue(e).ToString()).ToList();
+            List<string?> errorFieldsList = errors.Select(e => ReflectionHelpers.GetProperty(e.GetType(), "field").GetValue(e).ToString()).ToList();
+            List<string?> errorList = errors.Select(e => ReflectionHelpers.GetProperty(e.GetType(), "error").GetValue(e).ToString()).ToList();
 
-			//Corroboramos que devuelva errores en los campos esperados
-			Assert.Contains(validationFailures[0].PropertyName, errorFieldsList);
-			Assert.Contains(validationFailures[1].PropertyName, errorFieldsList);
+            //Corroboramos que devuelva errores en los campos esperados
+            Assert.Contains(validationFailures[0].PropertyName, errorFieldsList);
+            Assert.Contains(validationFailures[1].PropertyName, errorFieldsList);
 
-			//Corroboramos que los mensajes de error sean los esperados
-			Assert.Contains(validationFailures[0].ErrorMessage, errorList);
+            //Corroboramos que los mensajes de error sean los esperados
+            Assert.Contains(validationFailures[0].ErrorMessage, errorList);
             Assert.Contains(validationFailures[1].ErrorMessage, errorList);
 
-			//Corroboramos que no haya registrado el admin dado que hubieron errores
-			_mockAuthenticationService.Verify(
-				s => s.RegisterAdminAsync(It.IsAny<RegisterUserDto>(), It.IsAny<CancellationToken>()),
-				Times.Never);
-		}
+            //Corroboramos que no haya registrado el admin dado que hubieron errores
+            _mockAuthenticationService.Verify(
+                s => s.RegisterAdminAsync(It.IsAny<RegisterUserDto>(), It.IsAny<CancellationToken>()),
+                Times.Never);
+        }
 
-		[Fact]
-		public async Task RegisterAdmin_ServiceError_ReturnsInternalServerError()
-		{
-			// Arrange
-			RegisterUserDto registerDto = new()
-			{
-				UserName        = "erroradmin",
-				Email           = "error@example.com",
-				Password        = "SecurePassword123!",
-				ConfirmPassword = "SecurePassword123!"
-			};
+        [Fact]
+        public async Task RegisterAdmin_ServiceError_ReturnsInternalServerError()
+        {
+            // Arrange
+            RegisterUserDto registerDto = new()
+            {
+                UserName = "erroradmin",
+                Email = "error@example.com",
+                Password = "SecurePassword123!",
+                ConfirmPassword = "SecurePassword123!"
+            };
 
-			_ = _mockAuthenticationService
-				.Setup(s => s.RegisterAdminAsync(registerDto, It.IsAny<CancellationToken>()))
-				.ThrowsAsync(new ServiceException("Error al registrar el administrador."));
+            _ = _mockAuthenticationService
+                .Setup(s => s.RegisterAdminAsync(registerDto, It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new ServiceException("Error al registrar el administrador."));
 
-			// Act
-			IActionResult result = await _controller.RegisterAdmin(registerDto, CancellationToken.None);
+            // Act
+            IActionResult result = await _controller.RegisterAdmin(registerDto, CancellationToken.None);
 
-			// Assert
-			ObjectResult objResult = Assert.IsType<ObjectResult>(result);
-			Assert.Equal(500, objResult.StatusCode);
-			var response = objResult.Value as dynamic;
-			Assert.Contains("Error al registrar el administrador", response.error.ToString());
+            // Assert
+            ObjectResult objResult = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(500, objResult.StatusCode);
+            dynamic? response = objResult.Value;
+            Assert.Contains("Error al registrar el administrador", response.error.ToString());
 
-			_mockAuthenticationService.Verify(
-				s => s.RegisterAdminAsync(registerDto, It.IsAny<CancellationToken>()),
-				Times.Once);
-		}
+            _mockAuthenticationService.Verify(
+                s => s.RegisterAdminAsync(registerDto, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
 
-		[Fact]
-		public async Task RegisterAdmin_ReturnsConflict_WhenServiceBusinessExceptionThrown()
-		{
-			// Arrange
-			RegisterUserDto registerDto = new()
-			{
-				UserName = "conflictadmin",
-				Email = "conflict@example.com",
-				Password = "SecurePassword123!",
-				ConfirmPassword = "SecurePassword123!"
-			};
+        [Fact]
+        public async Task RegisterAdmin_ReturnsConflict_WhenServiceBusinessExceptionThrown()
+        {
+            // Arrange
+            RegisterUserDto registerDto = new()
+            {
+                UserName = "conflictadmin",
+                Email = "conflict@example.com",
+                Password = "SecurePassword123!",
+                ConfirmPassword = "SecurePassword123!"
+            };
 
-			_ = _mockAuthenticationService
-				.Setup(s => s.RegisterAdminAsync(registerDto, It.IsAny<CancellationToken>()))
-				.ThrowsAsync(new ServiceBusinessException("Administrador duplicado"));
+            _ = _mockAuthenticationService
+                .Setup(s => s.RegisterAdminAsync(registerDto, It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new ServiceBusinessException("Administrador duplicado"));
 
-			// Act
-			IActionResult result = await _controller.RegisterAdmin(registerDto, CancellationToken.None);
+            // Act
+            IActionResult result = await _controller.RegisterAdmin(registerDto, CancellationToken.None);
 
-			// Assert
-			_ = Assert.IsType<ConflictObjectResult>(result);
-		}
+            // Assert
+            _ = Assert.IsType<ConflictObjectResult>(result);
+        }
 
         #endregion
 
-		#region Login Tests
+        #region Login Tests
 
-		[Fact]
+        [Fact]
         public async Task Login_ValidCredentials_ReturnsOkWithUserInfo()
         {
             // Arrange

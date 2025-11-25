@@ -1,14 +1,9 @@
-﻿using GeneralReservationSystem.Infrastructure.Helpers;
-using GeneralReservationSystem.Web.Authentication;
+﻿using GeneralReservationSystem.Web.Authentication;
 using GeneralReservationSystem.Web.Client;
-using GeneralReservationSystem.Web.Client.Authentication;
 using GeneralReservationSystem.Web.Client.Helpers;
 using GeneralReservationSystem.Web.Components;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.IdentityModel.Tokens;
-using System.Security.Claims;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -59,7 +54,7 @@ catch (Exception ex)
 
 builder.Services.AddAuthentication(ApiAuthenticationHandler.SchemeName)
     .AddScheme<AuthenticationSchemeOptions, ApiAuthenticationHandler>(
-        ApiAuthenticationHandler.SchemeName, 
+        ApiAuthenticationHandler.SchemeName,
         options => { });
 
 builder.Services.AddAuthorization();

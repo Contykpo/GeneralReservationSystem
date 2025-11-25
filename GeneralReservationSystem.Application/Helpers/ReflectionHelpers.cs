@@ -49,12 +49,7 @@ namespace GeneralReservationSystem.Application.Helpers
 
             PropertyInfo? propertyInfo = GetProperties(type).FirstOrDefault(p => p.Name == propertyName);
 
-            if (propertyInfo == null)
-            {
-                throw new ArgumentException($"Property '{propertyName}' not found on type '{type.FullName}'", nameof(propertyName));
-            }
-
-            return propertyInfo;
+            return propertyInfo ?? throw new ArgumentException($"Property '{propertyName}' not found on type '{type.FullName}'", nameof(propertyName));
         }
 
         public static PropertyInfo[] GetFilteredProperties<TEntity>(Func<PropertyInfo, bool> predicate)

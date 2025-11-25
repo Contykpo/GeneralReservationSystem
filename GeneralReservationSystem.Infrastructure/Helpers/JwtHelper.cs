@@ -73,9 +73,11 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
         }
 
         public static void SetJwtCookie(this HttpContext context, string token, JwtSettings settings)
-            => SetJwtCookie(context.Response, token, settings); 
+        {
+            SetJwtCookie(context.Response, token, settings);
+        }
 
-		public static string GenerateAndSetJwtCookie(this HttpContext context, UserSessionInfo userSession, JwtSettings settings)
+        public static string GenerateAndSetJwtCookie(this HttpContext context, UserSessionInfo userSession, JwtSettings settings)
         {
             string token = GenerateJwtToken(userSession, settings);
             SetJwtCookie(context, token, settings);
@@ -83,20 +85,22 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             return token;
         }
 
-		public static void ClearJwtCookie(this HttpResponse response)
-		{
-			CookieOptions options = new()
-			{
-				HttpOnly = true,
-				Secure = true,
-				SameSite = SameSiteMode.None,
-				Path = CookiePath,
-			};
+        public static void ClearJwtCookie(this HttpResponse response)
+        {
+            CookieOptions options = new()
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Path = CookiePath,
+            };
 
-			response.Cookies.Delete(CookieName, options);
-		}
+            response.Cookies.Delete(CookieName, options);
+        }
 
-		public static void ClearJwtCookie(this HttpContext context) 
-            => ClearJwtCookie(context.Response);
-	}
+        public static void ClearJwtCookie(this HttpContext context)
+        {
+            ClearJwtCookie(context.Response);
+        }
+    }
 }

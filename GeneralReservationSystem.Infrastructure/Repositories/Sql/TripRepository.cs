@@ -98,7 +98,7 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                 int page = searchDto.Page > 0 ? searchDto.Page : 1;
                 int pageSize = searchDto.PageSize > 0 ? searchDto.PageSize : 10;
                 int offset = (page - 1) * pageSize;
-                
+
                 StringBuilder sql = new();
                 _ = sql.Append("SELECT * FROM (");
                 _ = sql.Append($"SELECT t.\"TripId\", t.\"DepartureStationId\", dst.\"StationName\" AS \"DepartureStationName\", dst.\"City\" AS \"DepartureCity\", dst.\"Province\" AS \"DepartureProvince\", dst.\"Country\" AS \"DepartureCountry\", t.\"DepartureTime\", t.\"ArrivalStationId\", ast.\"StationName\" AS \"ArrivalStationName\", ast.\"City\" AS \"ArrivalCity\", ast.\"Province\" AS \"ArrivalProvince\", ast.\"Country\" AS \"ArrivalCountry\", t.\"ArrivalTime\", t.\"AvailableSeats\", COALESCE(r.reserved, 0) AS \"ReservedSeats\" " +
@@ -109,15 +109,15 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql
                 $"SELECT \"TripId\", COUNT(*) AS reserved FROM grsdb.\"Reservation\" GROUP BY \"TripId\"" +
                 ") r ON t.\"TripId\" = r.\"TripId\"");
                 _ = sql.Append(") subquery");
-                
+
                 if (hasFilter)
                 {
                     _ = sql.Append($" WHERE {filterClause}");
                 }
-                
+
                 _ = sql.Append($" ORDER BY {orderByClause}");
                 _ = sql.Append($" LIMIT {pageSize} OFFSET {offset}");
-                
+
                 cmd.CommandText = sql.ToString();
                 SqlCommandHelper.AddFilterParameters<TripWithDetailsDto>(cmd, searchDto.FilterClauses);
 

@@ -111,7 +111,7 @@ app.UseExceptionHandler(errorApp =>
 if (!app.Environment.IsDevelopment())
 {
     // If in development, web and api containers can communicate via http, but in production they MUST use https
-    app.UseHttpsRedirection();
+    _ = app.UseHttpsRedirection();
 }
 
 app.UseCors();

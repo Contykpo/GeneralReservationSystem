@@ -1,7 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using System.Text.Json;
-
-namespace GeneralReservationSystem.Infrastructure.Helpers
+﻿namespace GeneralReservationSystem.Infrastructure.Helpers
 {
     public class UserSessionInfo
     {

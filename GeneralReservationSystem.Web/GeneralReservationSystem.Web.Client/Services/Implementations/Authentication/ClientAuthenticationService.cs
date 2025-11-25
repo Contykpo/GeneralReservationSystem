@@ -1,35 +1,34 @@
 ﻿using GeneralReservationSystem.Application.DTOs.Authentication;
 using GeneralReservationSystem.Web.Client.Services.Interfaces.Authentication;
-using System.Threading;
 
 namespace GeneralReservationSystem.Web.Client.Services.Implementations.Authentication
 {
     public class ClientAuthenticationService(HttpClient httpClient) : ApiServiceBase(httpClient), IClientAuthenticationService
     {
-		public async Task<UserInfo> GetCurrentUserAsync(CancellationToken cancellationToken = default)
-		{
-			return await GetAsync<UserInfo>("/api/auth/me", cancellationToken);
-		}
-
-		private async Task<UserInfo> Post2AuthAndGetUserAsync<TDTO, TResponse>(string endpoint, TDTO dto, CancellationToken cancellationToken)
-		{
-			_ = await PostAsync<TResponse>($"/api/auth/{endpoint}", dto, cancellationToken);
-
-			// After registration, get full user details from API
-			return await GetCurrentUserAsync(cancellationToken);
-		}
-
-		public async Task<UserInfo> RegisterUserAsync(RegisterUserDto dto, CancellationToken cancellationToken = default)
+        public async Task<UserInfo> GetCurrentUserAsync(CancellationToken cancellationToken = default)
         {
-			return await Post2AuthAndGetUserAsync<RegisterUserDto, RegisterResponse>("register", dto, cancellationToken);
+            return await GetAsync<UserInfo>("/api/auth/me", cancellationToken);
+        }
+
+        private async Task<UserInfo> Post2AuthAndGetUserAsync<TDTO, TResponse>(string endpoint, TDTO dto, CancellationToken cancellationToken)
+        {
+            _ = await PostAsync<TResponse>($"/api/auth/{endpoint}", dto, cancellationToken);
+
+            // After registration, get full user details from API
+            return await GetCurrentUserAsync(cancellationToken);
+        }
+
+        public async Task<UserInfo> RegisterUserAsync(RegisterUserDto dto, CancellationToken cancellationToken = default)
+        {
+            return await Post2AuthAndGetUserAsync<RegisterUserDto, RegisterResponse>("register", dto, cancellationToken);
         }
 
         public async Task<UserInfo> RegisterAdminAsync(RegisterUserDto dto, CancellationToken cancellationToken = default)
         {
             return await Post2AuthAndGetUserAsync<RegisterUserDto, RegisterResponse>("register-admin", dto, cancellationToken);
-		}
+        }
 
-		public async Task<UserInfo> AuthenticateAsync(LoginDto dto, CancellationToken cancellationToken = default)
+        public async Task<UserInfo> AuthenticateAsync(LoginDto dto, CancellationToken cancellationToken = default)
         {
             return await Post2AuthAndGetUserAsync<LoginDto, LoginResponse>("login", dto, cancellationToken);
         }

@@ -19,7 +19,7 @@ namespace GeneralReservationSystem.Web.Client
             using HttpClient serverHttp = new() { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) };
             ConfigData config = await serverHttp.GetFromJsonAsync<ConfigData>("config.json") ?? new ConfigData(builder.HostEnvironment.BaseAddress);
 
-            var apiBaseUrl = config.ApiBaseUrl;
+            string apiBaseUrl = config.ApiBaseUrl;
 
             // Register API base URL provider as singleton
             _ = builder.Services.AddSingleton<IApiBaseUrlProvider>(new ApiBaseUrlProvider(apiBaseUrl));

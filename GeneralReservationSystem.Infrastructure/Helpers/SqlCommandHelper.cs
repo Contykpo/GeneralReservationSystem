@@ -377,7 +377,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
         public static string BuildOrderByClauseWithDefault<T>(IEnumerable<SortOption> sortOptions)
         {
             string orderByClause = BuildOrderByClause<T>(sortOptions);
-            
+
             if (!string.IsNullOrEmpty(orderByClause))
             {
                 return orderByClause;

@@ -47,20 +47,20 @@ namespace GeneralReservationSystem.Infrastructure.Repositories.Sql.Authenticatio
                 int page = searchDto.Page > 0 ? searchDto.Page : 1;
                 int pageSize = searchDto.PageSize > 0 ? searchDto.PageSize : 10;
                 int offset = (page - 1) * pageSize;
-                
+
                 StringBuilder sql = new();
                 _ = sql.Append("SELECT * FROM (");
                 _ = sql.Append($"SELECT \"UserId\", \"UserName\", \"Email\", \"IsAdmin\" FROM grsdb.\"{_tableName}\"");
                 _ = sql.Append(") subquery");
-                
+
                 if (hasFilter)
                 {
                     _ = sql.Append($" WHERE {filterClause}");
                 }
-                
+
                 _ = sql.Append($" ORDER BY {orderByClause}");
                 _ = sql.Append($" LIMIT {pageSize} OFFSET {offset}");
-                
+
                 cmd.CommandText = sql.ToString();
                 SqlCommandHelper.AddFilterParameters<UserInfo>(cmd, searchDto.FilterClauses);
 

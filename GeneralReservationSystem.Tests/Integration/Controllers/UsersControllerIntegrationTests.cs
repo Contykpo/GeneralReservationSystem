@@ -1,5 +1,4 @@
-﻿using GeneralReservationSystem.Application.DTOs;
-using GeneralReservationSystem.Application.DTOs.Authentication;
+﻿using GeneralReservationSystem.Application.DTOs.Authentication;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -222,7 +221,7 @@ public class UsersControllerIntegrationTests : IntegrationTestBase
         JsonDocument doc = JsonDocument.Parse(content);
         JsonElement items = doc.RootElement.GetProperty("items");
         Assert.True(items.GetArrayLength() >= 3);
-        
+
         string firstName = items[0].GetProperty("userName").GetString()!;
         string secondName = items[1].GetProperty("userName").GetString()!;
         Assert.True(string.Compare(firstName, secondName, StringComparison.Ordinal) < 0);

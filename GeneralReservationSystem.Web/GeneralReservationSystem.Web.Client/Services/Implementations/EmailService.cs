@@ -1,5 +1,5 @@
-﻿using GeneralReservationSystem.Application.Services.Interfaces;
-using GeneralReservationSystem.Application.DTOs;
+﻿using GeneralReservationSystem.Application.DTOs;
+using GeneralReservationSystem.Application.Services.Interfaces;
 
 namespace GeneralReservationSystem.Web.Client.Services.Implementations
 {

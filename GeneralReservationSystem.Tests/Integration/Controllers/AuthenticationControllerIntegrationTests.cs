@@ -1,4 +1,4 @@
-using GeneralReservationSystem.Application.DTOs.Authentication;
+﻿using GeneralReservationSystem.Application.DTOs.Authentication;
 using GeneralReservationSystem.Tests.Integration.Helpers;
 using System.Net;
 using System.Net.Http.Json;
@@ -456,187 +456,187 @@ public class AuthenticationControllerIntegrationTests : IntegrationTestBase
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-	#region RegisterAdmin Tests
+    #region RegisterAdmin Tests
 
-	[Fact]
-	public async Task RegisterAdmin_ValidAdmin_ReturnsOkAndCreatesAdminUser()
-	{
-		// Arrange
-		RegisterUserDto registerDto = new()
-		{
-			UserName        = "superadmin",
-			Email           = "superadmin@grs.com",
-			Password        = "123456",
-			ConfirmPassword = "123456"
-		};
+    [Fact]
+    public async Task RegisterAdmin_ValidAdmin_ReturnsOkAndCreatesAdminUser()
+    {
+        // Arrange
+        RegisterUserDto registerDto = new()
+        {
+            UserName = "superadmin",
+            Email = "superadmin@grs.com",
+            Password = "123456",
+            ConfirmPassword = "123456"
+        };
 
-		// Act
-		HttpResponseMessage response = await _client.PostAsJsonAsync("/api/auth/register-admin", registerDto);
+        // Act
+        HttpResponseMessage response = await _client.PostAsJsonAsync("/api/auth/register-admin", registerDto);
 
-		// Assert
-		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-		string responseBody = await response.Content.ReadAsStringAsync();
-		JsonDocument json = JsonDocument.Parse(responseBody);
+        string responseBody = await response.Content.ReadAsStringAsync();
+        JsonDocument json = JsonDocument.Parse(responseBody);
 
-		Assert.True(json.RootElement.TryGetProperty("userId", out _));
-		Assert.Contains("Administrador registrado exitosamente", responseBody);
-	}
+        Assert.True(json.RootElement.TryGetProperty("userId", out _));
+        Assert.Contains("Administrador registrado exitosamente", responseBody);
+    }
 
-	[Fact]
-	public async Task RegisterAdmin_DuplicateUsername_ReturnsConflict()
-	{
-		// Arrange
-		RegisterUserDto registerDto = new()
-		{
-			UserName            = "adminDuplicate",
-			Email               = "admindup@example.com",
-			Password            = "SecurePassword123!",
-			ConfirmPassword     = "SecurePassword123!"
-		};
+    [Fact]
+    public async Task RegisterAdmin_DuplicateUsername_ReturnsConflict()
+    {
+        // Arrange
+        RegisterUserDto registerDto = new()
+        {
+            UserName = "adminDuplicate",
+            Email = "admindup@example.com",
+            Password = "SecurePassword123!",
+            ConfirmPassword = "SecurePassword123!"
+        };
 
-		_ = await _client.PostAsJsonAsync("/api/auth/register-admin", registerDto);
+        _ = await _client.PostAsJsonAsync("/api/auth/register-admin", registerDto);
 
-		// Act
-		HttpResponseMessage response = await _client.PostAsJsonAsync("/api/auth/register-admin", registerDto);
+        // Act
+        HttpResponseMessage response = await _client.PostAsJsonAsync("/api/auth/register-admin", registerDto);
 
-		// Assert
-		Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-	}
+        // Assert
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
 
-	[Fact]
-	public async Task RegisterAdmin_DuplicateEmail_ReturnsConflict()
-	{
-		// Arrange
-		RegisterUserDto registerDto = new()
-		{
-			UserName        = "admin1",
-			Email           = "sameadmin@example.com",
-			Password        = "SecurePassword123!",
-			ConfirmPassword = "SecurePassword123!"
-		};
+    [Fact]
+    public async Task RegisterAdmin_DuplicateEmail_ReturnsConflict()
+    {
+        // Arrange
+        RegisterUserDto registerDto = new()
+        {
+            UserName = "admin1",
+            Email = "sameadmin@example.com",
+            Password = "SecurePassword123!",
+            ConfirmPassword = "SecurePassword123!"
+        };
 
-		_ = await _client.PostAsJsonAsync("/api/auth/register-admin", registerDto);
+        _ = await _client.PostAsJsonAsync("/api/auth/register-admin", registerDto);
 
-		RegisterUserDto duplicateDto = new()
-		{
-			UserName        = "admin2",
-			Email           = "sameadmin@example.com", // mismo email
-			Password        = "SecurePassword123!",
-			ConfirmPassword = "SecurePassword123!"
-		};
+        RegisterUserDto duplicateDto = new()
+        {
+            UserName = "admin2",
+            Email = "sameadmin@example.com", // mismo email
+            Password = "SecurePassword123!",
+            ConfirmPassword = "SecurePassword123!"
+        };
 
-		// Act
-		HttpResponseMessage response = await _client.PostAsJsonAsync("/api/auth/register-admin", duplicateDto);
+        // Act
+        HttpResponseMessage response = await _client.PostAsJsonAsync("/api/auth/register-admin", duplicateDto);
 
-		// Assert
-		Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-	}
+        // Assert
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
 
-	[Fact]
-	public async Task RegisterAdmin_InvalidEmail_ReturnsBadRequest()
-	{
-		// Arrange
-		RegisterUserDto registerDto = new()
-		{
-			UserName        = "admininvalid",
-			Email           = "not-an-email",
-			Password        = "SecurePassword123!",
-			ConfirmPassword = "SecurePassword123!"
-		};
+    [Fact]
+    public async Task RegisterAdmin_InvalidEmail_ReturnsBadRequest()
+    {
+        // Arrange
+        RegisterUserDto registerDto = new()
+        {
+            UserName = "admininvalid",
+            Email = "not-an-email",
+            Password = "SecurePassword123!",
+            ConfirmPassword = "SecurePassword123!"
+        };
 
-		// Act
-		HttpResponseMessage response = await _client.PostAsJsonAsync("/api/auth/register-admin", registerDto);
+        // Act
+        HttpResponseMessage response = await _client.PostAsJsonAsync("/api/auth/register-admin", registerDto);
 
-		// Assert
-		Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-	}
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
 
-	[Fact]
-	public async Task RegisterAdmin_WeakPassword_ReturnsBadRequest()
-	{
-		// Arrange
-		RegisterUserDto registerDto = new()
-		{
-			UserName        = "weakadmin",
-			Email           = "weak@example.com",
-			Password        = "123",
-			ConfirmPassword = "123"
-		};
+    [Fact]
+    public async Task RegisterAdmin_WeakPassword_ReturnsBadRequest()
+    {
+        // Arrange
+        RegisterUserDto registerDto = new()
+        {
+            UserName = "weakadmin",
+            Email = "weak@example.com",
+            Password = "123",
+            ConfirmPassword = "123"
+        };
 
-		// Act
-		HttpResponseMessage response = await _client.PostAsJsonAsync("/api/auth/register-admin", registerDto);
+        // Act
+        HttpResponseMessage response = await _client.PostAsJsonAsync("/api/auth/register-admin", registerDto);
 
-		// Assert
-		Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-	}
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
 
-	[Fact]
-	public async Task RegisterAdmin_PasswordMismatch_ReturnsBadRequest()
-	{
-		// Arrange
-		RegisterUserDto registerDto = new()
-		{
-			UserName        = "mismatchadmin",
-			Email           = "mismatch@example.com",
-			Password        = "Password123!",
-			ConfirmPassword = "DifferentPassword123!"
-		};
+    [Fact]
+    public async Task RegisterAdmin_PasswordMismatch_ReturnsBadRequest()
+    {
+        // Arrange
+        RegisterUserDto registerDto = new()
+        {
+            UserName = "mismatchadmin",
+            Email = "mismatch@example.com",
+            Password = "Password123!",
+            ConfirmPassword = "DifferentPassword123!"
+        };
 
-		// Act
-		HttpResponseMessage response = await _client.PostAsJsonAsync("/api/auth/register-admin", registerDto);
+        // Act
+        HttpResponseMessage response = await _client.PostAsJsonAsync("/api/auth/register-admin", registerDto);
 
-		// Assert
-		Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-	}
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
 
-	[Fact]
-	public async Task RegisterAdmin_ValidAdmin_CannotLoginAsUserWithoutAdminPrivileges()
-	{
-		// Arrange
-		RegisterUserDto registerDto = new()
-		{
-			UserName        = "adminrestricted",
-			Email           = "restricted@example.com",
-			Password        = "SecurePassword123!",
-			ConfirmPassword = "SecurePassword123!"
-		};
+    [Fact]
+    public async Task RegisterAdmin_ValidAdmin_CannotLoginAsUserWithoutAdminPrivileges()
+    {
+        // Arrange
+        RegisterUserDto registerDto = new()
+        {
+            UserName = "adminrestricted",
+            Email = "restricted@example.com",
+            Password = "SecurePassword123!",
+            ConfirmPassword = "SecurePassword123!"
+        };
 
-		HttpResponseMessage registerResponse = await _client.PostAsJsonAsync("/api/auth/register-admin", registerDto);
+        HttpResponseMessage registerResponse = await _client.PostAsJsonAsync("/api/auth/register-admin", registerDto);
 
-		string responseBody = await registerResponse.Content.ReadAsStringAsync();
+        string responseBody = await registerResponse.Content.ReadAsStringAsync();
 
-		JsonDocument json = JsonDocument.Parse(responseBody);
+        JsonDocument json = JsonDocument.Parse(responseBody);
 
-		int adminUserId = json.RootElement.GetProperty("userId").GetInt32();
+        int adminUserId = json.RootElement.GetProperty("userId").GetInt32();
 
-		// Simulamos login y obtenemos cookie
-		LoginDto loginDto = new()
-		{
-			UserNameOrEmail = "adminrestricted",
-			Password        = "SecurePassword123!"
-		};
+        // Simulamos login y obtenemos cookie
+        LoginDto loginDto = new()
+        {
+            UserNameOrEmail = "adminrestricted",
+            Password = "SecurePassword123!"
+        };
 
-		HttpResponseMessage loginResponse = await _client.PostAsJsonAsync("/api/auth/login", loginDto);
+        HttpResponseMessage loginResponse = await _client.PostAsJsonAsync("/api/auth/login", loginDto);
 
-		Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
 
-		string? token = AuthenticationHelper.ExtractJwtTokenFromCookie(loginResponse);
-		Assert.NotNull(token);
+        string? token = AuthenticationHelper.ExtractJwtTokenFromCookie(loginResponse);
+        Assert.NotNull(token);
 
-		// Act � consultamos /api/auth/me con cookie
-		_client = _factory.CreateClient();
-		AuthenticationHelper.SetAuthenticationCookie(_client, token!);
-		HttpResponseMessage meResponse = await _client.GetAsync("/api/auth/me");
+        // Act — consultamos /api/auth/me con cookie
+        _client = _factory.CreateClient();
+        AuthenticationHelper.SetAuthenticationCookie(_client, token!);
+        HttpResponseMessage meResponse = await _client.GetAsync("/api/auth/me");
 
-		// Assert
-		Assert.Equal(HttpStatusCode.OK, meResponse.StatusCode);
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, meResponse.StatusCode);
 
-		UserInfo? info = await meResponse.Content.ReadFromJsonAsync<UserInfo>();
-		Assert.NotNull(info);
-		Assert.Equal(adminUserId, info.UserId);
-		Assert.True(info.IsAdmin);
-	}
+        UserInfo? info = await meResponse.Content.ReadFromJsonAsync<UserInfo>();
+        Assert.NotNull(info);
+        Assert.Equal(adminUserId, info.UserId);
+        Assert.True(info.IsAdmin);
+    }
 
-	#endregion
+    #endregion
 }

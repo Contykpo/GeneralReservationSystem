@@ -1,8 +1,6 @@
 ﻿using GeneralReservationSystem.Application.DTOs.Authentication;
-using GeneralReservationSystem.Infrastructure.Helpers;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.WebAssembly.Http;
-using System.Net.Http.Json;
 using System.Security.Claims;
 
 namespace GeneralReservationSystem.Web.Authentication
@@ -11,17 +9,17 @@ namespace GeneralReservationSystem.Web.Authentication
     {
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me")
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me")
                 .SetBrowserRequestCredentials(BrowserRequestCredentials.Include);
 
-            var context = httpContextAccessor.HttpContext;
+            HttpContext? context = httpContextAccessor.HttpContext;
 
             if (context == null)
             {
                 return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
             }
 
-            foreach (var cookie in context.Request.Cookies)
+            foreach (KeyValuePair<string, string> cookie in context.Request.Cookies)
             {
                 request.Headers.Add("Cookie", $"{cookie.Key}={cookie.Value}");
             }
@@ -37,7 +35,7 @@ namespace GeneralReservationSystem.Web.Authentication
                 UserInfo? currentUser = await response.Content.ReadFromJsonAsync<UserInfo>();
                 if (currentUser == null)
                 {
-                     return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+                    return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
                 }
 
                 List<Claim> claims =

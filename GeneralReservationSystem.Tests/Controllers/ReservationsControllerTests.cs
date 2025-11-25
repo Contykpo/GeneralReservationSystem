@@ -252,7 +252,7 @@ namespace GeneralReservationSystem.Tests.Controllers
             // Assert
             OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
             PagedResult<ReservationDetailsDto> pagedResult = Assert.IsType<PagedResult<ReservationDetailsDto>>(okResult.Value);
-            Assert.Single(pagedResult.Items);
+            _ = Assert.Single(pagedResult.Items);
         }
 
         [Fact]
@@ -463,7 +463,7 @@ namespace GeneralReservationSystem.Tests.Controllers
             // Assert
             OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
             PagedResult<UserReservationDetailsDto> pagedResult = Assert.IsType<PagedResult<UserReservationDetailsDto>>(okResult.Value);
-            Assert.Single(pagedResult.Items);
+            _ = Assert.Single(pagedResult.Items);
         }
 
         [Fact]
@@ -509,7 +509,7 @@ namespace GeneralReservationSystem.Tests.Controllers
             // Assert
             OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
             PagedResult<UserReservationDetailsDto> pagedResult = Assert.IsType<PagedResult<UserReservationDetailsDto>>(okResult.Value);
-            Assert.Single(pagedResult.Items);
+            _ = Assert.Single(pagedResult.Items);
         }
 
         [Fact]
@@ -773,7 +773,7 @@ namespace GeneralReservationSystem.Tests.Controllers
             // Assert
             OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
             PagedResult<UserReservationDetailsDto> pagedResult = Assert.IsType<PagedResult<UserReservationDetailsDto>>(okResult.Value);
-            Assert.Single(pagedResult.Items);
+            _ = Assert.Single(pagedResult.Items);
         }
 
         [Fact]

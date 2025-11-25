@@ -1334,7 +1334,7 @@ namespace GeneralReservationSystem.Tests.Services
             // Assert
             Assert.NotNull(result);
             Assert.Equal(2, result.TotalCount);
-            Assert.All(result.Items, item => Assert.True(item.DepartureStationId == 1 || item.DepartureStationId == 2));
+            Assert.All(result.Items, item => Assert.True(item.DepartureStationId is 1 or 2));
 
             _mockTripRepository.Verify(
                 repo => repo.SearchWithDetailsAsync(searchDto, It.IsAny<CancellationToken>()),

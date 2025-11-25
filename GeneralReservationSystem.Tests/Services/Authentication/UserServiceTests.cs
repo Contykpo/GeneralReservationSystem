@@ -1006,7 +1006,7 @@ namespace GeneralReservationSystem.Tests.Services.Authentication
             // Assert
             Assert.NotNull(result);
             Assert.Equal(2, result.TotalCount);
-            Assert.All(result.Items, item => Assert.True(item.UserName == "admin" || item.UserName == "superadmin"));
+            Assert.All(result.Items, item => Assert.True(item.UserName is "admin" or "superadmin"));
 
             _mockUserRepository.Verify(
                 repo => repo.SearchWithInfoAsync(searchDto, It.IsAny<CancellationToken>()),

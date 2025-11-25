@@ -1,6 +1,4 @@
-﻿using System.Security.AccessControl;
-
-namespace GeneralReservationSystem.Infrastructure.Helpers
+﻿namespace GeneralReservationSystem.Infrastructure.Helpers
 {
     public static class EntityTypeConverter
     {

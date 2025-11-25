@@ -1,7 +1,7 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using GeneralReservationSystem.API.Helpers;
 using GeneralReservationSystem.Application.DTOs;
-using GeneralReservationSystem.Application.Helpers;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 
 namespace GeneralReservationSystem.API.Controllers

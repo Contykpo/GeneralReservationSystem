@@ -9,13 +9,12 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
 {
     public abstract class ApiServiceBase(HttpClient httpClient)
     {
-        private readonly HttpClient httpClient = httpClient;
         protected static readonly JsonSerializerOptions jsonOptions = new()
         {
             PropertyNameCaseInsensitive = true
         };
 
-        protected HttpClient HttpClient => httpClient;
+        protected HttpClient HttpClient { get; } = httpClient;
 
         protected static HttpRequestMessage CreateRequestWithCredentials(HttpMethod method, string url)
         {
@@ -99,12 +98,12 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
                 return fileName.Trim('"', '\'');
             }
 
-            if (response.Content.Headers.TryGetValues("Content-Disposition", out var values))
+            if (response.Content.Headers.TryGetValues("Content-Disposition", out IEnumerable<string>? values))
             {
                 string? contentDisposition = values.FirstOrDefault();
                 if (!string.IsNullOrEmpty(contentDisposition))
                 {
-                    var match = Regex.Match(contentDisposition, @"filename[*]?=[""']?([^""';]+)[""']?", RegexOptions.IgnoreCase);
+                    Match match = Regex.Match(contentDisposition, @"filename[*]?=[""']?([^""';]+)[""']?", RegexOptions.IgnoreCase);
                     if (match.Success && match.Groups.Count > 1)
                     {
                         return match.Groups[1].Value.Trim();

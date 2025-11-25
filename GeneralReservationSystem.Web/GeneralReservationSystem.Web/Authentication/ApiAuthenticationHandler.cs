@@ -10,7 +10,7 @@ namespace GeneralReservationSystem.Web.Authentication
         IOptionsMonitor<AuthenticationSchemeOptions> options,
         ILoggerFactory logger,
         UrlEncoder encoder,
-        ServerAuthenticationStateProvider authStateProvider) 
+        ServerAuthenticationStateProvider authStateProvider)
         : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
     {
         public const string SchemeName = "ApiAuthentication";

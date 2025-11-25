@@ -282,7 +282,7 @@ namespace GeneralReservationSystem.Tests.Controllers
             // Assert
             OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
             PagedResult<Station> pagedResult = Assert.IsType<PagedResult<Station>>(okResult.Value);
-            Assert.Single(pagedResult.Items);
+            _ = Assert.Single(pagedResult.Items);
         }
 
         [Fact]

@@ -1,4 +1,4 @@
-using GeneralReservationSystem.Application.DTOs.Authentication;
+﻿using GeneralReservationSystem.Application.DTOs.Authentication;
 using GeneralReservationSystem.Application.Entities.Authentication;
 using GeneralReservationSystem.Application.Exceptions.Repositories;
 using GeneralReservationSystem.Application.Exceptions.Services;
@@ -173,223 +173,227 @@ namespace GeneralReservationSystem.Tests.Services.Authentication
                 Times.Once);
         }
 
-		#endregion
+        #endregion
 
-		#region RegisterAdminAsync Tests
+        #region RegisterAdminAsync Tests
 
         public readonly RegisterUserDto registerAdminDTO = new()
-		{
-			UserName        = "adminuser",
-			Password        = "gigacontraseña",
-			ConfirmPassword = "gigacontraseña",
-			Email           = "admin@grs.com"
-		};
+        {
+            UserName = "adminuser",
+            Password = "gigacontraseña",
+            ConfirmPassword = "gigacontraseña",
+            Email = "admin@grs.com"
+        };
 
-		[Fact]
-		public async Task RegisterAdminAsync_ShouldReturn_UserInfo_WithAdminFlagTrue()
-		{
-			_mockUserRepository
-				.Setup(r => r.CreateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
-				.ReturnsAsync(1);
+        [Fact]
+        public async Task RegisterAdminAsync_ShouldReturn_UserInfo_WithAdminFlagTrue()
+        {
+            _ = _mockUserRepository
+                .Setup(r => r.CreateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(1);
 
-			// Act
-			UserInfo result = await _authenticationService.RegisterAdminAsync(registerAdminDTO);
+            // Act
+            UserInfo result = await _authenticationService.RegisterAdminAsync(registerAdminDTO);
 
-			// Assert (resultado)
-			Assert.NotNull  (result                                 );
-			Assert.Equal    (registerAdminDTO.UserName,  result.UserName );
-			Assert.Equal    (registerAdminDTO.Email,     result.Email    );
-			Assert.True     (result.IsAdmin                         );
+            // Assert (resultado)
+            Assert.NotNull(result);
+            Assert.Equal(registerAdminDTO.UserName, result.UserName);
+            Assert.Equal(registerAdminDTO.Email, result.Email);
+            Assert.True(result.IsAdmin);
 
-			// Assert (interacción)
-			_mockUserRepository.Verify(
-				repo => repo.CreateAsync(
-					It.Is<User>(u =>
-						u.UserName      == registerAdminDTO.UserName &&
-						u.Email         == registerAdminDTO.Email    &&
-						u.IsAdmin       == true                 &&
-						u.PasswordHash  != null                 &&
-						u.PasswordSalt  != null),
-					It.IsAny<CancellationToken>()),
-				Times.Once);
-		}
+            // Assert (interacción)
+            _mockUserRepository.Verify(
+                repo => repo.CreateAsync(
+                    It.Is<User>(u =>
+                        u.UserName == registerAdminDTO.UserName &&
+                        u.Email == registerAdminDTO.Email &&
+                        u.IsAdmin == true &&
+                        u.PasswordHash != null &&
+                        u.PasswordSalt != null),
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
 
-		[Fact]
-		public async Task RegisterAdminAsync_WhenDuplicateUser_ThrowsServiceBusinessException()
-		{
-			_mockUserRepository
-				.Setup(r => r.CreateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
-				.ThrowsAsync(new UniqueConstraintViolationException("UQ_User_UserName"));
+        [Fact]
+        public async Task RegisterAdminAsync_WhenDuplicateUser_ThrowsServiceBusinessException()
+        {
+            _ = _mockUserRepository
+                .Setup(r => r.CreateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new UniqueConstraintViolationException("UQ_User_UserName"));
 
-			// Act & Assert
-			ServiceBusinessException ex = await Assert.ThrowsAsync<ServiceBusinessException>(
-				() => _authenticationService.RegisterAdminAsync(registerAdminDTO));
+            // Act & Assert
+            ServiceBusinessException ex = await Assert.ThrowsAsync<ServiceBusinessException>(
+                () => _authenticationService.RegisterAdminAsync(registerAdminDTO));
 
-			Assert.Equal("Ya existe un usuario con el mismo nombre o correo electrónico.", ex.Message);
-			Assert.IsType<UniqueConstraintViolationException>(ex.InnerException);
+            Assert.Equal("Ya existe un usuario con el mismo nombre o correo electrónico.", ex.Message);
+            _ = Assert.IsType<UniqueConstraintViolationException>(ex.InnerException);
 
-			_mockUserRepository.Verify(
-				r => r.CreateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()),
-				Times.Once);
-		}
+            _mockUserRepository.Verify(
+                r => r.CreateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
 
-		[Fact]
-		public async Task RegisterAdminAsync_WhenRepositoryFails_ThrowsServiceException()
-		{
-			_mockUserRepository
-				.Setup(r => r.CreateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
-				.ThrowsAsync(new RepositoryException("DB error"));
+        [Fact]
+        public async Task RegisterAdminAsync_WhenRepositoryFails_ThrowsServiceException()
+        {
+            _ = _mockUserRepository
+                .Setup(r => r.CreateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new RepositoryException("DB error"));
 
-			// Act & Assert
-			ServiceException ex = await Assert.ThrowsAsync<ServiceException>(
-				() => _authenticationService.RegisterAdminAsync(registerAdminDTO));
+            // Act & Assert
+            ServiceException ex = await Assert.ThrowsAsync<ServiceException>(
+                () => _authenticationService.RegisterAdminAsync(registerAdminDTO));
 
-			Assert.Equal("Error al registrar el usuario.", ex.Message);
-			Assert.IsType<RepositoryException>(ex.InnerException);
+            Assert.Equal("Error al registrar el usuario.", ex.Message);
+            _ = Assert.IsType<RepositoryException>(ex.InnerException);
 
-			_mockUserRepository.Verify(
-				r => r.CreateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()),
-				Times.Once);
-		}
+            _mockUserRepository.Verify(
+                r => r.CreateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
 
-		[Fact]
-		public async Task RegisterAdminAsync_ShouldNotPassNormalizedFields()
-		{
-			_mockUserRepository
-				.Setup(r => r.CreateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
-				.ReturnsAsync(1);
+        [Fact]
+        public async Task RegisterAdminAsync_ShouldNotPassNormalizedFields()
+        {
+            _ = _mockUserRepository
+                .Setup(r => r.CreateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(1);
 
-			// Act
-			await _authenticationService.RegisterAdminAsync(registerAdminDTO);
+            // Act
+            _ = await _authenticationService.RegisterAdminAsync(registerAdminDTO);
 
-			// Assert
-			_mockUserRepository.Verify(
-				repo => repo.CreateAsync(
-					It.Is<User>(u =>
-						u.UserName                  == registerAdminDTO.UserName &&
-						u.Email                     == registerAdminDTO.Email    &&
-						u.IsAdmin                   == true                 &&
-						u.PasswordHash              != null                 &&
-						u.PasswordSalt              != null                 &&
-						u.NormalizedUserName        == null                 && // Propiedades [Computed] no se setean aquí
-						u.NormalizedEmail           == null                 ),
-					It.IsAny<CancellationToken>()),
-				Times.Once);
-		}
+            // Assert
+            _mockUserRepository.Verify(
+                repo => repo.CreateAsync(
+                    It.Is<User>(u =>
+                        u.UserName == registerAdminDTO.UserName &&
+                        u.Email == registerAdminDTO.Email &&
+                        u.IsAdmin == true &&
+                        u.PasswordHash != null &&
+                        u.PasswordSalt != null &&
+                        u.NormalizedUserName == null && // Propiedades [Computed] no se setean aquí
+                        u.NormalizedEmail == null),
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
 
-		[Fact]
-		public async Task RegisterAdminAsync_SamePassword_ShouldGenerateDifferentHashAndSalt()
-		{
-			// Arrange
-			RegisterUserDto dto1 = new()
-			{
-				UserName        = "admin1",
-				Password        = "123456",
-				ConfirmPassword = "123456",
-				Email           = "admin1@grs.com"
-			};
+        [Fact]
+        public async Task RegisterAdminAsync_SamePassword_ShouldGenerateDifferentHashAndSalt()
+        {
+            // Arrange
+            RegisterUserDto dto1 = new()
+            {
+                UserName = "admin1",
+                Password = "123456",
+                ConfirmPassword = "123456",
+                Email = "admin1@grs.com"
+            };
 
-			RegisterUserDto dto2 = new()
-			{
-				UserName            = "admin2",
-				Password            = "123456", // misma contraseña a propósito
-				ConfirmPassword     = "123456",
-				Email               = "admin2@grs.com"
-			};
+            RegisterUserDto dto2 = new()
+            {
+                UserName = "admin2",
+                Password = "123456", // misma contraseña a propósito
+                ConfirmPassword = "123456",
+                Email = "admin2@grs.com"
+            };
 
-			User? capturedUser1 = null;
-			User? capturedUser2 = null;
+            User? capturedUser1 = null;
+            User? capturedUser2 = null;
             int ctr = 0;
 
-            _mockUserRepository
+            _ = _mockUserRepository
                 .Setup(r => r.CreateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(1)
                 .Callback<User, CancellationToken>((u, _) =>
                 {
                     if (ctr == 0)
+                    {
                         capturedUser1 = u;
+                    }
                     else
+                    {
                         capturedUser2 = u;
+                    }
 
                     ctr++;
                 });
 
-			// Act
-			await _authenticationService.RegisterAdminAsync(dto1);
-			await _authenticationService.RegisterAdminAsync(dto2);
+            // Act
+            _ = await _authenticationService.RegisterAdminAsync(dto1);
+            _ = await _authenticationService.RegisterAdminAsync(dto2);
 
-			Assert.NotNull(capturedUser1);
-			Assert.NotNull(capturedUser2);
+            Assert.NotNull(capturedUser1);
+            Assert.NotNull(capturedUser2);
 
-			//Misma contraseña genera distintos hashes y salts
-			Assert.False(capturedUser1!.PasswordHash.SequenceEqual(capturedUser2!.PasswordHash));
-			Assert.False(capturedUser1.PasswordSalt.SequenceEqual(capturedUser2.PasswordSalt));
+            //Misma contraseña genera distintos hashes y salts
+            Assert.False(capturedUser1!.PasswordHash.SequenceEqual(capturedUser2!.PasswordHash));
+            Assert.False(capturedUser1.PasswordSalt.SequenceEqual(capturedUser2.PasswordSalt));
 
-			Assert.NotEmpty(capturedUser1.PasswordHash);
-			Assert.NotEmpty(capturedUser1.PasswordSalt);
-			Assert.NotEmpty(capturedUser2.PasswordHash);
-			Assert.NotEmpty(capturedUser2.PasswordSalt);
+            Assert.NotEmpty(capturedUser1.PasswordHash);
+            Assert.NotEmpty(capturedUser1.PasswordSalt);
+            Assert.NotEmpty(capturedUser2.PasswordHash);
+            Assert.NotEmpty(capturedUser2.PasswordSalt);
 
-			_mockUserRepository.Verify(
-				repo => repo.CreateAsync(
-					It.Is<User>(u => 
-                        u.IsAdmin                   && 
-                        u.PasswordHash.Length > 0   && 
+            _mockUserRepository.Verify(
+                repo => repo.CreateAsync(
+                    It.Is<User>(u =>
+                        u.IsAdmin &&
+                        u.PasswordHash.Length > 0 &&
                         u.PasswordSalt.Length > 0),
-					It.IsAny<CancellationToken>()),
-				Times.Exactly(2));
-		}
+                    It.IsAny<CancellationToken>()),
+                Times.Exactly(2));
+        }
 
-		[Fact]
-		public async Task RegisterAdminAsync_ShouldGenerateVerifiablePasswordHash()
-		{
-			User? capturedUser = null;
+        [Fact]
+        public async Task RegisterAdminAsync_ShouldGenerateVerifiablePasswordHash()
+        {
+            User? capturedUser = null;
 
-			_mockUserRepository
-				.Setup(r => r.CreateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
-				.ReturnsAsync(1)
-				.Callback<User, CancellationToken>((u, _) => capturedUser = u);
+            _ = _mockUserRepository
+                .Setup(r => r.CreateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(1)
+                .Callback<User, CancellationToken>((u, _) => capturedUser = u);
 
-			// Act
-			await _authenticationService.RegisterAdminAsync(registerAdminDTO);
+            // Act
+            _ = await _authenticationService.RegisterAdminAsync(registerAdminDTO);
 
-			// Assert
-			Assert.NotNull(capturedUser);
-			Assert.NotEmpty(capturedUser!.PasswordHash);
-			Assert.NotEmpty(capturedUser.PasswordSalt);
+            // Assert
+            Assert.NotNull(capturedUser);
+            Assert.NotEmpty(capturedUser!.PasswordHash);
+            Assert.NotEmpty(capturedUser.PasswordSalt);
 
-			//La contraseña debe poder verificarse correctamente
-			bool verified = PasswordHelper.VerifyPassword(registerAdminDTO.Password, capturedUser.PasswordHash, capturedUser.PasswordSalt);
-			Assert.True(verified, "La contraseña debería verificarse correctamente con el hash y salt generados.");
+            //La contraseña debe poder verificarse correctamente
+            bool verified = PasswordHelper.VerifyPassword(registerAdminDTO.Password, capturedUser.PasswordHash, capturedUser.PasswordSalt);
+            Assert.True(verified, "La contraseña debería verificarse correctamente con el hash y salt generados.");
 
-			_mockUserRepository.Verify(
-				r => r.CreateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()),
-				Times.Once);
-		}
+            _mockUserRepository.Verify(
+                r => r.CreateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
 
-		[Fact]
-		public async Task RegisterAdminAsync_WithCancellationToken_PassesTokenToRepository()
-		{
-			_mockUserRepository
-				.Setup(r => r.CreateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
-				.ReturnsAsync(1);
+        [Fact]
+        public async Task RegisterAdminAsync_WithCancellationToken_PassesTokenToRepository()
+        {
+            _ = _mockUserRepository
+                .Setup(r => r.CreateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(1);
 
             CancellationToken cancellationToken = new();
 
-			// Act
-			await _authenticationService.RegisterAdminAsync(registerAdminDTO, cancellationToken);
+            // Act
+            _ = await _authenticationService.RegisterAdminAsync(registerAdminDTO, cancellationToken);
 
-			_mockUserRepository.Verify(
-				r => r.CreateAsync(It.IsAny<User>(), cancellationToken),
-				Times.Once,
+            _mockUserRepository.Verify(
+                r => r.CreateAsync(It.IsAny<User>(), cancellationToken),
+                Times.Once,
                 $"{nameof(_authenticationService.RegisterAdminAsync)} no paso {nameof(cancellationToken)} al repositorio");
-		}
+        }
 
-		#endregion
+        #endregion
 
-		#region AuthenticateAsync Tests
+        #region AuthenticateAsync Tests
 
-		[Fact]
+        [Fact]
         public async Task AuthenticateAsync_ValidCredentials_ReturnsUserInfo()
         {
             // Arrange

@@ -5,7 +5,6 @@ using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Helpers;
 using GeneralReservationSystem.Application.Repositories.Interfaces.Authentication;
 using GeneralReservationSystem.Application.Services.Interfaces.Authentication;
-using System.Threading;
 
 namespace GeneralReservationSystem.Application.Services.DefaultImplementations.Authentication
 {
@@ -13,38 +12,43 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
     {
         private async Task<UserInfo> RegisterUserAsync_Internal(RegisterUserDto dto, bool isAdmin = false, CancellationToken cancellationToken = default)
         {
-			(byte[] hash, byte[] salt) = PasswordHelper.HashPassword(dto.Password);
+            (byte[] hash, byte[] salt) = PasswordHelper.HashPassword(dto.Password);
 
-			User user = new()
-			{
-				UserName        = dto.UserName,
-				Email           = dto.Email,
-				PasswordHash    = hash,
-				PasswordSalt    = salt,
-				IsAdmin         = isAdmin
-			};
+            User user = new()
+            {
+                UserName = dto.UserName,
+                Email = dto.Email,
+                PasswordHash = hash,
+                PasswordSalt = salt,
+                IsAdmin = isAdmin
+            };
 
-			try
-			{
-				_ = await userRepository.CreateAsync(user, cancellationToken);
+            try
+            {
+                _ = await userRepository.CreateAsync(user, cancellationToken);
                 return user.GetUserInfo();
-			}
-			catch (UniqueConstraintViolationException ex)
-			{
-				throw new ServiceBusinessException("Ya existe un usuario con el mismo nombre o correo electrónico.", ex);
-			}
-			catch (RepositoryException ex)
-			{
-				throw new ServiceException("Error al registrar el usuario.", ex);
-			}
-		}
+            }
+            catch (UniqueConstraintViolationException ex)
+            {
+                throw new ServiceBusinessException("Ya existe un usuario con el mismo nombre o correo electrónico.", ex);
+            }
+            catch (RepositoryException ex)
+            {
+                throw new ServiceException("Error al registrar el usuario.", ex);
+            }
+        }
 
-        public async Task<UserInfo> RegisterUserAsync(RegisterUserDto dto, CancellationToken cancellationToken = default) => await RegisterUserAsync_Internal(dto, false, cancellationToken);
+        public async Task<UserInfo> RegisterUserAsync(RegisterUserDto dto, CancellationToken cancellationToken = default)
+        {
+            return await RegisterUserAsync_Internal(dto, false, cancellationToken);
+        }
 
-		public async Task<UserInfo> RegisterAdminAsync(RegisterUserDto dto, CancellationToken cancellationToken = default) => await RegisterUserAsync_Internal(dto, true, cancellationToken);
+        public async Task<UserInfo> RegisterAdminAsync(RegisterUserDto dto, CancellationToken cancellationToken = default)
+        {
+            return await RegisterUserAsync_Internal(dto, true, cancellationToken);
+        }
 
-
-		public async Task<UserInfo> AuthenticateAsync(LoginDto dto, CancellationToken cancellationToken = default)
+        public async Task<UserInfo> AuthenticateAsync(LoginDto dto, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -91,5 +95,5 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
                 throw new ServiceException("Error al cambiar la contraseña.", ex);
             }
         }
-	}
+    }
 }

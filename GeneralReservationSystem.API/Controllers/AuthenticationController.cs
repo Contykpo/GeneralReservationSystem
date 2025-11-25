@@ -8,51 +8,52 @@ using GeneralReservationSystem.Infrastructure.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using System.Threading;
 
 namespace GeneralReservationSystem.API.Controllers
 {
     [Route("api/auth")]
     [ApiController]
     public class AuthenticationController(
-        IAuthenticationService          authenticationService, 
-        JwtSettings                     jwtSettings, 
-        IValidator<RegisterUserDto>     registerValidator, 
-        IValidator<LoginDto>            loginValidator, 
-        IValidator<ChangePasswordDto>   changePasswordValidator) : ControllerBase
+        IAuthenticationService authenticationService,
+        JwtSettings jwtSettings,
+        IValidator<RegisterUserDto> registerValidator,
+        IValidator<LoginDto> loginValidator,
+        IValidator<ChangePasswordDto> changePasswordValidator) : ControllerBase
     {
         private async Task<(IActionResult actionResult, UserInfo? createdUser)> RegisterUserAsync(RegisterUserDto dto, bool isAdmin, CancellationToken cancellationToken)
         {
-			IActionResult? validationResult = await ValidationHelper.ValidateAsync(registerValidator, dto, cancellationToken);
-			if (validationResult != null)
-			{
-				return new (validationResult, null);
-			}
-			try
-			{
-				UserInfo userInfo = isAdmin ? await authenticationService.RegisterAdminAsync(dto, cancellationToken) : await authenticationService.RegisterUserAsync(dto, cancellationToken);
+            IActionResult? validationResult = await ValidationHelper.ValidateAsync(registerValidator, dto, cancellationToken);
+            if (validationResult != null)
+            {
+                return new(validationResult, null);
+            }
+            try
+            {
+                UserInfo userInfo = isAdmin ? await authenticationService.RegisterAdminAsync(dto, cancellationToken) : await authenticationService.RegisterUserAsync(dto, cancellationToken);
 
-				return new(
+                return new(
                     Ok(new { message = "Administrador registrado exitosamente", userId = userInfo.UserId }),
                     userInfo);
-			}
-			catch (ServiceBusinessException ex)
-			{
-				return new (Conflict(new { error = ex.Message }), null);
-			}
-			catch (ServiceException)
-			{
-				return new (StatusCode(500, new { error = "Error al registrar el administrador. Por favor, intente nuevamente." }), null);
-			}
-		}
+            }
+            catch (ServiceBusinessException ex)
+            {
+                return new(Conflict(new { error = ex.Message }), null);
+            }
+            catch (ServiceException)
+            {
+                return new(StatusCode(500, new { error = "Error al registrar el administrador. Por favor, intente nuevamente." }), null);
+            }
+        }
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterUserDto dto, CancellationToken cancellationToken)
         {
-            (var actionResult, var createdUser) = await RegisterUserAsync(dto, isAdmin: false, cancellationToken);
+            (IActionResult? actionResult, UserInfo? createdUser) = await RegisterUserAsync(dto, isAdmin: false, cancellationToken);
 
-			if (createdUser is not null)
-				CreateSessionAndLogin(createdUser);
+            if (createdUser is not null)
+            {
+                CreateSessionAndLogin(createdUser);
+            }
 
             return actionResult;
         }
@@ -60,12 +61,12 @@ namespace GeneralReservationSystem.API.Controllers
         [HttpPost("register-admin")]
         public async Task<IActionResult> RegisterAdmin([FromBody] RegisterUserDto dto, CancellationToken cancellationToken)
         {
-			(var registrationResult, _) = await RegisterUserAsync(dto, isAdmin: true, cancellationToken);
+            (IActionResult? registrationResult, _) = await RegisterUserAsync(dto, isAdmin: true, cancellationToken);
 
             return registrationResult;
-		}
+        }
 
-		[HttpPost("login")]
+        [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto dto, CancellationToken cancellationToken)
         {
             IActionResult? validationResult = await ValidationHelper.ValidateAsync(loginValidator, dto, cancellationToken);

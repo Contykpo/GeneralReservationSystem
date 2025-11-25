@@ -39,13 +39,13 @@ namespace GeneralReservationSystem.Application.DTOs.Authentication
     {
         public UserInfo() { }
 
-        public UserInfo(User usr) 
+        public UserInfo(User usr)
         {
-            UserId      = usr.UserId;
-            UserName    = usr.UserName;
-            Email       = usr.Email;
-            IsAdmin     = usr.IsAdmin;
-		}
+            UserId = usr.UserId;
+            UserName = usr.UserName;
+            Email = usr.Email;
+            IsAdmin = usr.IsAdmin;
+        }
 
         public int UserId { get; set; }
         public string UserName { get; set; } = string.Empty;

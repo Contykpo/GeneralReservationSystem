@@ -1051,7 +1051,7 @@ namespace GeneralReservationSystem.Tests.Services
             // Assert
             Assert.NotNull(result);
             Assert.Equal(2, result.TotalCount);
-            Assert.All(result.Items, item => Assert.True(item.Country == "Argentina" || item.Country == "Brazil"));
+            Assert.All(result.Items, item => Assert.True(item.Country is "Argentina" or "Brazil"));
 
             _mockStationRepository.Verify(
                 repo => repo.SearchAsync(searchDto, It.IsAny<CancellationToken>()),
@@ -1374,7 +1374,7 @@ namespace GeneralReservationSystem.Tests.Services
             Assert.Equal(4, result.TotalCount);
             Assert.All(result.Items, item =>
             {
-                Assert.True(item.Country == "Argentina" || item.Country == "Brazil");
+                Assert.True(item.Country is "Argentina" or "Brazil");
                 Assert.True(item.StationId > 0);
             });
             List<Station> items = [.. result.Items];
