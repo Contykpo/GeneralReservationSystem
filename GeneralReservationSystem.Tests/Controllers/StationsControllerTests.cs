@@ -911,7 +911,7 @@ namespace GeneralReservationSystem.Tests.Controllers
             FileContentResult fileResult = Assert.IsType<FileContentResult>(result);
             Assert.Contains("text/csv", fileResult.ContentType);
             Assert.Contains("charset=utf-8", fileResult.ContentType);
-            Assert.Contains("estaciones_", fileResult.FileDownloadName);
+            Assert.Contains("stations_", fileResult.FileDownloadName);
             Assert.NotEmpty(fileResult.FileContents);
 
             // Verify the CSV content contains the expected data
