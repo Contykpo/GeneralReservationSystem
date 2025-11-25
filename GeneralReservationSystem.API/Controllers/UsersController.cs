@@ -107,7 +107,7 @@ namespace GeneralReservationSystem.API.Controllers
             }
         }
 
-        [HttpPut("me")]
+        [HttpPatch("me")]
         [Authorize]
         public async Task<IActionResult> UpdateCurrentUser([FromBody] UpdateUserDto dto, CancellationToken cancellationToken)
         {
@@ -123,7 +123,7 @@ namespace GeneralReservationSystem.API.Controllers
             return await UpdateUser(dto, cancellationToken);
         }
 
-        [HttpPut("{userId:int}")]
+        [HttpPatch("{userId:int}")]
         [Authorize]
         public async Task<IActionResult> UpdateUserById([FromRoute] int userId, [FromBody] UpdateUserDto dto, CancellationToken cancellationToken)
         {

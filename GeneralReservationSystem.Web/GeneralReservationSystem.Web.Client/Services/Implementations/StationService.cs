@@ -31,7 +31,7 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
 
         public async Task<Station> UpdateStationAsync(UpdateStationDto dto, CancellationToken cancellationToken = default)
         {
-            return await PutAsync<Station>($"/api/stations/{dto.StationId}", dto, cancellationToken);
+            return await PatchAsync<Station>($"/api/stations/{dto.StationId}", dto, cancellationToken);
         }
 
         public async Task DeleteStationAsync(StationKeyDto keyDto, CancellationToken cancellationToken = default)

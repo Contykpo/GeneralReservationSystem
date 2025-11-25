@@ -460,7 +460,7 @@ public class UsersControllerIntegrationTests : IntegrationTestBase
         };
 
         // Act
-        HttpResponseMessage response = await userClient.PutAsJsonAsync("/api/users/me", updateDto);
+        HttpResponseMessage response = await userClient.PatchAsJsonAsync("/api/users/me", updateDto);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -489,7 +489,7 @@ public class UsersControllerIntegrationTests : IntegrationTestBase
         };
 
         // Act
-        HttpResponseMessage response = await adminClient.PutAsJsonAsync("/api/users/me", updateDto);
+        HttpResponseMessage response = await adminClient.PatchAsJsonAsync("/api/users/me", updateDto);
 
         // Assert
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
@@ -511,7 +511,7 @@ public class UsersControllerIntegrationTests : IntegrationTestBase
         };
 
         // Act
-        HttpResponseMessage response = await userClient.PutAsJsonAsync($"/api/users/{_userId}", updateDto);
+        HttpResponseMessage response = await userClient.PatchAsJsonAsync($"/api/users/{_userId}", updateDto);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -533,7 +533,7 @@ public class UsersControllerIntegrationTests : IntegrationTestBase
         };
 
         // Act
-        HttpResponseMessage response = await adminClient.PutAsJsonAsync($"/api/users/{_userId}", updateDto);
+        HttpResponseMessage response = await adminClient.PatchAsJsonAsync($"/api/users/{_userId}", updateDto);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -555,7 +555,7 @@ public class UsersControllerIntegrationTests : IntegrationTestBase
         };
 
         // Act
-        HttpResponseMessage response = await userClient.PutAsJsonAsync("/api/users/999", updateDto);
+        HttpResponseMessage response = await userClient.PatchAsJsonAsync("/api/users/999", updateDto);
 
         // Assert
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);

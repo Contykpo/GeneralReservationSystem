@@ -78,7 +78,7 @@ namespace GeneralReservationSystem.API.Controllers
             }
         }
 
-        [HttpPut("{stationId:int}")]
+        [HttpPatch("{stationId:int}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateStation([FromRoute] int stationId, [FromBody] UpdateStationDto dto, CancellationToken cancellationToken)
         {

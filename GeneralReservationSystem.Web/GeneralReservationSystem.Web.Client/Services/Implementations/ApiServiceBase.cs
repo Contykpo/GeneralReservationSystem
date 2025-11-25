@@ -60,6 +60,16 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
                 ?? throw new ServiceException("La respuesta del servidor está vacía.");
         }
 
+        protected async Task<T> PatchAsync<T>(string url, object content, CancellationToken cancellationToken = default)
+        {
+            HttpRequestMessage request = CreateRequestWithCredentials(HttpMethod.Patch, url);
+            request.Content = JsonContent.Create(content);
+            HttpResponseMessage response = await HttpClient.SendAsync(request, cancellationToken);
+            await EnsureSuccessOrThrow(response);
+            return await response.Content.ReadFromJsonAsync<T>(jsonOptions, cancellationToken)
+                ?? throw new ServiceException("La respuesta del servidor está vacía.");
+        }
+
         protected async Task DeleteAsync(string url, CancellationToken cancellationToken = default)
         {
             HttpRequestMessage request = CreateRequestWithCredentials(HttpMethod.Delete, url);

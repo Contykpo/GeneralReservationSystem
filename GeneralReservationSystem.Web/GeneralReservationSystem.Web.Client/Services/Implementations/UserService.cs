@@ -27,7 +27,7 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
 
         public async Task<User> UpdateUserAsync(UpdateUserDto dto, CancellationToken cancellationToken = default)
         {
-            return await PutAsync<User>($"/api/users/{dto.UserId}", dto, cancellationToken);
+            return await PatchAsync<User>($"/api/users/{dto.UserId}", dto, cancellationToken);
         }
 
         public async Task DeleteUserAsync(UserKeyDto keyDto, CancellationToken cancellationToken = default)

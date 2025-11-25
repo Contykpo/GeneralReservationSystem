@@ -344,7 +344,7 @@ public class AuthenticationControllerIntegrationTests : IntegrationTestBase
         };
 
         // Act
-        HttpResponseMessage response = await _client.PostAsJsonAsync("/api/auth/change-password", changePasswordDto);
+        HttpResponseMessage response = await _client.PatchAsJsonAsync("/api/auth/change-password", changePasswordDto);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -388,7 +388,7 @@ public class AuthenticationControllerIntegrationTests : IntegrationTestBase
         };
 
         // Act
-        HttpResponseMessage response = await _client.PostAsJsonAsync("/api/auth/change-password", changePasswordDto);
+        HttpResponseMessage response = await _client.PatchAsJsonAsync("/api/auth/change-password", changePasswordDto);
 
         // Assert
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
@@ -432,7 +432,7 @@ public class AuthenticationControllerIntegrationTests : IntegrationTestBase
         };
 
         // Act
-        HttpResponseMessage response = await _client.PostAsJsonAsync("/api/auth/change-password", changePasswordDto);
+        HttpResponseMessage response = await _client.PatchAsJsonAsync("/api/auth/change-password", changePasswordDto);
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -450,7 +450,7 @@ public class AuthenticationControllerIntegrationTests : IntegrationTestBase
         };
 
         // Act
-        HttpResponseMessage response = await _client.PostAsJsonAsync("/api/auth/change-password", changePasswordDto);
+        HttpResponseMessage response = await _client.PatchAsJsonAsync("/api/auth/change-password", changePasswordDto);
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);

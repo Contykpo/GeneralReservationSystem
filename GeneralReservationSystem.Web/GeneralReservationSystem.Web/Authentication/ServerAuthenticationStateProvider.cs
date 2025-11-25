@@ -29,6 +29,9 @@ namespace GeneralReservationSystem.Web.Authentication
                 HttpResponseMessage response = await httpClient.SendAsync(request);
                 if (!response.IsSuccessStatusCode)
                 {
+                    Console.WriteLine($"Failed to get current user. Status code: {response.StatusCode}");
+                    Console.WriteLine($"Response content: {await response.Content.ReadAsStringAsync()}");
+
                     return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
                 }
 
@@ -54,10 +57,8 @@ namespace GeneralReservationSystem.Web.Authentication
                 ClaimsPrincipal principal = new(identity);
                 return new AuthenticationState(principal);
             }
-            catch(Exception ex)
+            catch
             {
-                Console.WriteLine($"Error retrieving authentication state from API: {ex}");
-
                 return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
             }
         }

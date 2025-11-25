@@ -117,7 +117,7 @@ namespace GeneralReservationSystem.API.Controllers
                 });
         }
 
-        [HttpPost("change-password")]
+        [HttpPatch("change-password")]
         [Authorize]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto, CancellationToken cancellationToken)
         {

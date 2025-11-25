@@ -293,7 +293,7 @@ public class StationsControllerIntegrationTests : IntegrationTestBase
         };
 
         // Act
-        HttpResponseMessage response = await adminClient.PutAsJsonAsync($"/api/stations/{createdStation.StationId}", updateDto);
+        HttpResponseMessage response = await adminClient.PatchAsJsonAsync($"/api/stations/{createdStation.StationId}", updateDto);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -334,7 +334,7 @@ public class StationsControllerIntegrationTests : IntegrationTestBase
         };
 
         // Act
-        HttpResponseMessage response = await userClient.PutAsJsonAsync($"/api/stations/{createdStation.StationId}", updateDto);
+        HttpResponseMessage response = await userClient.PatchAsJsonAsync($"/api/stations/{createdStation.StationId}", updateDto);
 
         // Assert
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
@@ -358,7 +358,7 @@ public class StationsControllerIntegrationTests : IntegrationTestBase
         };
 
         // Act
-        HttpResponseMessage response = await adminClient.PutAsJsonAsync("/api/stations/999999", updateDto);
+        HttpResponseMessage response = await adminClient.PatchAsJsonAsync("/api/stations/999999", updateDto);
 
         // Assert
         Assert.NotEqual(HttpStatusCode.InternalServerError, response.StatusCode);
