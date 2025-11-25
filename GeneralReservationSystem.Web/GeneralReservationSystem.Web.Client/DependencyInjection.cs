@@ -14,23 +14,10 @@ namespace GeneralReservationSystem.Web.Client
 {
     public static class DependencyInjection
     {
-        public static IServiceCollection AddClientServices(this IServiceCollection services, string apiBaseUrl)
+        public static IServiceCollection AddClientServices(this IServiceCollection services)
         {
-            // Register API base URL provider as singleton
-            _ = services.AddSingleton<IApiBaseUrlProvider>(new ApiBaseUrlProvider(apiBaseUrl));
-
-            // HttpClient for API calls
-            // Credentials (cookies) are configured per-request in ApiServiceBase
-            _ = services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(apiBaseUrl) });
-
             // Register MudBlazor services
             _ = services.AddMudServices();
-
-            // Register authentication state provider for Blazor client
-            _ = services.AddOptions();
-            _ = services.AddScoped<ClientAuthenticationStateProvider>();
-            _ = services.AddScoped<AuthenticationStateProvider>(provider => provider.GetRequiredService<ClientAuthenticationStateProvider>());
-            _ = services.AddAuthorizationCore();
 
             _ = services.AddScoped<IClientAuthenticationService, ClientAuthenticationService>();
             _ = services.AddScoped<IUserService, UserService>();

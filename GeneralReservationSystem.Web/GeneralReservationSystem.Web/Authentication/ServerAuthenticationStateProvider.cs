@@ -1,48 +1,64 @@
-﻿using GeneralReservationSystem.Infrastructure.Helpers;
+﻿using GeneralReservationSystem.Application.DTOs.Authentication;
+using GeneralReservationSystem.Infrastructure.Helpers;
 using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.Components.WebAssembly.Http;
+using System.Net.Http.Json;
 using System.Security.Claims;
 
 namespace GeneralReservationSystem.Web.Authentication
 {
-    public class ServerAuthenticationStateProvider(IHttpContextAccessor httpContextAccessor, JwtSettings jwtSettings) : AuthenticationStateProvider
+    public class ServerAuthenticationStateProvider(IHttpContextAccessor httpContextAccessor, HttpClient httpClient) : AuthenticationStateProvider
     {
-        private readonly JwtSettings jwtSettings = jwtSettings;
-
-        public override Task<AuthenticationState> GetAuthenticationStateAsync()
+        public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {
-            HttpContext? context = httpContextAccessor.HttpContext;
+            var request = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me")
+                .SetBrowserRequestCredentials(BrowserRequestCredentials.Include);
+
+            var context = httpContextAccessor.HttpContext;
+
             if (context == null)
             {
-                return Task.FromResult(new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity())));
+                return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
             }
 
-            if (!context.Request.Cookies.TryGetValue(JwtHelper.CookieName, out string? token) || string.IsNullOrEmpty(token))
+            foreach (var cookie in context.Request.Cookies)
             {
-                return Task.FromResult(new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity())));
+                request.Headers.Add("Cookie", $"{cookie.Key}={cookie.Value}");
             }
 
-            JwtSecurityTokenHandler handler = new();
             try
             {
-                ClaimsPrincipal principal = handler.ValidateToken(token, new TokenValidationParameters
+                HttpResponseMessage response = await httpClient.SendAsync(request);
+                if (!response.IsSuccessStatusCode)
                 {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = JwtHelper.GetIssuerSigningKeyFromString(jwtSettings.SecretKey),
-                    ValidateIssuer = true,
-                    ValidIssuer = jwtSettings.Issuer,
-                    ValidateAudience = true,
-                    ValidAudience = jwtSettings.Audience,
-                    ValidateLifetime = true,
-                    RoleClaimType = ClaimTypes.Role,
-                    ClockSkew = TimeSpan.Zero
-                }, out _);
-                return Task.FromResult(new AuthenticationState(principal));
+                    return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+                }
+
+                UserInfo? currentUser = await response.Content.ReadFromJsonAsync<UserInfo>();
+                if (currentUser == null)
+                {
+                     return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+                }
+
+                List<Claim> claims =
+                [
+                    new(ClaimTypes.NameIdentifier, currentUser.UserId.ToString()),
+                    new(ClaimTypes.Name, currentUser.UserName ?? string.Empty),
+                    new(ClaimTypes.Email, currentUser.Email ?? string.Empty)
+                ];
+
+                if (currentUser.IsAdmin)
+                {
+                    claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+                }
+
+                ClaimsIdentity identity = new(claims, "cookie");
+                ClaimsPrincipal principal = new(identity);
+                return new AuthenticationState(principal);
             }
             catch
             {
-                return Task.FromResult(new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity())));
+                return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
             }
         }
     }

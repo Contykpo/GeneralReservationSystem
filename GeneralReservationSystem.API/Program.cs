@@ -108,7 +108,12 @@ app.UseExceptionHandler(errorApp =>
     errorApp.Run(GlobalExceptionHandler.HandleAsync);
 });
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    // If in development, web and api containers can communicate via http, but in production they MUST use https
+    app.UseHttpsRedirection();
+}
+
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();

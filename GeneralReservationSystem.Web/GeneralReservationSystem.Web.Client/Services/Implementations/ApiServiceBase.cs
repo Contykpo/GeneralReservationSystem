@@ -9,11 +9,13 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
 {
     public abstract class ApiServiceBase(HttpClient httpClient)
     {
-        protected readonly HttpClient _httpClient = httpClient;
+        private readonly HttpClient httpClient = httpClient;
         protected static readonly JsonSerializerOptions jsonOptions = new()
         {
             PropertyNameCaseInsensitive = true
         };
+
+        protected HttpClient HttpClient => httpClient;
 
         protected static HttpRequestMessage CreateRequestWithCredentials(HttpMethod method, string url)
         {
@@ -25,7 +27,7 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
         protected async Task<T> GetAsync<T>(string url, CancellationToken cancellationToken = default)
         {
             HttpRequestMessage request = CreateRequestWithCredentials(HttpMethod.Get, url);
-            HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
+            HttpResponseMessage response = await HttpClient.SendAsync(request, cancellationToken);
             await EnsureSuccessOrThrow(response);
             return await response.Content.ReadFromJsonAsync<T>(jsonOptions, cancellationToken)
                 ?? throw new ServiceException("La respuesta del servidor está vacía.");
@@ -35,7 +37,7 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
         {
             HttpRequestMessage request = CreateRequestWithCredentials(HttpMethod.Post, url);
             request.Content = JsonContent.Create(content);
-            HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
+            HttpResponseMessage response = await HttpClient.SendAsync(request, cancellationToken);
             await EnsureSuccessOrThrow(response);
             return await response.Content.ReadFromJsonAsync<T>(jsonOptions, cancellationToken)
                 ?? throw new ServiceException("La respuesta del servidor está vacía.");
@@ -45,7 +47,7 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
         {
             HttpRequestMessage request = CreateRequestWithCredentials(HttpMethod.Post, url);
             request.Content = JsonContent.Create(content);
-            HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
+            HttpResponseMessage response = await HttpClient.SendAsync(request, cancellationToken);
             await EnsureSuccessOrThrow(response);
         }
 
@@ -53,7 +55,7 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
         {
             HttpRequestMessage request = CreateRequestWithCredentials(HttpMethod.Put, url);
             request.Content = JsonContent.Create(content);
-            HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
+            HttpResponseMessage response = await HttpClient.SendAsync(request, cancellationToken);
             await EnsureSuccessOrThrow(response);
             return await response.Content.ReadFromJsonAsync<T>(jsonOptions, cancellationToken)
                 ?? throw new ServiceException("La respuesta del servidor está vacía.");
@@ -62,7 +64,7 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
         protected async Task DeleteAsync(string url, CancellationToken cancellationToken = default)
         {
             HttpRequestMessage request = CreateRequestWithCredentials(HttpMethod.Delete, url);
-            HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
+            HttpResponseMessage response = await HttpClient.SendAsync(request, cancellationToken);
             await EnsureSuccessOrThrow(response);
         }
 
@@ -70,7 +72,7 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
         {
             HttpRequestMessage request = CreateRequestWithCredentials(HttpMethod.Post, url);
             request.Content = content;
-            HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
+            HttpResponseMessage response = await HttpClient.SendAsync(request, cancellationToken);
             await EnsureSuccessOrThrow(response);
             return await response.Content.ReadFromJsonAsync<T>(jsonOptions, cancellationToken)
                 ?? throw new ServiceException("La respuesta del servidor está vacía.");
@@ -79,7 +81,7 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
         protected async Task<(byte[] FileContent, string FileName)> GetFileAsync(string url, CancellationToken cancellationToken = default)
         {
             HttpRequestMessage request = CreateRequestWithCredentials(HttpMethod.Get, url);
-            HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
+            HttpResponseMessage response = await HttpClient.SendAsync(request, cancellationToken);
             await EnsureSuccessOrThrow(response);
 
             byte[] fileContent = await response.Content.ReadAsByteArrayAsync(cancellationToken);

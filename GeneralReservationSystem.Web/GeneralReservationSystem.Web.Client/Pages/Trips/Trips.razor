@@ -22,7 +22,6 @@
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 @inject IStationService StationService
-@inject NavigationManager Navigation
 
 <PageTitle>Viajes</PageTitle>
 
@@ -206,8 +205,8 @@
                     <MudTd DataLabel="Libres">@context.FreeSeats</MudTd>
                     <MudTd DataLabel="Acciones" Style="text-align: right" Class="text-nowrap">
                         <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
-                            Disabled="@(context.FreeSeats == 0 || DateTime.Now >= context.DepartureTime)"
-                            OnClick="@(() => ReserveTrip(context.TripId))" StartIcon="@Icons.Material.Filled.EventSeat">
+                                    Disabled="@(context.FreeSeats == 0 || DateTime.Now >= context.DepartureTime)"
+                                    Href="@($"/trips/reserve/{context.TripId}")" StartIcon="@Icons.Material.Filled.EventSeat">
                             Reservar
                         </MudButton>
                         <AuthorizeView Roles="Admin" Context="authContext">
@@ -680,8 +679,8 @@
         return d.Date + t;
     }
 
-    private void ReserveTrip(int tripId)
+    /*private void ReserveTrip(int tripId)
     {
         Navigation.NavigateTo($"/trips/reserve/{tripId}");
-    }
+    }*/
 }

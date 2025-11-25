@@ -1,7 +1,9 @@
 ﻿using GeneralReservationSystem.Infrastructure.Helpers;
 using GeneralReservationSystem.Web.Authentication;
 using GeneralReservationSystem.Web.Client;
+using GeneralReservationSystem.Web.Client.Authentication;
 using GeneralReservationSystem.Web.Components;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.IdentityModel.Tokens;
@@ -13,71 +15,26 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
 
-string apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "localhost";
-builder.Services.AddClientServices(apiBaseUrl);
+string clientApiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "localhost";
 
-JwtSettings jwtSettings = new()
-{
-    SecretKey = builder.Configuration["Jwt:SecretKey"] ?? "YourSuperSecretKeyThatIsAtLeast32CharactersLong!",
-    Issuer = builder.Configuration["Jwt:Issuer"] ?? "GeneralReservationSystemAPI",
-    Audience = builder.Configuration["Jwt:Audience"] ?? "GeneralReservationSystemClient",
-    ExpirationDays = int.Parse(builder.Configuration["Jwt:ExpirationDays"] ?? "7"),
-    Domain = builder.Configuration["Jwt:Domain"]
-};
-builder.Services.AddSingleton(jwtSettings);
+string serverApiBaseUrl = builder.Configuration["ApiBaseUrlServer"] ?? clientApiBaseUrl;
+_ = builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(serverApiBaseUrl) });
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
-{
-    options.RequireHttpsMetadata = false;
-    options.SaveToken = true;
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = JwtHelper.GetIssuerSigningKeyFromString(jwtSettings.SecretKey),
-        ValidateIssuer = true,
-        ValidIssuer = jwtSettings.Issuer,
-        ValidateAudience = true,
-        ValidAudience = jwtSettings.Audience,
-        ValidateLifetime = true,
-        RoleClaimType = ClaimTypes.Role,
-        ClockSkew = TimeSpan.Zero
-    };
+builder.Services.AddClientServices();
 
-    options.Events = new JwtBearerEvents
-    {
-        OnMessageReceived = context =>
-        {
-            context.Token = context.Request.Cookies[JwtHelper.CookieName];
-            return Task.CompletedTask;
-        },
-        OnAuthenticationFailed = context =>
-        {
-            context.Response.Redirect("/login");
-            return Task.CompletedTask;
-        },
-        OnChallenge = context =>
-        {
-            if (!context.Response.HasStarted)
-            {
-                context.Response.Redirect("/login");
-            }
-            context.HandleResponse();
-            return Task.CompletedTask;
-        },
-        OnForbidden = context =>
-        {
-            if (!context.Response.HasStarted)
-            {
-                context.Response.Redirect("/status/403");
-            }
-            return Task.CompletedTask;
-        }
-    };
-});
-builder.Services.AddAuthorization();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddOptions();
 builder.Services.AddScoped<ServerAuthenticationStateProvider>();
-builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<ServerAuthenticationStateProvider>());
+builder.Services.AddScoped<AuthenticationStateProvider>(provider => provider.GetRequiredService<ServerAuthenticationStateProvider>());
+
+builder.Services.AddAuthentication(ApiAuthenticationHandler.SchemeName)
+    .AddScheme<AuthenticationSchemeOptions, ApiAuthenticationHandler>(
+        ApiAuthenticationHandler.SchemeName, 
+        options => { });
+
+builder.Services.AddAuthorization();
+
+//builder.Services.AddCascadingAuthenticationState();
 
 WebApplication app = builder.Build();
 
@@ -95,10 +52,13 @@ else
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.UseAntiforgery();
 
 // Map the config endpoint to provide the API base URL to the Blazor WebAssembly client. Seems hacky, but it works.
-app.MapGet("/config.json", () => new { ApiBaseUrl = apiBaseUrl });
+app.MapGet("/config.json", () => new { ApiBaseUrl = clientApiBaseUrl });
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()

@@ -20,8 +20,8 @@
 
 @using AppFilterOperator = GeneralReservationSystem.Application.Common.FilterOperator
 @using Severity = MudBlazor.Severity
+@using System.Security.Claims
 
-@inject IClientAuthenticationService ClientAuthenticationService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IUserService UserService
 @inject ISnackbar Snackbar
@@ -246,7 +246,21 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _user = await ClientAuthenticationService.GetCurrentUserAsync();
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        string userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value!; // User MUST be authenticated here, to see this page
+        string? userName = user.FindFirst(ClaimTypes.Name)?.Value;
+        string? email = user.FindFirst(ClaimTypes.Email)?.Value;
+        bool isAdmin = user.IsInRole("Admin");
+
+        _user = new UserInfo
+        {
+            UserId = int.Parse(userId),
+            UserName = userName ?? string.Empty,
+            Email = email ?? string.Empty,
+            IsAdmin = isAdmin
+        };
     }
 
     private async Task<TableData<UserInfo>> ServerReload(TableState state, CancellationToken cancellationToken)
