@@ -7,7 +7,6 @@
 
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
-    <RunSettingsFilePath>C:\Users\super\Desktop\GeneralReservationSystem\GeneralReservationSystem.Tests\bin\Debug\net9.0\fine-code-coverage\coverage-tool-output\GeneralReservationSystem.Tests-fcc-mscodecoverage-generated.runsettings</RunSettingsFilePath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,11 +30,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Using Include="Xunit" />
+    <ProjectReference Include="..\GeneralReservationSystem.Server\GeneralReservationSystem.Server.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\GeneralReservationSystem.API\GeneralReservationSystem.API.csproj" />
+    <Using Include="Xunit" />
   </ItemGroup>
 
 </Project>

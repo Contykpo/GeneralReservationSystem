@@ -1,0 +1,202 @@
+﻿@page "/trips/reserve/{TripId:int}"
+
+@attribute [Authorize]
+
+@using GeneralReservationSystem.Application.DTOs
+@using GeneralReservationSystem.Application.Entities
+@using GeneralReservationSystem.Application.Services.Interfaces
+@using GeneralReservationSystem.Application.Exceptions.Services
+@using GeneralReservationSystem.Web.Client.Components
+@using GeneralReservationSystem.Web.Client.Services.Interfaces
+@using GeneralReservationSystem.Web.Client.Helpers
+@using Microsoft.AspNetCore.Authorization
+@using MudBlazor
+@using Severity = MudBlazor.Severity
+
+@inject IClientTripService TripService
+@inject IClientStationService StationService
+@inject IClientReservationService ReservationService
+@inject IClientAuthenticationService AuthenticationService
+@inject IClientEmailService EmailService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+
+<PageTitle>Reservar Asiento</PageTitle>
+
+@if (_loading)
+{
+    <CenteredLoader Text="Buscando viaje..." />
+}
+else
+{
+    <MudContainer MaxWidth="MaxWidth.Medium" Class="my-8">
+
+        @if (_error != null)
+        {
+            <MudAlert Severity="Severity.Error">@_error</MudAlert>
+        }
+        else if (_tripDetails is null)
+        {
+            <MudAlert Severity="Severity.Warning">No se encontró el viaje.</MudAlert>
+        }
+        else
+        {
+            bool tripStarted = DateTime.Now >= _tripDetails.DepartureTime;
+            <MudPaper Elevation="2" Class="pa-6" Style="border-radius:12px;">
+                <MudGrid>
+                    <MudItem xs="12" md="8">
+                        <MudText Typo="Typo.h5" Class="mb-2"><b>@_tripDetails!.DepartureStationName <MudIcon Icon="@Icons.Material.Filled.ArrowForward" /> @_tripDetails!.ArrivalStationName</b></MudText>
+                        <MudText Typo="Typo.body2" Class="mb-2">@_tripDetails!.DepartureCity, @_tripDetails!.DepartureProvince, @_tripDetails!.DepartureCountry <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small" /> @_tripDetails!.ArrivalCity, @_tripDetails!.ArrivalProvince, @_tripDetails!.ArrivalCountry</MudText>
+                        <MudText Typo="Typo.body1" Class="mb-1">Salida: @_tripDetails!.DepartureTime.ToString("dd/MM/yyyy HH:mm")</MudText>
+                        <MudText Typo="Typo.body1" Class="mb-1">Llegada: @_tripDetails!.ArrivalTime.ToString("dd/MM/yyyy HH:mm")</MudText>
+                        <MudText Typo="Typo.caption">Asientos totales: @_tripDetails!.AvailableSeats</MudText>
+                    </MudItem>
+                    <MudItem xs="12" md="4" Class="d-flex align-center justify-end">
+                        <MudIcon Icon="@Icons.Material.Filled.EventSeat" Color="Color.Primary" Style="font-size:72px; opacity:0.9;" />
+                    </MudItem>
+                </MudGrid>
+
+                <MudDivider Class="my-4" />
+
+                @if (tripStarted)
+                {
+                    <MudAlert Severity="Severity.Warning">No se pueden reservar asientos porque el viaje ya comenzó.</MudAlert>
+                }
+                else if (_freeSeats != null && _freeSeats.Any())
+                {
+                    <MudText Typo="Typo.subtitle2">Asientos disponibles</MudText>
+                    <MudChipSet T="int?" @bind-SelectedValue="_selectedSeat" SelectionMode="SelectionMode.SingleSelection" CheckMark Class="mt-2 d-flex flex-wrap g-3">
+                        @foreach (var seat in Enumerable.Range(1, _tripDetails!.AvailableSeats))
+                        {
+                            bool isFree = _freeSeats.Contains(seat);
+                            <MudChip T="int?" Value="@seat" Color="@(isFree? Color.Success: Color.Default)" Variant="Variant.Outlined" Disabled="@(!isFree)">
+                                @seat
+                            </MudChip>
+                        }
+                    </MudChipSet>
+                }
+
+                <MudStack Class="mt-2" Row="true" Spacing="2" Justify="Justify.FlexEnd">
+                    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="Cancel">Cancelar</MudButton>
+                    <MudButton Disabled="@(_selectedSeat == null || tripStarted)" Variant="Variant.Filled" Color="Color.Primary" OnClick="ConfirmReservation">Reservar</MudButton>
+                </MudStack>
+            </MudPaper>
+        }
+    </MudContainer>
+}
+
+@code
+{
+    [Parameter]
+    public int TripId { get; set; }
+
+    private TripWithDetailsDto? _tripDetails;
+
+    private List<int>? _freeSeats;
+    private int? _selectedSeat;
+    private bool _loading = true;
+    private string? _error;
+
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            var key = new TripKeyDto { TripId = TripId };
+            _tripDetails = await TripService.GetTripWithDetailsAsync(key);
+            _freeSeats = (await TripService.GetFreeSeatsAsync(key)).ToList();
+
+            if (_freeSeats.Count == 0)
+            {
+                Snackbar.Add("No hay asientos libres para este viaje.", Severity.Warning);
+            }
+        }
+        catch (ServiceNotFoundException ex)
+        {
+            // Trip not found - handled by null check
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch
+        {
+            _error = "Ocurrió un error al cargar la información del viaje.";
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/trips");
+    }
+
+    private async Task ConfirmReservation()
+    {
+        if (_selectedSeat == null) return;
+
+        if (_tripDetails != null && DateTime.Now >= _tripDetails.DepartureTime)
+        {
+            Snackbar.Add("No se pueden reservar asientos porque el viaje ya comenzó.", Severity.Error);
+            return;
+        }
+
+        try
+        {
+            var keyDto = new ReservationKeyDto { TripId = TripId, Seat = _selectedSeat.Value };
+
+            await ReservationService.CreateCurrentUserReservationAsync(keyDto);
+            Snackbar.Add("Reserva creada correctamente.", Severity.Success);
+
+            // Get current user info
+            var currentUser = await AuthenticationService.GetCurrentUserAsync();
+
+            var emailDto = new ReservationConfirmationEmailDto
+            {
+                Email = currentUser.Email,
+                UserName = currentUser.UserName,
+                DepartureStation = _tripDetails!.DepartureStationName,
+                ArrivalStation = _tripDetails!.ArrivalStationName,
+                DepartureTime = _tripDetails!.DepartureTime.ToString(),
+                SeatNumber = keyDto.Seat
+            };
+
+            // TODO: enable email once EmailManager SMTP works properly
+            // await EmailService.SendReservationConfirmationAsync(emailDto);
+
+            Navigation.NavigateTo("/trips");
+        }
+        catch (ServiceBusinessException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+
+			await RefreshFreeSeatsAsync();
+        }
+        catch (ServiceValidationException ex)
+        {
+            foreach (var err in ex.Errors)
+                Snackbar.Add(err.Error, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error inesperado al crear la reserva. {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task RefreshFreeSeatsAsync()
+    {
+        _loading = true;
+        StateHasChanged();
+
+        _freeSeats = (await TripService.GetFreeSeatsAsync(new TripKeyDto { TripId = TripId })).ToList();
+        _selectedSeat = null;
+
+        _loading = false;
+        StateHasChanged();
+    }
+
+}

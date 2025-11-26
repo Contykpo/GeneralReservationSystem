@@ -35,7 +35,7 @@ jobs:
   deploy:
     needs: build_test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event.inputs.deploy_confirm == 'yes'
+    if: github.event.inputs.deploy_confirm == 'yes'
     steps:
       - uses: actions/checkout@v3
 
@@ -52,17 +52,13 @@ jobs:
         run: |
           TAG="${{ github.sha }}"
           docker tag generalreservationsystem-generalreservationsystem.migrator ${{ secrets.DOCKER_HUB_USER }}/grs-migrator:$TAG
-          docker tag generalreservationsystem-generalreservationsystem.api ${{ secrets.DOCKER_HUB_USER }}/grs-api:$TAG
-          docker tag generalreservationsystem-generalreservationsystem.web ${{ secrets.DOCKER_HUB_USER }}/grs-web:$TAG
+          docker tag generalreservationsystem-generalreservationsystem.server ${{ secrets.DOCKER_HUB_USER }}/grs-server:$TAG
           docker push ${{ secrets.DOCKER_HUB_USER }}/grs-migrator:$TAG
-          docker push ${{ secrets.DOCKER_HUB_USER }}/grs-api:$TAG
-          docker push ${{ secrets.DOCKER_HUB_USER }}/grs-web:$TAG
+          docker push ${{ secrets.DOCKER_HUB_USER }}/grs-server:$TAG
           docker tag ${{ secrets.DOCKER_HUB_USER }}/grs-migrator:$TAG ${{ secrets.DOCKER_HUB_USER }}/grs-migrator:latest
-          docker tag ${{ secrets.DOCKER_HUB_USER }}/grs-api:$TAG ${{ secrets.DOCKER_HUB_USER }}/grs-api:latest
-          docker tag ${{ secrets.DOCKER_HUB_USER }}/grs-web:$TAG ${{ secrets.DOCKER_HUB_USER }}/grs-web:latest
+          docker tag ${{ secrets.DOCKER_HUB_USER }}/grs-server:$TAG ${{ secrets.DOCKER_HUB_USER }}/grs-server:latest
           docker push ${{ secrets.DOCKER_HUB_USER }}/grs-migrator:latest
-          docker push ${{ secrets.DOCKER_HUB_USER }}/grs-api:latest
-          docker push ${{ secrets.DOCKER_HUB_USER }}/grs-web:latest
+          docker push ${{ secrets.DOCKER_HUB_USER }}/grs-server:latest
 
       - name: Run Migrations on Supabase
         env:
@@ -70,14 +66,8 @@ jobs:
         run: |
           docker run --rm generalreservationsystem-generalreservationsystem.migrator migrate "$SUPABASE_CONNECTION_STRING"
 
-      - name: Deploy API server on Render
+      - name: Deploy server on Render
         env:
-          deploy_url_api: ${{ secrets.RENDER_DEPLOY_HOOK_URL_API }}
+          deploy_url_server: ${{ secrets.RENDER_DEPLOY_HOOK_URL_SERVER }}
         run: |
-          curl "$deploy_url_api"
-
-      - name: Deploy Web server on Render
-        env:
-          deploy_url_web: ${{ secrets.RENDER_DEPLOY_HOOK_URL_WEB }}
-        run: |
-          curl "$deploy_url_web"
+          curl "$deploy_url_server"

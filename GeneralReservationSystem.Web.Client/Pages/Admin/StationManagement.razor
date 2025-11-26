@@ -1,0 +1,553 @@
+﻿@page "/admin/stations"
+
+@attribute [Authorize(Roles = AdminRoleName)]
+
+@using FluentValidation
+@using GeneralReservationSystem.Application.Entities
+@using GeneralReservationSystem.Application.Services.Interfaces
+@using GeneralReservationSystem.Application.DTOs
+@using GeneralReservationSystem.Application.Common
+@using GeneralReservationSystem.Application.Exceptions.Services
+@using GeneralReservationSystem.Application.Validators
+@using System.Linq.Expressions
+@using GeneralReservationSystem.Web.Client.Exceptions
+@using Microsoft.AspNetCore.Authorization
+@using GeneralReservationSystem.Web.Client.Helpers
+@using GeneralReservationSystem.Web.Client.Services.Interfaces
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
+
+@using AppFilterOperator = GeneralReservationSystem.Application.Common.FilterOperator
+@using AppSortDirection = GeneralReservationSystem.Application.Common.SortDirection
+@using Severity = MudBlazor.Severity
+
+@inject IClientStationService StationService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Gestión de Estaciones</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="my-8">
+    <MudExpansionPanels Class="mb-4">
+        <MudExpansionPanel Text="Agregar nueva estación" Icon="@Icons.Material.Filled.Add">
+            <MudCard Class="pd-2">
+                <MudCardContent>
+                    <MudForm Model="@_createStationDto" @ref="_createForm"
+                             Validation="@(_createStationDtoValidator.ValidateValue)" ValidationDelay="0" Spacing="3">
+                        <AntiforgeryToken />
+                        @StationFields(() => _createStationDto.StationName,
+                                                () => _createStationDto.City,
+                                                () => _createStationDto.Province,
+                                                () => _createStationDto.Country)
+                    </MudForm>
+                </MudCardContent>
+                <MudCardActions Class="gap-2">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="HandleCreateStation"
+                               StartIcon="@Icons.Material.Filled.Save">Guardar</MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ClearCreateForm">
+                        Limpiar
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudExpansionPanel>
+
+        <MudExpansionPanel Text="Importar/Exportar estaciones" Icon="@Icons.Material.Filled.ImportExport">
+            <MudCard Class="pd-2">
+                <MudCardContent>
+                    <MudFileUpload T="IBrowserFile" Accept=".csv" FilesChanged="HandleFileSelected"
+                                   MaximumFileCount="1">
+                        <ActivatorContent>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.CloudUpload">
+                                Seleccionar archivo CSV
+                            </MudButton>
+                        </ActivatorContent>
+                    </MudFileUpload>
+                    @if (_selectedFile != null)
+                    {
+                        <MudAlert Severity="Severity.Info" Class="mt-2" Dense="true"
+                                  CloseIcon="@Icons.Material.Filled.Close" CloseIconClicked="ClearSelectedFile">
+                            <MudText>Archivo seleccionado: @_selectedFile.Name</MudText>
+                        </MudAlert>
+                    }
+                </MudCardContent>
+                <MudCardActions Class="gap-2">
+                    <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="HandleImportStations"
+                               Disabled="@(_selectedFile == null)" StartIcon="@Icons.Material.Filled.Upload">
+                        Importar
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Info" OnClick="HandleExportStations"
+                               StartIcon="@Icons.Material.Filled.Download">
+                        Exportar
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudExpansionPanel>
+    </MudExpansionPanels>
+
+    <MudCard>
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">Estaciones</MudText>
+            </CardHeaderContent>
+            <CardHeaderActions>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => _table!.ReloadServerData())"
+                           StartIcon="@Icons.Material.Filled.Refresh">Actualizar</MudButton>
+            </CardHeaderActions>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudExpansionPanels Class="mb-3">
+                <MudExpansionPanel Text="Filtros avanzados" Icon="@Icons.Material.Filled.FilterList">
+                    <MudGrid>
+                        @foreach (var f in _filterDefinitions)
+                        {
+                            <MudItem xs="12" sm="6" md="3">
+                                <MudTextField @bind-Value="_filters[f.Key]" Label="@f.Label" Variant="Variant.Outlined"
+                                              Clearable="true"
+                                              OnClearButtonClick="@(() => { _filters[f.Key] = string.Empty; _table!.ReloadServerData(); })"
+                                              Immediate="true" DebounceInterval="300"
+                                              OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())" />
+                            </MudItem>
+                        }
+                        <MudItem xs="12">
+                            <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ClearFilters"
+                                       StartIcon="@Icons.Material.Filled.Clear">Limpiar Filtros</MudButton>
+                        </MudItem>
+                    </MudGrid>
+                </MudExpansionPanel>
+            </MudExpansionPanels>
+
+            <MudTable @ref="_table" T="Station" ServerData="ServerReload" Loading="@_loading"
+                      LoadingProgressColor="Color.Primary" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true"
+                      RowsPerPage="10" SortLabel="StationId" Elevation="0">
+                <ToolBarContent>
+                    <MudTextField @bind-Value="_searchString" Placeholder="Buscar en todos los campos - omite filtros avanzados"
+                                  Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium"
+                                  Class="mt-0" Clearable="true"
+                                  OnClearButtonClick="@(() => { _searchString = string.Empty; _table!.ReloadServerData(); })"
+                                  Immediate="true" DebounceInterval="300"
+                                  OnDebounceIntervalElapsed="@(() => _table!.ReloadServerData())"></MudTextField>
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh>
+                        <MudTableSortLabel SortLabel="StationId" T="Station">ID</MudTableSortLabel>
+                    </MudTh>
+                    <MudTh>
+                        <MudTableSortLabel SortLabel="StationName" T="Station">Nombre</MudTableSortLabel>
+                    </MudTh>
+                    <MudTh>
+                        <MudTableSortLabel SortLabel="City" T="Station">Ciudad</MudTableSortLabel>
+                    </MudTh>
+                    <MudTh>
+                        <MudTableSortLabel SortLabel="Province" T="Station">Provincia</MudTableSortLabel>
+                    </MudTh>
+                    <MudTh>
+                        <MudTableSortLabel SortLabel="Country" T="Station">País</MudTableSortLabel>
+                    </MudTh>
+                    <MudTh Style="text-align: right">Acciones</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="ID">@context.StationId</MudTd>
+                    <MudTd DataLabel="Nombre">@context.StationName</MudTd>
+                    <MudTd DataLabel="Ciudad">@context.City</MudTd>
+                    <MudTd DataLabel="Provincia">@context.Province</MudTd>
+                    <MudTd DataLabel="País">@context.Country</MudTd>
+                    <MudTd DataLabel="Acciones" Style="text-align: right">
+                        <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Filled.Edit"
+                                       OnClick="@(() => OpenEditDialog(context))" />
+                        <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                       OnClick="@(() => HandleDeleteStation(context))" />
+                    </MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText>No se encontraron estaciones.</MudText>
+                </NoRecordsContent>
+                <LoadingContent>
+                    <MudText>Cargando...</MudText>
+                </LoadingContent>
+                <PagerContent>
+                    <MudTablePager PageSizeOptions="new int[] { 10, 25, 50, 100 }" />
+                </PagerContent>
+            </MudTable>
+        </MudCardContent>
+    </MudCard>
+</MudContainer>
+
+<MudDialog @bind-Visible="_editDialogVisible" Options="_editDialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Edit" Class="mr-3" /> Editar Estación
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudForm Model="@_editStationDto" @ref="_updateForm" Validation="@(_updateStationDtoValidator.ValidateValue)"
+                 ValidationDelay="0">
+            @StationFields(() => _editStationDto.StationName,
+            () => _editStationDto.City,
+                        () => _editStationDto.Province,
+                        () => _editStationDto.Country)
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseEditDialog" Variant="Variant.Outlined">Cancelar</MudButton>
+        <MudButton OnClick="HandleUpdateStation" Variant="Variant.Filled" Color="Color.Primary">Guardar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+
+@code
+{
+    private MudTable<Station> _table = null!;
+    private bool _loading = false;
+    private string _searchString = string.Empty;
+
+    private readonly List<(string Key, string Label)> _filterDefinitions = new()
+    {
+        ("StationName", "Nombre"),
+        ("City", "Ciudad"),
+        ("Province", "Provincia"),
+        ("Country", "País")
+    };
+    private Dictionary<string, string> _filters = new();
+
+    private MudForm _createForm = null!;
+    private CreateStationDto _createStationDto = new();
+    private CreateStationDtoValidator _createStationDtoValidator = new();
+
+    private MudForm _updateForm = null!;
+    private UpdateStationDto _editStationDto = new();
+    private UpdateStationDtoValidator _updateStationDtoValidator = new();
+
+    private bool _editDialogVisible = false;
+    private DialogOptions _editDialogOptions = new()
+    {
+        MaxWidth = MaxWidth.Medium,
+        FullWidth = true,
+        CloseButton = true,
+        Position = DialogPosition.Center,
+        CloseOnEscapeKey = true
+    };
+
+    private IBrowserFile? _selectedFile;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        _filters = _filterDefinitions.ToDictionary(f => f.Key, _ => string.Empty);
+    }
+
+    private async Task<TableData<Station>> ServerReload(TableState state, CancellationToken cancellationToken)
+    {
+        _loading = true;
+        try
+        {
+            var searchRequest = new PagedSearchRequestDto
+            {
+                Page = state.Page + 1,
+                PageSize = state.PageSize,
+                FilterClauses = BuildFilterClauses(state),
+                Orders = TableHelpers.BuildOrders(state)
+            };
+
+            var result = await StationService.SearchStationsAsync(searchRequest, cancellationToken);
+            return new TableData<Station>
+            {
+                Items = result.Items,
+                TotalItems = result.TotalCount
+            };
+        }
+        catch (Exception ex)
+        {
+            HandleServiceException(ex, "Ocurrió un error inesperado al cargar las estaciones.");
+        }
+        finally
+        {
+            _loading = false;
+        }
+
+        return new TableData<Station> { Items = Array.Empty<Station>(), TotalItems = 0 };
+    }
+
+    private IEnumerable<FilterClause> BuildFilterClauses(TableState state)
+    {
+        var filterClauses = new List<FilterClause>();
+
+        if (!string.IsNullOrWhiteSpace(_searchString))
+        {
+            var searchFilters = new List<Filter>
+            {
+                new Filter("StationName", AppFilterOperator.Contains, _searchString),
+                new Filter("City", AppFilterOperator.Contains, _searchString),
+                new Filter("Province", AppFilterOperator.Contains, _searchString),
+                new Filter("Country", AppFilterOperator.Contains, _searchString)
+            };
+            filterClauses.Add(new FilterClause(searchFilters));
+        }
+        else
+        {
+            foreach (var def in _filterDefinitions)
+            {
+                if (!string.IsNullOrWhiteSpace(_filters[def.Key]))
+                {
+                    filterClauses.Add(new FilterClause(new[]
+                    {
+                        new Filter(def.Key, AppFilterOperator.Contains, _filters[def.Key])
+                    }));
+                }
+            }
+        }
+
+        return filterClauses;
+    }
+
+    private void ClearFilters()
+    {
+        foreach (var key in _filters.Keys.ToList())
+            _filters[key] = string.Empty;
+
+        _searchString = string.Empty;
+        _table!.ReloadServerData();
+    }
+
+    private async Task HandleCreateStation()
+    {
+        try
+        {
+            if (_createForm is not null)
+            {
+                await _createForm.Validate();
+                if (!_createForm.IsValid)
+                    return;
+            }
+
+            await StationService.CreateStationAsync(_createStationDto);
+            Snackbar.Add("Estación creada correctamente.", Severity.Success);
+            ClearCreateForm();
+            await _table.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            HandleServiceException(ex, "Ocurrió un error inesperado al crear la estación.");
+        }
+    }
+
+    private void OpenEditDialog(Station station)
+    {
+        _editStationDto = new UpdateStationDto
+        {
+            StationId = station.StationId,
+            StationName = station.StationName,
+            City = station.City,
+            Province = station.Province,
+            Country = station.Country
+        };
+        _updateForm?.ResetValidation();
+        _editDialogVisible = true;
+    }
+
+    private void CloseEditDialog()
+    {
+        _editDialogVisible = false;
+        _editStationDto = new UpdateStationDto();
+        _updateForm?.ResetValidation();
+    }
+
+    private async Task HandleUpdateStation()
+    {
+        try
+        {
+            if (_updateForm is not null)
+            {
+                await _updateForm.Validate();
+                if (!_updateForm.IsValid)
+                    return;
+            }
+
+            await StationService.UpdateStationAsync(_editStationDto);
+            Snackbar.Add("Estación actualizada correctamente.", Severity.Success);
+            CloseEditDialog();
+            await _table.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            if (ex is ServiceNotFoundException)
+            {
+                Snackbar.Add(ex.Message, Severity.Warning);
+                CloseEditDialog();
+                await _table.ReloadServerData();
+                return;
+            }
+
+            HandleServiceException(ex, "Ocurrió un error inesperado al actualizar la estación.");
+        }
+    }
+
+    private async Task HandleDeleteStation(Station item)
+    {
+        try
+        {
+            await StationService.DeleteStationAsync(new StationKeyDto { StationId = item.StationId });
+            Snackbar.Add("Estación eliminada correctamente.", Severity.Success);
+            await _table.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            if (ex is ServiceNotFoundException)
+            {
+                Snackbar.Add(ex.Message, Severity.Warning);
+                await _table.ReloadServerData();
+                return;
+            }
+
+            HandleServiceException(ex, "Ocurrió un error inesperado al eliminar la estación.");
+        }
+    }
+
+    private void ClearCreateForm()
+    {
+        _createStationDto.StationName = string.Empty;
+        _createStationDto.City = string.Empty;
+        _createStationDto.Province = string.Empty;
+        _createStationDto.Country = string.Empty;
+        _createForm.ResetValidation();
+    }
+
+    private void HandleFileSelected(IBrowserFile file)
+    {
+        _selectedFile = file;
+    }
+
+    private void ClearSelectedFile()
+    {
+        _selectedFile = null;
+    }
+
+    private async Task HandleImportStations()
+    {
+        if (_selectedFile == null)
+        {
+            Snackbar.Add("Por favor seleccione un archivo CSV.", Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            using var stream = _selectedFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+            int count = (await StationService.ImportStationsFromCsvAsync(stream, _selectedFile.Name)).Count;
+            Snackbar.Add($"Se importaron {count} estaciones exitosamente.", Severity.Success);
+            ClearSelectedFile();
+            await _table.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            HandleServiceException(ex, $"Error inesperado al importar estaciones: {ex.Message}");
+        }
+    }
+
+    private async Task HandleExportStations()
+    {
+        try
+        {
+            var (fileContent, fileName) = await StationService.ExportStationsToCsvAsync();
+            var base64 = Convert.ToBase64String(fileContent);
+            await JSRuntime.InvokeVoidAsync("downloadFileFromBase64", base64, fileName, "text/csv");
+            Snackbar.Add("Estaciones exportadas correctamente.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            HandleServiceException(ex, "Error inesperado al exportar estaciones.");
+        }
+    }
+
+    private RenderFragment StationFields(Expression<Func<string?>> nameExpr,
+                                         Expression<Func<string?>> cityExpr,
+                                         Expression<Func<string?>> provinceExpr,
+                                         Expression<Func<string?>> countryExpr) => builder =>
+    {
+        int seq = 0;
+
+        void AddField(string label, Expression<Func<string?>> expr)
+        {
+            builder.OpenComponent<MudTextField<string>>(seq++);
+            builder.AddAttribute(seq++, "Label", label);
+            builder.AddAttribute(seq++, "For", expr);
+            builder.AddAttribute(seq++, "Value", GetExpressionValue(expr));
+            builder.AddAttribute(seq++, "ValueChanged", EventCallback.Factory.Create<string?>(this, (string? v) => SetExpressionValue(expr, v)));
+            builder.AddAttribute(seq++, "ValueExpression", expr);
+            builder.AddAttribute(seq++, "Variant", Variant.Outlined);
+            builder.AddAttribute(seq++, "Immediate", true);
+            builder.CloseComponent();
+        }
+
+        AddField("Nombre", nameExpr);
+        AddField("Ciudad", cityExpr);
+        AddField("Provincia", provinceExpr);
+        AddField("País", countryExpr);
+    };
+
+    private string? GetExpressionValue(Expression<Func<string?>> expr)
+    {
+        try
+        {
+            var func = expr.Compile();
+            return func();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private void SetExpressionValue(Expression<Func<string?>> expr, string? value)
+    {
+        if (expr.Body is UnaryExpression ue && ue.Operand is MemberExpression meUnary)
+            SetMemberValue(meUnary, value);
+        else if (expr.Body is MemberExpression me)
+            SetMemberValue(me, value);
+    }
+
+    private void SetMemberValue(MemberExpression memberExpression, string? value)
+    {
+        object? target = null;
+        
+        if (memberExpression.Expression != null)
+        {
+            var lambda = Expression.Lambda(memberExpression.Expression);
+            target = lambda.Compile().DynamicInvoke();
+        }
+
+        switch (memberExpression.Member)
+        {
+            case System.Reflection.PropertyInfo pi:
+                pi.SetValue(target, value);
+                break;
+            case System.Reflection.FieldInfo fi:
+                fi.SetValue(target, value);
+                break;
+        }
+    }
+
+    private void HandleServiceException(Exception ex, string fallbackMessage)
+    {
+        switch (ex)
+        {
+            case ServiceValidationException sve:
+                foreach (var err in sve.Errors)
+                    Snackbar.Add(err.Error, Severity.Error);
+                break;
+            case ServiceBusinessException sbe:
+                Snackbar.Add(sbe.Message, Severity.Error);
+                break;
+            case ServiceException se:
+                Snackbar.Add(se.Message, Severity.Error);
+                break;
+            case HttpRequestException hre:
+                Snackbar.Add(hre.Message, Severity.Error);
+                break;
+            default:
+                Snackbar.Add(fallbackMessage, Severity.Error);
+                break;
+        }
+    }
+}

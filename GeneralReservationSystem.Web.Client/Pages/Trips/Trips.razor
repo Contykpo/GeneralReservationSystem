@@ -1,0 +1,522 @@
+﻿@page "/trips"
+
+@attribute [Authorize]
+
+@using FluentValidation
+@using GeneralReservationSystem.Application.Common
+@using GeneralReservationSystem.Application.DTOs
+@using GeneralReservationSystem.Application.Entities
+@using GeneralReservationSystem.Application.Exceptions.Services
+@using GeneralReservationSystem.Application.Services.Interfaces
+@using GeneralReservationSystem.Application.Validators
+@using GeneralReservationSystem.Web.Client.Helpers
+@using GeneralReservationSystem.Web.Client.Exceptions
+@using GeneralReservationSystem.Web.Client.Services.Interfaces
+@using Microsoft.AspNetCore.Authorization
+
+@using AppFilterOperator = GeneralReservationSystem.Application.Common.FilterOperator
+@using Severity = MudBlazor.Severity
+
+@inject IClientTripService TripService
+@inject IClientReservationService ReservationService
+@inject IClientStationService StationService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>Viajes</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="my-8">
+    <AuthorizeView Roles="Admin">
+        <Authorized>
+            <MudExpansionPanels Class="mb-4">
+                <MudExpansionPanel Text="Agregar nuevo viaje" Icon="@Icons.Material.Filled.Add">
+                    <MudCard Class="pd-2">
+                        <MudCardContent>
+                            <MudForm @ref="_createForm" Model="@_createTripDto"
+                                     Validation="@(CreateValidationDelegate())" ValidationDelay="0" Spacing="3">
+                                <MudSelect T="int" Label="Estación de salida"
+                                    @bind-Value="_createTripDto.DepartureStationId"
+                                    For="@(() => _createTripDto.DepartureStationId)" Variant="Variant.Outlined"
+                                    Immediate="true">
+                                    <MudSelectItem T="int" Value="0" Disabled="true">Seleccione una estación
+                                    </MudSelectItem>
+                                    @foreach (var station in _stations)
+                                    {
+                                        <MudSelectItem T="int" Value="@station.StationId">
+                                            @station.StationName, @station.City, @station.Province, @station.Country
+                                        </MudSelectItem>
+                                    }
+                                </MudSelect>
+                                <MudDatePicker Label="Fecha de salida" Date="_createTripDto.DepartureTime"
+                                    DateChanged="@(date => OnDateChanged(() => _createTripDto.DepartureTime, v => _createTripDto.DepartureTime = v ?? DefaultDepartureDate, _createForm, date))"
+                                    DateFormat="dd/MM/yyyy"
+                                    Variant="Variant.Outlined" />
+                                <MudTimePicker Label="Hora de salida" Time="_createTripDto.DepartureTime.TimeOfDay"
+                                    TimeChanged="@(time => OnTimeChanged(() => _createTripDto.DepartureTime, v => _createTripDto.DepartureTime = v ?? DefaultDepartureDate, _createForm, time))"
+                                    TimeFormat="HH:mm"
+                                    Variant="Variant.Outlined" />
+                                <MudSelect T="int" Label="Estación de llegada"
+                                    @bind-Value="_createTripDto.ArrivalStationId"
+                                    For="@(() => _createTripDto.ArrivalStationId)" Variant="Variant.Outlined"
+                                    Immediate="true">
+                                    <MudSelectItem T="int" Value="0" Disabled="true">Seleccione una estación
+                                    </MudSelectItem>
+                                    @foreach (var station in _stations)
+                                    {
+                                        <MudSelectItem T="int" Value="@station.StationId">
+                                            @station.StationName, @station.City, @station.Province, @station.Country
+                                        </MudSelectItem>
+                                    }
+                                </MudSelect>
+                                <MudDatePicker Label="Fecha de llegada" Date="_createTripDto.ArrivalTime"
+                                    DateChanged="@(date => OnDateChanged(() => _createTripDto.ArrivalTime, v => _createTripDto.ArrivalTime = v ?? DefaultArrivalDate, _createForm, date))"
+                                    DateFormat="dd/MM/yyyy"
+                                    Variant="Variant.Outlined" />
+                                <MudTimePicker Label="Hora de llegada" Time="_createTripDto.ArrivalTime.TimeOfDay"
+                                    TimeChanged="@(time => OnTimeChanged(() => _createTripDto.ArrivalTime, v => _createTripDto.ArrivalTime = v ?? DefaultArrivalDate, _createForm, time))"
+                                    TimeFormat="HH:mm"
+                                    Variant="Variant.Outlined" />
+                                <MudNumericField Label="Asientos disponibles"
+                                    For="@(() => _createTripDto.AvailableSeats)"
+                                    @bind-Value="_createTripDto.AvailableSeats" Variant="Variant.Outlined"/>
+                            </MudForm>
+                        </MudCardContent>
+                        <MudCardActions Class="gap-2">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="HandleCreate"
+                                StartIcon="@Icons.Material.Filled.Save">Guardar</MudButton>
+                            <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ClearForm">Limpiar
+                            </MudButton>
+                        </MudCardActions>
+                    </MudCard>
+                </MudExpansionPanel>
+            </MudExpansionPanels>
+        </Authorized>
+    </AuthorizeView>
+
+    <MudCard>
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">Viajes</MudText>
+            </CardHeaderContent>
+            <CardHeaderActions>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => _table!.ReloadServerData())"
+                    StartIcon="@Icons.Material.Filled.Refresh">Actualizar</MudButton>
+            </CardHeaderActions>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudExpansionPanels Class="mb-3">
+                <MudExpansionPanel Text="Filtros avanzados" Icon="@Icons.Material.Filled.FilterList">
+                    <MudGrid>
+                        <MudItem xs="12" sm="6" md="3">
+                            <MudSelect T="int?" Label="Estación de salida" Value="_filterDepartureStationId"
+                                ValueChanged="@(async (int? value) => { _filterDepartureStationId = value; await OnFilterChanged(); })"
+                                Variant="Variant.Outlined" Clearable="true">
+                                <MudSelectItem T="int?" Value="null">Todas</MudSelectItem>
+                                @foreach (var station in _stations)
+                                {
+                                    <MudSelectItem T="int?" Value="@station.StationId">
+                                        @station.StationName, @station.City, @station.Province, @station.Country
+                                    </MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="3">
+                            <MudSelect T="int?" Label="Estación de llegada" Value="_filterArrivalStationId"
+                                ValueChanged="@(async (int? value) => { _filterArrivalStationId = value; await OnFilterChanged(); })"
+                                Variant="Variant.Outlined" Clearable="true">
+                                <MudSelectItem T="int?" Value="null">Todas</MudSelectItem>
+                                @foreach (var station in _stations)
+                                {
+                                    <MudSelectItem T="int?" Value="@station.StationId">
+                                        @station.StationName, @station.City, @station.Province, @station.Country
+                                    </MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="3">
+                            <MudDateRangePicker DateRange="_filterDepartureDateRange"
+                                DateRangeChanged="@(async (DateRange? range) => { _filterDepartureDateRange = range; await OnFilterChanged(); })"
+                                Label="Rango Fecha Salida" Variant="Variant.Outlined" Clearable="true" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="3">
+                            <MudDateRangePicker DateRange="_filterArrivalDateRange"
+                                DateRangeChanged="@(async (DateRange? range) => { _filterArrivalDateRange = range; await OnFilterChanged(); })"
+                                Label="Rango Fecha Llegada" Variant="Variant.Outlined" Clearable="true" />
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ClearFilters"
+                                StartIcon="@Icons.Material.Filled.Clear">Limpiar Filtros</MudButton>
+                        </MudItem>
+                    </MudGrid>
+                </MudExpansionPanel>
+            </MudExpansionPanels>
+
+            <MudTable @ref="_table" T="TripWithDetailsDto" ServerData="ServerReload" Loading="@_loading"
+                LoadingProgressColor="Color.Primary" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true"
+                RowsPerPage="10" Elevation="0">
+                <ToolBarContent>
+                    <MudTextField @bind-Value="_searchString" Placeholder="Buscar en todos los campos - omite filtros avanzados"
+                        Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium"
+                        Class="mt-0" Clearable="true"
+                        OnClearButtonClick="@(() => { _searchString = string.Empty; _table!.ReloadServerData(); })"
+                        Immediate="true" DebounceInterval="300"
+                        OnDebounceIntervalElapsed="@(async () => { await OnSearchChanged(); })"></MudTextField>
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh>
+                        <MudTableSortLabel SortLabel="DepartureStationName" T="TripWithDetailsDto">Salida
+                        </MudTableSortLabel>
+                    </MudTh>
+                    <MudTh>
+                        <MudTableSortLabel SortLabel="DepartureTime" T="TripWithDetailsDto">Hora Salida
+                        </MudTableSortLabel>
+                    </MudTh>
+                    <MudTh>
+                        <MudTableSortLabel SortLabel="ArrivalStationName" T="TripWithDetailsDto">Llegada
+                        </MudTableSortLabel>
+                    </MudTh>
+                    <MudTh>
+                        <MudTableSortLabel SortLabel="ArrivalTime" T="TripWithDetailsDto">Hora Llegada
+                        </MudTableSortLabel>
+                    </MudTh>
+                    <MudTh>
+                        <MudTableSortLabel SortLabel="AvailableSeats" T="TripWithDetailsDto">Asientos
+                        </MudTableSortLabel>
+                    </MudTh>
+                    <MudTh>Reservados</MudTh>
+                    <MudTh>Libres</MudTh>
+                    <MudTh Style="text-align: right">Acciones</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Salida">
+                        @context.DepartureStationName
+                        <div class="mud-typography-caption">@context.DepartureCity, @context.DepartureProvince,
+                            @context.DepartureCountry</div>
+                    </MudTd>
+                    <MudTd DataLabel="Hora Salida">@context.DepartureTime.ToString("dd/MM/yyyy HH:mm")</MudTd>
+                    <MudTd DataLabel="Llegada">
+                        @context.ArrivalStationName
+                        <div class="mud-typography-caption">@context.ArrivalCity, @context.ArrivalProvince,
+                            @context.ArrivalCountry</div>
+                    </MudTd>
+                    <MudTd DataLabel="Hora Llegada">@context.ArrivalTime.ToString("dd/MM/yyyy HH:mm")</MudTd>
+                    <MudTd DataLabel="Asientos">@context.AvailableSeats</MudTd>
+                    <MudTd DataLabel="Reservados">@context.ReservedSeats</MudTd>
+                    <MudTd DataLabel="Libres">@context.FreeSeats</MudTd>
+                    <MudTd DataLabel="Acciones" Style="text-align: right" Class="text-nowrap">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                                    Disabled="@(context.FreeSeats == 0 || DateTime.Now >= context.DepartureTime)"
+                                    Href="@($"/trips/reserve/{context.TripId}")" StartIcon="@Icons.Material.Filled.EventSeat">
+                            Reservar
+                        </MudButton>
+                        <AuthorizeView Roles="Admin" Context="authContext">
+                            <Authorized>
+                                <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Filled.Delete"
+                                    Color="Color.Error" OnClick="@(() => HandleDelete(context))" />
+                            </Authorized>
+                        </AuthorizeView>
+                    </MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText>No se encontraron viajes.</MudText>
+                </NoRecordsContent>
+                <LoadingContent>
+                    <MudText>Cargando...</MudText>
+                </LoadingContent>
+                <PagerContent>
+                    <MudTablePager PageSizeOptions="new int[] { 10, 25, 50, 100 }" />
+                </PagerContent>
+            </MudTable>
+        </MudCardContent>
+    </MudCard>
+</MudContainer>
+
+@code
+{
+    private MudTable<TripWithDetailsDto> _table = null!;
+    private bool _loading = false;
+    private string _searchString = string.Empty;
+
+    // Advanced filters
+    private int? _filterDepartureStationId = null;
+    private int? _filterArrivalStationId = null;
+    private DateRange? _filterDepartureDateRange = null;
+    private DateRange? _filterArrivalDateRange = null;
+
+    private MudForm _createForm = null!;
+    private static DateTime DefaultDepartureDate => DateTime.Now;
+    private static DateTime DefaultArrivalDate => DateTime.Now.AddHours(12);
+    private CreateTripDto _createTripDto = new()
+    {
+        DepartureTime = DefaultDepartureDate,
+        ArrivalTime = DefaultArrivalDate
+    };
+    private CreateTripDtoValidator _createTripDtoValidator = new();
+
+    private List<Station> _stations = new();
+
+    // Flag de control de validacion.
+    // De esta manera solo validamos cuando el usuario intenta enviar el formulario.
+    private bool _shouldValidateCreate = false;
+
+    // Delegado que MudForm espera para aplicar la validacion.
+    private Func<object, string, Task<IEnumerable<string>>> CreateValidationDelegate()
+    {
+        return async (model, propertyName) =>
+        {
+            // Si el falg está desactivado, no validamos los campos.
+            if (!_shouldValidateCreate)
+                return Array.Empty<string>();
+
+            return await _createTripDtoValidator.ValidateValue(model, propertyName);
+        };
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _stations = (await StationService.GetAllStationsAsync()).ToList();
+        }
+        catch
+        {
+            Snackbar.Add("Error al cargar las estaciones.", Severity.Error);
+        }
+    }
+
+    private async Task<TableData<TripWithDetailsDto>> ServerReload(TableState state, CancellationToken cancellationToken)
+    {
+        _loading = true;
+        try
+        {
+            var searchRequest = new PagedSearchRequestDto
+            {
+                Page = state.Page + 1,
+                PageSize = state.PageSize,
+                FilterClauses = BuildFilterClauses(state),
+                Orders = TableHelpers.BuildOrders(state)
+            };
+
+            var result = await TripService.SearchTripsAsync(searchRequest, cancellationToken);
+            return new TableData<TripWithDetailsDto>
+            {
+                Items = result.Items,
+                TotalItems = result.TotalCount
+            };
+        }
+        catch (ServiceBusinessException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (ServiceException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Ocurrió un error al cargar los viajes.", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+
+        return new TableData<TripWithDetailsDto> { Items = Array.Empty<TripWithDetailsDto>(), TotalItems = 0 };
+    }
+
+    private IEnumerable<FilterClause> BuildFilterClauses(TableState state)
+    {
+        var filterClauses = new List<FilterClause>();
+
+        if (!string.IsNullOrWhiteSpace(_searchString))
+        {
+            var searchProperties = new[]
+            {
+                "DepartureStationName", "DepartureCity", "DepartureProvince", "DepartureCountry",
+                "ArrivalStationName", "ArrivalCity", "ArrivalProvince", "ArrivalCountry"
+            };
+
+            var searchFilters = searchProperties.Select(p => new Filter(p, AppFilterOperator.Contains, _searchString)).ToList();
+            filterClauses.Add(new FilterClause(searchFilters));
+            return filterClauses;
+        }
+
+        // Local helpers to avoid duplication
+        void AddEqualsIfHas(int? value, string property)
+        {
+            if (value.HasValue)
+            {
+                filterClauses.Add(new FilterClause(new[]
+                {
+                    new Filter(property, AppFilterOperator.Equals, value.Value)
+                }));
+            }
+        }
+
+        void AddBetweenIfHas(DateRange? range, string property)
+        {
+            if (range?.Start != null && range?.End != null)
+            {
+                filterClauses.Add(new FilterClause(new[]
+                {
+                    new Filter(property, AppFilterOperator.Between, new object[] { range.Start.Value, range.End.Value })
+                }));
+            }
+        }
+
+        AddEqualsIfHas(_filterDepartureStationId, "DepartureStationId");
+        AddEqualsIfHas(_filterArrivalStationId, "ArrivalStationId");
+
+        AddBetweenIfHas(_filterDepartureDateRange, "DepartureTime");
+        AddBetweenIfHas(_filterArrivalDateRange, "ArrivalTime");
+
+        return filterClauses;
+    }
+
+    private void ClearFilters()
+    {
+        _filterDepartureStationId = null;
+        _filterArrivalStationId = null;
+        _filterDepartureDateRange = null;
+        _filterArrivalDateRange = null;
+        _searchString = string.Empty;
+        _table!.ReloadServerData();
+    }
+
+    private async Task OnFilterChanged()
+    {
+        // Clear search string when using advanced filters
+        if (!string.IsNullOrWhiteSpace(_searchString))
+        {
+            _searchString = string.Empty;
+        }
+        await _table!.ReloadServerData();
+    }
+
+    private async Task OnSearchChanged()
+    {
+        // Clear advanced filters when using search
+        if (!string.IsNullOrWhiteSpace(_searchString))
+        {
+            _filterDepartureStationId = null;
+            _filterArrivalStationId = null;
+            _filterDepartureDateRange = null;
+            _filterArrivalDateRange = null;
+        }
+        await _table!.ReloadServerData();
+    }
+
+    private async Task HandleCreate()
+    {
+        try
+        {
+            _shouldValidateCreate = true;
+
+            if (_createForm is not null)
+            {
+                await _createForm.Validate();
+                if (!_createForm.IsValid) return;
+            }
+
+            await TripService.CreateTripAsync(_createTripDto);
+            Snackbar.Add("Viaje creado correctamente.", Severity.Success);
+
+            ClearForm();
+
+            _shouldValidateCreate = false;
+
+            await _table.ReloadServerData();
+        }
+        catch (ServiceValidationException ex)
+        {
+            foreach (var error in ex.Errors)
+            {
+                Snackbar.Add(error.Error, Severity.Error);
+            }
+        }
+        catch (ServiceBusinessException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (ServiceException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Error inesperado al crear el viaje.", Severity.Error);
+        }
+    }
+
+    private async Task HandleDelete(TripWithDetailsDto item)
+    {
+        try
+        {
+            await TripService.DeleteTripAsync(new TripKeyDto { TripId = item.TripId });
+            Snackbar.Add("Viaje eliminado correctamente.", Severity.Success);
+            await _table.ReloadServerData();
+        }
+        catch (ServiceNotFoundException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Warning);
+            await _table.ReloadServerData();
+        }
+        catch (ServiceBusinessException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (ServiceException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Error inesperado al eliminar el viaje.", Severity.Error);
+        }
+    }
+
+    private void ClearForm()
+    {
+        _shouldValidateCreate = false;
+
+        _createTripDto.DepartureStationId = 0;
+        _createTripDto.ArrivalStationId = 0;
+        _createTripDto.DepartureTime = DefaultDepartureDate;
+        _createTripDto.ArrivalTime = DefaultArrivalDate;
+        _createTripDto.AvailableSeats = 0;
+
+        _createForm?.ResetValidation();
+
+        StateHasChanged();
+    }
+
+    // Unified date/time handlers
+    private async Task OnDateChanged(Func<DateTime?> currentGetter, Action<DateTime?> setter, MudForm? form, DateTime? date)
+    {
+        var newValue = Combine(date, currentGetter()?.TimeOfDay);
+        setter(newValue);
+        if (form is not null)
+        {
+            await form.Validate();
+        }
+        StateHasChanged();
+    }
+
+    private async Task OnTimeChanged(Func<DateTime?> currentGetter, Action<DateTime?> setter, MudForm? form, TimeSpan? time)
+    {
+        var newValue = Combine(currentGetter()?.Date, time);
+        setter(newValue);
+        if (form is not null)
+        {
+            await form.Validate();
+        }
+        StateHasChanged();
+    }
+
+    private static DateTime Combine(DateTime? date, TimeSpan? time)
+    {
+        var d = date ?? DateTime.Today;
+        var t = time ?? TimeSpan.Zero;
+        return d.Date + t;
+    }
+}

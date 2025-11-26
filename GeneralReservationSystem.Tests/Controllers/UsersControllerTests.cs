@@ -1,12 +1,12 @@
 ﻿using FluentValidation;
 using FluentValidation.Results;
-using GeneralReservationSystem.API.Controllers;
 using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.DTOs.Authentication;
 using GeneralReservationSystem.Application.Entities.Authentication;
 using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Services.Interfaces.Authentication;
+using GeneralReservationSystem.Server.Controllers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;

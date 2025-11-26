@@ -1,13 +1,7 @@
-#See https://aka.ms/overrideVSDockerComposeConfiguration to understand how Visual Studio uses this override file.
+﻿#See https://aka.ms/overrideVSDockerComposeConfiguration to understand how Visual Studio uses this override file.
 
 services:
-  generalreservationsystem.api:
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-    volumes:
-      - ~/.microsoft/usersecrets:/root/.microsoft/usersecrets:ro
-
-  generalreservationsystem.web:
+  generalreservationsystem.server:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
     volumes:

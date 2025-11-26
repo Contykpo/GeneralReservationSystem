@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 
 namespace GeneralReservationSystem.Tests.Integration.Controllers;
 
@@ -30,7 +30,7 @@ public class HealthCheckIntegrationTests : IntegrationTestBase
         // Arrange
 
         // Act
-        HttpResponseMessage response = await _client.GetAsync("/health");
+        HttpResponseMessage response = await _client.GetAsync("/api/health");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
