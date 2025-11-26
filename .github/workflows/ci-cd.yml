@@ -13,7 +13,7 @@ on:
         default: "no"
 
 jobs:
-  build_test:
+  build_and_test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -32,15 +32,15 @@ jobs:
       - name: Test
         run: dotnet test GeneralReservationSystem.sln --no-build -c Release
 
-  deploy:
-    needs: build_test
+  push_images:
+    needs: build_and_test
     runs-on: ubuntu-latest
-    if: github.event.inputs.deploy_confirm == 'yes'
+    if: github.ref == 'refs/heads/main' || github.event.inputs.deploy_confirm == 'yes'
     steps:
       - uses: actions/checkout@v3
 
-      - name: Build Docker images
-        run: docker compose -f docker-compose.yml build
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
@@ -48,26 +48,76 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-      - name: Push Images
+      - name: Build and Push Images
         run: |
           TAG="${{ github.sha }}"
+          docker compose -f docker-compose.yml build
           docker tag generalreservationsystem-generalreservationsystem.migrator ${{ secrets.DOCKER_HUB_USER }}/grs-migrator:$TAG
           docker tag generalreservationsystem-generalreservationsystem.server ${{ secrets.DOCKER_HUB_USER }}/grs-server:$TAG
           docker push ${{ secrets.DOCKER_HUB_USER }}/grs-migrator:$TAG
           docker push ${{ secrets.DOCKER_HUB_USER }}/grs-server:$TAG
+
+      - name: Tag and Push Staging
+        if: github.ref == 'refs/heads/main'
+        run: |
+          TAG="${{ github.sha }}"
+          docker tag ${{ secrets.DOCKER_HUB_USER }}/grs-migrator:$TAG ${{ secrets.DOCKER_HUB_USER }}/grs-migrator:staging
+          docker tag ${{ secrets.DOCKER_HUB_USER }}/grs-server:$TAG ${{ secrets.DOCKER_HUB_USER }}/grs-server:staging
+          docker push ${{ secrets.DOCKER_HUB_USER }}/grs-migrator:staging
+          docker push ${{ secrets.DOCKER_HUB_USER }}/grs-server:staging
+
+      - name: Tag and Push Production
+        if: github.event.inputs.deploy_confirm == 'yes'
+        run: |
+          TAG="${{ github.sha }}"
           docker tag ${{ secrets.DOCKER_HUB_USER }}/grs-migrator:$TAG ${{ secrets.DOCKER_HUB_USER }}/grs-migrator:latest
           docker tag ${{ secrets.DOCKER_HUB_USER }}/grs-server:$TAG ${{ secrets.DOCKER_HUB_USER }}/grs-server:latest
           docker push ${{ secrets.DOCKER_HUB_USER }}/grs-migrator:latest
           docker push ${{ secrets.DOCKER_HUB_USER }}/grs-server:latest
 
-      - name: Run Migrations on Supabase
+  run_migrations:
+    needs: push_images
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.event.inputs.deploy_confirm == 'yes'
+    steps:
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Run Migrations on Staging
+        if: github.ref == 'refs/heads/main'
+        env:
+          SUPABASE_CONNECTION_STRING_STAGING: ${{ secrets.SUPABASE_CONNECTION_STRING_STAGING }}
+        run: |
+          docker run --rm ${{ secrets.DOCKER_HUB_USER }}/grs-migrator:staging migrate "$SUPABASE_CONNECTION_STRING_STAGING"
+
+      - name: Run Migrations on Production
+        if: github.event.inputs.deploy_confirm == 'yes'
         env:
           SUPABASE_CONNECTION_STRING: ${{ secrets.SUPABASE_CONNECTION_STRING }}
         run: |
-          docker run --rm generalreservationsystem-generalreservationsystem.migrator migrate "$SUPABASE_CONNECTION_STRING"
+          docker run --rm ${{ secrets.DOCKER_HUB_USER }}/grs-migrator:latest migrate "$SUPABASE_CONNECTION_STRING"
 
-      - name: Deploy server on Render
+  deploy_staging:
+    needs: run_migrations
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Deploy server on Render (Staging)
         env:
-          deploy_url_server: ${{ secrets.RENDER_DEPLOY_HOOK_URL_SERVER }}
+          deploy_url_staging: ${{ secrets.RENDER_DEPLOY_HOOK_URL_STAGING }}
+        run: |
+          curl "$deploy_url_staging"
+
+  deploy_production:
+    needs: run_migrations
+    runs-on: ubuntu-latest
+    if: github.event.inputs.deploy_confirm == 'yes'
+    steps:
+      - name: Deploy server on Render (Production)
+        env:
+          deploy_url_server: ${{ secrets.RENDER_DEPLOY_HOOK_URL_PRODUCTION }}
         run: |
           curl "$deploy_url_server"
