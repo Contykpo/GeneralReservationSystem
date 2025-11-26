@@ -11,5 +11,5 @@ services:
   generalreservationsystem.migrator:
     #command: [] # this to void the command line parameters from docker-compose.yml
     labels:
-      com.microsoft.visualstudio.debuggee.arguments: --additionalProbingPath /root/.nuget/fallbackpackages2 --additionalProbingPath /root/.nuget/fallbackpackages /app/bin/Debug/net9.0/GeneralReservationSystem.Migration.dll migrate "Host=${SQL_HOST};Port=${SQL_PORT};Database=${SQL_DB:-grsdb};Username=${DB_OWNER:-grs_admin_user};Password=${DB_OWNER_PASSWORD};SSLMode=${DB_SSL_MODE:-Require};TrustServerCertificate=${DB_TRUST_SERVER_CERTIFICATE:-true}"
+      com.microsoft.visualstudio.debuggee.arguments: --additionalProbingPath /root/.nuget/fallbackpackages2 --additionalProbingPath /root/.nuget/fallbackpackages /app/bin/Debug/net9.0/GeneralReservationSystem.Migration.dll migrate "Host=${SQL_HOST:-postgres};Port=${SQL_PORT:-5432};Database=${SQL_DB:-grsdb};Username=${DB_OWNER:-grs_admin_user};Password=${DB_OWNER_PASSWORD:-ChangeThisAdminPassword1234};SSLMode=${DB_SSL_MODE:-Prefer};TrustServerCertificate=true"
       com.microsoft.visualstudio.debuggee.program: "/usr/bin/dotnet"

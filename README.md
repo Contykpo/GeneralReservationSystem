@@ -1,5 +1,53 @@
-# GeneralReservationSystem
+﻿# GeneralReservationSystem
 Sistema genérico para montar aplicaciones web de reservas. (https://generalreservationsystem.onrender.com/)
+
+## Configuración del entorno (.env)
+
+Para configurar el sistema, necesitas crear un archivo `.env` en la raíz del proyecto basado en el archivo `.env.example` incluido.
+
+### Configuración Mínima (Desarrollo Local con Docker)
+
+Para ejecutar el sistema localmente con Docker Compose, **solo es necesario establecer el valor de `JWT_SECRET_KEY`**. Los demás valores tienen configuraciones predeterminadas que funcionan automáticamente con el contenedor PostgreSQL incluido en Docker Compose.
+
+```bash
+# Copia el archivo de ejemplo
+cp .env.example .env
+
+# Edita el archivo .env y genera un JWT_SECRET_KEY seguro
+# Puedes generar uno usando:
+# - Linux/Mac: openssl rand -base64 64
+# - PowerShell: -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 64 | % {[char]$_})
+```
+
+**Ejemplo de configuración mínima (.env):**
+```env
+JWT_SECRET_KEY=8K9mP2vN7xR4tY6wQ3sE5hU8jM1nB4cF7gD9kL2oP5rT8vX1zA4yC6eG9iH2mJ5nQ8sW3uE6xR9tY2bN5cV8fH1kL4oM7pS0zD3gJ6iK9mP2qT5uX8wA1yC4eF7hN0jR3sV6xZ9b
+CERT_PASSWORD=YourSecureCertPassword123
+```
+
+### Configuración con Base de Datos Externa (Supabase)
+
+Si deseas usar una base de datos externa como Supabase, debes configurar todos los valores de conexión en el archivo `.env`:
+
+```env
+SQL_HOST=aws-1-us-east-2.pooler.supabase.com
+SQL_PORT=5432
+SQL_DB=postgres
+
+SA_USER=postgres.faeehnzdfgbsfiblqbgt
+SA_PASSWORD=<Tu_Password_Supabase>
+
+DB_OWNER=postgres.faeehnzdfgbsfiblqbgt
+DB_OWNER_PASSWORD=<Tu_Password_Supabase>
+
+DB_USER=grs_app_user.faeehnzdfgbsfiblqbgt
+DB_PASSWORD=<Tu_Password_Usuario_Aplicacion>
+
+JWT_SECRET_KEY=<Tu_Clave_Secreta_JWT_64_caracteres_minimo>
+CERT_PASSWORD=<Tu_Password_Certificado>
+```
+
+Consulta los comentarios en `.env.example` para más detalles sobre cada configuración.
 
 ## Certificados SSL para desarrollo
 
