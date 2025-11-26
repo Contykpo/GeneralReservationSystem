@@ -1,13 +1,14 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 18
-VisualStudioVersion = 18.0.11111.16
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36518.9
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Source", "Source", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 	ProjectSection(SolutionItems) = preProject
 		.env = .env
 		.env.example = .env.example
 		.gitattributes = .gitattributes
+		..\GeneralReservationSystem.Web\GeneralReservationSystem.Web\Program.cs = ..\GeneralReservationSystem.Web\GeneralReservationSystem.Web\Program.cs
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeneralReservationSystem.Infrastructure", "GeneralReservationSystem.Infrastructure\GeneralReservationSystem.Infrastructure.csproj", "{D795CC22-FB8F-4EF7-B234-263995402503}"
@@ -18,13 +19,11 @@ Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-co
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeneralReservationSystem.Tests", "GeneralReservationSystem.Tests\GeneralReservationSystem.Tests.csproj", "{9B54F143-36E3-48F5-B183-4191579FC092}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeneralReservationSystem.API", "GeneralReservationSystem.API\GeneralReservationSystem.API.csproj", "{04D9C2E5-FF3B-41B3-99DB-A3D2EA5104C6}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeneralReservationSystem.Migration", "GeneralReservationSystem.Migration\GeneralReservationSystem.Migration.csproj", "{2C2FA244-3D1D-42B0-B43F-77BC06FCDE6D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeneralReservationSystem.Web", "GeneralReservationSystem.Web\GeneralReservationSystem.Web\GeneralReservationSystem.Web.csproj", "{546A2596-4683-434A-8828-67DDB1CB595C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeneralReservationSystem.Web.Client", "GeneralReservationSystem.Web.Client\GeneralReservationSystem.Web.Client.csproj", "{A2951B25-8AE9-6F08-DB67-580504868CA4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeneralReservationSystem.Web.Client", "GeneralReservationSystem.Web\GeneralReservationSystem.Web.Client\GeneralReservationSystem.Web.Client.csproj", "{26596B42-53E9-4F3B-A092-3C1678E79E4D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeneralReservationSystem.Server", "GeneralReservationSystem.Server\GeneralReservationSystem.Server.csproj", "{FDE35DB5-2407-1D5A-AC63-527BA51BA865}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -48,22 +47,18 @@ Global
 		{9B54F143-36E3-48F5-B183-4191579FC092}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9B54F143-36E3-48F5-B183-4191579FC092}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9B54F143-36E3-48F5-B183-4191579FC092}.Release|Any CPU.Build.0 = Release|Any CPU
-		{04D9C2E5-FF3B-41B3-99DB-A3D2EA5104C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{04D9C2E5-FF3B-41B3-99DB-A3D2EA5104C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{04D9C2E5-FF3B-41B3-99DB-A3D2EA5104C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{04D9C2E5-FF3B-41B3-99DB-A3D2EA5104C6}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2C2FA244-3D1D-42B0-B43F-77BC06FCDE6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2C2FA244-3D1D-42B0-B43F-77BC06FCDE6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2C2FA244-3D1D-42B0-B43F-77BC06FCDE6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2C2FA244-3D1D-42B0-B43F-77BC06FCDE6D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{546A2596-4683-434A-8828-67DDB1CB595C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{546A2596-4683-434A-8828-67DDB1CB595C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{546A2596-4683-434A-8828-67DDB1CB595C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{546A2596-4683-434A-8828-67DDB1CB595C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{26596B42-53E9-4F3B-A092-3C1678E79E4D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{26596B42-53E9-4F3B-A092-3C1678E79E4D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{26596B42-53E9-4F3B-A092-3C1678E79E4D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{26596B42-53E9-4F3B-A092-3C1678E79E4D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A2951B25-8AE9-6F08-DB67-580504868CA4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A2951B25-8AE9-6F08-DB67-580504868CA4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A2951B25-8AE9-6F08-DB67-580504868CA4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A2951B25-8AE9-6F08-DB67-580504868CA4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FDE35DB5-2407-1D5A-AC63-527BA51BA865}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FDE35DB5-2407-1D5A-AC63-527BA51BA865}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FDE35DB5-2407-1D5A-AC63-527BA51BA865}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FDE35DB5-2407-1D5A-AC63-527BA51BA865}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -72,10 +67,9 @@ Global
 		{D795CC22-FB8F-4EF7-B234-263995402503} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{120F192D-1AC8-40B8-A62A-AB8B6F31CAFE} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{9B54F143-36E3-48F5-B183-4191579FC092} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
-		{04D9C2E5-FF3B-41B3-99DB-A3D2EA5104C6} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{2C2FA244-3D1D-42B0-B43F-77BC06FCDE6D} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
-		{546A2596-4683-434A-8828-67DDB1CB595C} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
-		{26596B42-53E9-4F3B-A092-3C1678E79E4D} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{A2951B25-8AE9-6F08-DB67-580504868CA4} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{FDE35DB5-2407-1D5A-AC63-527BA51BA865} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {55D942AB-6EC8-4F5D-B4D0-983864A504DC}

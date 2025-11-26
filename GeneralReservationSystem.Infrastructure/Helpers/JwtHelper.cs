@@ -59,7 +59,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             {
                 HttpOnly = true,
                 Secure = true,
-                SameSite = SameSiteMode.None,
+                SameSite = SameSiteMode.Strict,
                 Path = CookiePath,
                 Expires = DateTimeOffset.UtcNow.AddDays(settings.ExpirationDays)
             };
@@ -91,7 +91,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             {
                 HttpOnly = true,
                 Secure = true,
-                SameSite = SameSiteMode.None,
+                SameSite = SameSiteMode.Strict,
                 Path = CookiePath,
             };
 

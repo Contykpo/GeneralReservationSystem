@@ -1,13 +1,13 @@
-#See https://aka.ms/overrideVSDockerComposeConfiguration to understand how Visual Studio uses this override file.
+﻿#See https://aka.ms/overrideVSDockerComposeConfiguration to understand how Visual Studio uses this override file.
 
 #services:
-  #generalreservationsystem.api:
+  #generalreservationsystem.server:
     #labels:
       #com.microsoft.visualstudio.debuggee.program: "dotnet"
-      #com.microsoft.visualstudio.debuggee.arguments: "\"/app/GeneralReservationSystem.API.dll\""
+      #com.microsoft.visualstudio.debuggee.arguments: "\"/app/GeneralReservationSystem.Server.dll\""
       #com.microsoft.visualstudio.debuggee.workingdirectory: "/app"
       #com.microsoft.visualstudio.debuggee.killprogram: "$kill_command$"
-      #com.microsoft.visual-studio.project-name: "GeneralReservationSystem.API"
+      #com.microsoft.visual-studio.project-name: "GeneralReservationSystem.Server"
   #generalreservationsystem.testdb.migrator:
     #labels:
       #com.microsoft.visualstudio.debuggee.program: "dotnet"

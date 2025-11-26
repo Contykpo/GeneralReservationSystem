@@ -1,9 +1,9 @@
-using GeneralReservationSystem.API.Services.Implementations;
-using GeneralReservationSystem.Application.DTOs;
+﻿using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.Entities;
 using GeneralReservationSystem.Application.Exceptions.Repositories;
 using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Repositories.Interfaces;
+using GeneralReservationSystem.Server.Services.Implementations;
 using Moq;
 
 namespace GeneralReservationSystem.Tests.Services.API

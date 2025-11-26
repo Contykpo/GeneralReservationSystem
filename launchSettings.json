@@ -1,15 +1,14 @@
-{
+﻿{
   "profiles": {
     "Docker Compose": {
       "commandName": "DockerCompose",
       "commandVersion": "1.0",
       "composeLaunchAction": "LaunchBrowser",
-      "composeLaunchServiceName": "generalreservationsystem.web",
+      "composeLaunchServiceName": "generalreservationsystem.server",
       "composeLaunchUrl": "{Scheme}://localhost:{ServicePort}",
       "serviceActions": {
-        "generalreservationsystem.api": "StartDebugging",
+        "generalreservationsystem.server": "StartDebugging",
         "generalreservationsystem.migrator": "StartDebugging",
-        "generalreservationsystem.web": "StartDebugging",
         "postgres": "StartWithoutDebugging"
       }
     }
