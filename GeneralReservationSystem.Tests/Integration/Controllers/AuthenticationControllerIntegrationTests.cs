@@ -193,7 +193,7 @@ public class AuthenticationControllerIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Login_InvalidPassword_ReturnsConflict()
+    public async Task Login_InvalidPassword_ReturnsBadRequest()
     {
         // Arrange
         RegisterUserDto registerDto = new()
@@ -217,11 +217,11 @@ public class AuthenticationControllerIntegrationTests : IntegrationTestBase
         HttpResponseMessage response = await _client.PostAsJsonAsync("/api/auth/login", loginDto);
 
         // Assert
-        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
-    public async Task Login_NonExistentUser_ReturnsConflict()
+    public async Task Login_NonExistentUser_ReturnsBadRequest()
     {
         // Arrange
         LoginDto loginDto = new()
@@ -234,7 +234,7 @@ public class AuthenticationControllerIntegrationTests : IntegrationTestBase
         HttpResponseMessage response = await _client.PostAsJsonAsync("/api/auth/login", loginDto);
 
         // Assert
-        Assert.True(response.StatusCode is HttpStatusCode.Conflict or HttpStatusCode.NotFound);
+        Assert.True(response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.NotFound);
     }
 
     [Fact]
@@ -360,7 +360,7 @@ public class AuthenticationControllerIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task ChangePassword_IncorrectCurrentPassword_ReturnsConflict()
+    public async Task ChangePassword_IncorrectCurrentPassword_ReturnsBadRequest()
     {
         // Arrange
         RegisterUserDto registerDto = new()
@@ -391,7 +391,7 @@ public class AuthenticationControllerIntegrationTests : IntegrationTestBase
         HttpResponseMessage response = await _client.PatchAsJsonAsync("/api/auth/change-password", changePasswordDto);
 
         // Assert
-        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]

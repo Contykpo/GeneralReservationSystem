@@ -134,13 +134,13 @@
                             </MudSelect>
                         </MudItem>
                         <MudItem xs="12" sm="6" md="3">
-                            <MudDateRangePicker DateRange="_filterDepartureDateRange"
-                                DateRangeChanged="@(async (DateRange? range) => { _filterDepartureDateRange = range; await OnFilterChanged(); })"
+                            <MudDateRangePicker @bind-DateRange="_filterDepartureDateRange"
+                                PickerClosed="@OnDepartureDateRangeChanged"
                                 Label="Rango Fecha Salida" Variant="Variant.Outlined" Clearable="true" />
                         </MudItem>
                         <MudItem xs="12" sm="6" md="3">
-                            <MudDateRangePicker DateRange="_filterArrivalDateRange"
-                                DateRangeChanged="@(async (DateRange? range) => { _filterArrivalDateRange = range; await OnFilterChanged(); })"
+                            <MudDateRangePicker @bind-DateRange="_filterArrivalDateRange"
+                                PickerClosed="@OnArrivalDateRangeChanged"
                                 Label="Rango Fecha Llegada" Variant="Variant.Outlined" Clearable="true" />
                         </MudItem>
                         <MudItem xs="12">
@@ -373,37 +373,61 @@
         return filterClauses;
     }
 
-    private void ClearFilters()
+    private async Task ClearFilters()
     {
         _filterDepartureStationId = null;
         _filterArrivalStationId = null;
         _filterDepartureDateRange = null;
         _filterArrivalDateRange = null;
         _searchString = string.Empty;
-        _table!.ReloadServerData();
+        await _table!.ReloadServerData();
+    }
+
+    private async Task OnDepartureDateRangeChanged()
+    {
+        await OnFilterChanged();
+    }
+
+    private async Task OnArrivalDateRangeChanged()
+    {
+        await OnFilterChanged();
     }
 
     private async Task OnFilterChanged()
     {
-        // Clear search string when using advanced filters
-        if (!string.IsNullOrWhiteSpace(_searchString))
+        try
         {
-            _searchString = string.Empty;
+            // Clear search string when using advanced filters
+            if (!string.IsNullOrWhiteSpace(_searchString))
+            {
+                _searchString = string.Empty;
+            }
+            await _table!.ReloadServerData();
         }
-        await _table!.ReloadServerData();
+        catch (Exception)
+        {
+            Snackbar.Add("Error al aplicar los filtros.", Severity.Error);
+        }
     }
 
     private async Task OnSearchChanged()
     {
-        // Clear advanced filters when using search
-        if (!string.IsNullOrWhiteSpace(_searchString))
+        try
         {
-            _filterDepartureStationId = null;
-            _filterArrivalStationId = null;
-            _filterDepartureDateRange = null;
-            _filterArrivalDateRange = null;
+            // Clear advanced filters when using search
+            if (!string.IsNullOrWhiteSpace(_searchString))
+            {
+                _filterDepartureStationId = null;
+                _filterArrivalStationId = null;
+                _filterDepartureDateRange = null;
+                _filterArrivalDateRange = null;
+            }
+            await _table!.ReloadServerData();
         }
-        await _table!.ReloadServerData();
+        catch (Exception)
+        {
+            Snackbar.Add("Error al buscar viajes.", Severity.Error);
+        }
     }
 
     private async Task HandleCreate()

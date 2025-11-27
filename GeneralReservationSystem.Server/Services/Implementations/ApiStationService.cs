@@ -28,7 +28,7 @@ namespace GeneralReservationSystem.Server.Services.Implementations
             }
             catch (UniqueConstraintViolationException ex)
             {
-                throw new ServiceBusinessException("Una o más estaciones tienen nombres duplicados/ya registrados.", ex);
+                throw new ServiceDuplicateException("Una o más estaciones tienen nombres duplicados/ya registrados.", ex);
             }
             catch (RepositoryException ex)
             {

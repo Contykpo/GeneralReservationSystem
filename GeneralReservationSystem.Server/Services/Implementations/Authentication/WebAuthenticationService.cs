@@ -17,17 +17,15 @@ namespace GeneralReservationSystem.Server.Services.Implementations.Authenticatio
         {
             EnsureAuthenticated();
 
-            string? userId = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             string? userName = User?.FindFirst(ClaimTypes.Name)?.Value;
             string? email = User?.FindFirst(ClaimTypes.Email)?.Value;
-            bool isAdmin = User?.IsInRole("Admin") ?? false;
 
             return Task.FromResult(new UserInfo
             {
-                UserId = int.Parse(userId!),
+                UserId = CurrentUserId,
                 UserName = userName ?? string.Empty,
                 Email = email ?? string.Empty,
-                IsAdmin = isAdmin
+                IsAdmin = IsAdmin
             });
         }
 
@@ -56,11 +54,13 @@ namespace GeneralReservationSystem.Server.Services.Implementations.Authenticatio
 
         public async Task ChangePasswordAsync(ChangePasswordDto dto, CancellationToken cancellationToken = default)
         {
-            await ValidateAsync(changePasswordValidator, dto, cancellationToken);
             EnsureOwnerOrAdmin(dto.UserId);
+            await ValidateAsync(changePasswordValidator, dto, cancellationToken);
             await authenticationService.ChangePasswordAsync(dto, cancellationToken);
         }
     }
 }
+
+
 
 

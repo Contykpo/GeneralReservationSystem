@@ -26,7 +26,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             }
             catch (UniqueConstraintViolationException ex)
             {
-                throw new ServiceBusinessException("Ya existe una estación con el mismo nombre o código.", ex);
+                throw new ServiceDuplicateException("Ya existe una estación con el mismo nombre o código.", ex);
             }
             catch (RepositoryException ex)
             {
@@ -64,7 +64,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations
             }
             catch (UniqueConstraintViolationException ex)
             {
-                throw new ServiceBusinessException("Ya existe una estación con el mismo nombre o código.", ex);
+                throw new ServiceDuplicateException("Ya existe una estación con el mismo nombre o código.", ex);
             }
             catch (RepositoryException ex)
             {

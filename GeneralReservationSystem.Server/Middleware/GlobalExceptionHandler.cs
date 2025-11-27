@@ -1,30 +1,64 @@
 ﻿using GeneralReservationSystem.Application.Exceptions.Repositories;
 using GeneralReservationSystem.Application.Exceptions.Services;
-using Microsoft.AspNetCore.Diagnostics;
 using System.Data.Common;
 using System.Net;
+using System.Security;
 using System.Text.Json;
 
 namespace GeneralReservationSystem.Server.Middleware
 {
-    public static class GlobalExceptionHandler
+    public class GlobalExceptionHandler
     {
-        public static async Task HandleAsync(HttpContext context)
-        {
-            ILogger logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("GlobalExceptionHandler");
-            Exception? exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
-            string message = "Ha ocurrido un error inesperado.";
-            HttpStatusCode statusCode = HttpStatusCode.InternalServerError;
+        private readonly RequestDelegate _next;
+        private readonly ILogger<GlobalExceptionHandler> _logger;
 
-            if (exception is ServiceNotFoundException notFoundEx)
+        public GlobalExceptionHandler(RequestDelegate next, ILogger<GlobalExceptionHandler> logger)
+        {
+            _next = next;
+            _logger = logger;
+        }
+
+        public async Task InvokeAsync(HttpContext context)
+        {
+            try
             {
-                logger.LogWarning(notFoundEx, "Resource not found: {error}", notFoundEx.Message);
+                await _next(context);
+            }
+            catch (Exception ex)
+            {
+                await HandleExceptionAsync(context, ex);
+            }
+        }
+
+        private async Task HandleExceptionAsync(HttpContext context, Exception exception)
+        {
+            string message = "Ha ocurrido un error inesperado";
+            HttpStatusCode statusCode = HttpStatusCode.InternalServerError;
+            object? responseBody = null;
+
+            if (exception is ServiceValidationException validationEx)
+            {
+                message = validationEx.Message;
+                statusCode = HttpStatusCode.BadRequest;
+                responseBody = new { errorMessage = message, errors = validationEx.Errors };
+            }
+            else if (exception is ServiceNotFoundException notFoundEx)
+            {
                 message = notFoundEx.Message;
                 statusCode = HttpStatusCode.NotFound;
             }
+            else if (exception is ServiceDuplicateException duplicateEx)
+            {
+                message = duplicateEx.Message;
+                statusCode = HttpStatusCode.Conflict;
+            }
+            else if (exception is ServiceReferenceException referenceEx)
+            {
+                message = referenceEx.Message;
+                statusCode = HttpStatusCode.Conflict;
+            }
             else if (exception is ServiceBusinessException businessEx)
             {
-                logger.LogWarning(businessEx, "Business rule violation: {error}", businessEx.Message);
                 message = businessEx.Message;
                 statusCode = HttpStatusCode.BadRequest;
             }
@@ -35,29 +69,34 @@ namespace GeneralReservationSystem.Server.Middleware
                     DbException? dbEx = GetInnermostDbException(repoEx);
                     if (dbEx != null)
                     {
-                        logger.LogError(dbEx, "DbException: {error}", dbEx.Message);
+                        _logger.LogError(dbEx, "DbException: {error}", dbEx.Message);
                     }
                     else
                     {
-                        logger.LogError(repoEx, "SQL error in repository: {error}", repoEx.Message);
+                        _logger.LogError(repoEx, "SQL error in repository: {error}", repoEx.Message);
                     }
                 }
                 else
                 {
-                    logger.LogError(serviceEx, "Service error: {error}", serviceEx.Message);
+                    _logger.LogError(serviceEx, "Service error: {error}", serviceEx.Message);
                 }
                 message = serviceEx.Message;
                 statusCode = HttpStatusCode.InternalServerError;
             }
-            else if (exception != null)
+            else if (exception is SecurityException securityEx)
             {
-                logger.LogError(exception, "Unhandled exception: {error}", exception.Message);
+                message = securityEx.Message;
+                statusCode = HttpStatusCode.Forbidden;
+            }
+            else
+            {
+                _logger.LogError(exception, "Unhandled exception: {error}", exception.Message);
             }
 
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = (int)statusCode;
-            var error = new { error = message };
-            await context.Response.WriteAsync(JsonSerializer.Serialize(error));
+            responseBody ??= new { error = message };
+            await context.Response.WriteAsync(JsonSerializer.Serialize(responseBody));
         }
 
         private static DbException? GetInnermostDbException(Exception ex)

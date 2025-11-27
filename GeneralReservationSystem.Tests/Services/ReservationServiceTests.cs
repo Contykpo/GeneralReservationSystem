@@ -53,7 +53,7 @@ namespace GeneralReservationSystem.Tests.Services
         }
 
         [Fact]
-        public async Task CreateReservationAsync_InvalidTripOrUser_ThrowsServiceBusinessException()
+        public async Task CreateReservationAsync_InvalidTripOrUser_ThrowsServiceReferenceException()
         {
             // Arrange
             CreateReservationDto createDto = new()
@@ -68,7 +68,7 @@ namespace GeneralReservationSystem.Tests.Services
                 .ThrowsAsync(new ForeignKeyViolationException("FK_Reservation_Trip_User"));
 
             // Act & Assert
-            ServiceBusinessException exception = await Assert.ThrowsAsync<ServiceBusinessException>(
+            ServiceReferenceException exception = await Assert.ThrowsAsync<ServiceReferenceException>(
                 () => _reservationService.CreateReservationAsync(createDto));
 
             Assert.Equal("El viaje o el usuario no existen.", exception.Message);
@@ -76,7 +76,7 @@ namespace GeneralReservationSystem.Tests.Services
         }
 
         [Fact]
-        public async Task CreateReservationAsync_SeatAlreadyReserved_ThrowsServiceBusinessException()
+        public async Task CreateReservationAsync_SeatAlreadyReserved_ThrowsServiceDuplicateException()
         {
             // Arrange
             CreateReservationDto createDto = new()
@@ -91,7 +91,7 @@ namespace GeneralReservationSystem.Tests.Services
                 .ThrowsAsync(new UniqueConstraintViolationException("UQ_Reservation_Trip_Seat"));
 
             // Act & Assert
-            ServiceBusinessException exception = await Assert.ThrowsAsync<ServiceBusinessException>(
+            ServiceDuplicateException exception = await Assert.ThrowsAsync<ServiceDuplicateException>(
                 () => _reservationService.CreateReservationAsync(createDto));
 
             Assert.Equal("El asiento ya está reservado para este viaje.", exception.Message);
@@ -1862,9 +1862,9 @@ namespace GeneralReservationSystem.Tests.Services
             {
                 Items =
                 [
-                    new() { TripId = 1, Seat = 5 },
-                    new() { TripId = 2, Seat = 10 },
-                    new() { TripId = 3, Seat = 15 }
+                    new() { TripId = 5, Seat = 5 },
+                    new() { TripId = 3, Seat = 10 },
+                    new() { TripId = 8, Seat = 15 }
                 ],
                 TotalCount = 3,
                 Page = 1,

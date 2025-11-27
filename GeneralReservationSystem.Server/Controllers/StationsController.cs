@@ -13,7 +13,13 @@ namespace GeneralReservationSystem.Server.Controllers
 {
     [Route("api/stations")]
     [ApiController]
-    public class StationsController(IApiStationService stationService, IValidator<PagedSearchRequestDto> pagedSearchValidator, IValidator<CreateStationDto> createStationValidator, IValidator<UpdateStationDto> updateStationValidator, IValidator<StationKeyDto> stationKeyValidator, IValidator<ImportStationDto> importStationValidator) : ControllerBase
+    public class StationsController(
+        IApiStationService stationService,
+        IValidator<PagedSearchRequestDto> pagedSearchValidator,
+        IValidator<CreateStationDto> createStationValidator,
+        IValidator<UpdateStationDto> updateStationValidator,
+        IValidator<StationKeyDto> stationKeyValidator,
+        IValidator<ImportStationDto> importStationValidator) : ControllerBase
     {
         [HttpGet]
         public async Task<IActionResult> GetAllStations(CancellationToken cancellationToken)
@@ -27,11 +33,7 @@ namespace GeneralReservationSystem.Server.Controllers
         {
             PagedSearchRequestDto searchDto = new();
             searchDto.PopulateFromQuery(Request.Query);
-            IActionResult? validationResult = await ValidationHelper.ValidateAsync(pagedSearchValidator, searchDto, cancellationToken);
-            if (validationResult != null)
-            {
-                return validationResult;
-            }
+            await ValidateAsync(pagedSearchValidator, searchDto, cancellationToken);
 
             PagedResult<Station> result = await stationService.SearchStationsAsync(searchDto, cancellationToken);
             return Ok(result);
@@ -41,42 +43,18 @@ namespace GeneralReservationSystem.Server.Controllers
         public async Task<IActionResult> GetStation([FromRoute] int stationId, CancellationToken cancellationToken)
         {
             StationKeyDto keyDto = new() { StationId = stationId };
-            IActionResult? validationResult = await ValidationHelper.ValidateAsync(stationKeyValidator, keyDto, cancellationToken);
-            if (validationResult != null)
-            {
-                return validationResult;
-            }
-
-            try
-            {
-                Station station = await stationService.GetStationAsync(keyDto, cancellationToken);
-                return Ok(station);
-            }
-            catch (ServiceNotFoundException ex)
-            {
-                return NotFound(new { error = ex.Message });
-            }
+            await ValidateAsync(stationKeyValidator, keyDto, cancellationToken);
+            Station station = await stationService.GetStationAsync(keyDto, cancellationToken);
+            return Ok(station);
         }
 
         [HttpPost]
         [Authorize(Roles = AdminRoleName)]
         public async Task<IActionResult> CreateStation([FromBody] CreateStationDto dto, CancellationToken cancellationToken)
         {
-            IActionResult? validationResult = await ValidationHelper.ValidateAsync(createStationValidator, dto, cancellationToken);
-            if (validationResult != null)
-            {
-                return validationResult;
-            }
-
-            try
-            {
-                Station station = await stationService.CreateStationAsync(dto, cancellationToken);
-                return CreatedAtAction(nameof(GetStation), new { stationId = station.StationId }, station);
-            }
-            catch (ServiceBusinessException ex)
-            {
-                return Conflict(new { error = ex.Message });
-            }
+            await ValidateAsync(createStationValidator, dto, cancellationToken);
+            Station station = await stationService.CreateStationAsync(dto, cancellationToken);
+            return CreatedAtAction(nameof(GetStation), new { stationId = station.StationId }, station);
         }
 
         [HttpPatch("{stationId:int}")]
@@ -84,25 +62,9 @@ namespace GeneralReservationSystem.Server.Controllers
         public async Task<IActionResult> UpdateStation([FromRoute] int stationId, [FromBody] UpdateStationDto dto, CancellationToken cancellationToken)
         {
             dto.StationId = stationId;
-            IActionResult? validationResult = await ValidationHelper.ValidateAsync(updateStationValidator, dto, cancellationToken);
-            if (validationResult != null)
-            {
-                return validationResult;
-            }
-
-            try
-            {
-                Station station = await stationService.UpdateStationAsync(dto, cancellationToken);
-                return Ok(station);
-            }
-            catch (ServiceNotFoundException ex)
-            {
-                return NotFound(new { error = ex.Message });
-            }
-            catch (ServiceBusinessException ex)
-            {
-                return Conflict(new { error = ex.Message });
-            }
+            await ValidateAsync(updateStationValidator, dto, cancellationToken);
+            Station station = await stationService.UpdateStationAsync(dto, cancellationToken);
+            return Ok(station);
         }
 
         [HttpDelete("{stationId:int}")]
@@ -110,21 +72,9 @@ namespace GeneralReservationSystem.Server.Controllers
         public async Task<IActionResult> DeleteStation([FromRoute] int stationId, CancellationToken cancellationToken)
         {
             StationKeyDto keyDto = new() { StationId = stationId };
-            IActionResult? validationResult = await ValidationHelper.ValidateAsync(stationKeyValidator, keyDto, cancellationToken);
-            if (validationResult != null)
-            {
-                return validationResult;
-            }
-
-            try
-            {
-                await stationService.DeleteStationAsync(keyDto, cancellationToken);
-                return NoContent();
-            }
-            catch (ServiceNotFoundException ex)
-            {
-                return NotFound(new { error = ex.Message });
-            }
+            await ValidateAsync(stationKeyValidator, keyDto, cancellationToken);
+            await stationService.DeleteStationAsync(keyDto, cancellationToken);
+            return NoContent();
         }
 
         [HttpPost("import")]
@@ -133,47 +83,32 @@ namespace GeneralReservationSystem.Server.Controllers
         {
             if (file == null || file.Length == 0)
             {
-                return BadRequest(new { error = "El archivo CSV es requerido." });
+                throw new ServiceValidationException("El archivo CSV es requerido.", [new ValidationError("El archivo CSV es requerido.", "file")]);
             }
 
             if (!file.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
             {
-                return BadRequest(new { error = "El archivo debe ser un CSV." });
+                throw new ServiceValidationException("El archivo debe ser un CSV.", [new ValidationError("El archivo debe ser un CSV.", "file")]);
             }
 
-            try
+            List<ImportStationDto> importDtos = [];
+            await foreach (ImportStationDto? dto in CsvHelper.ParseAndValidateCsvAsync(
+                file.OpenReadStream(),
+                importStationValidator,
+                cancellationToken
+            ))
             {
-                List<ImportStationDto> importDtos = [];
-                await foreach (ImportStationDto? dto in CsvHelper.ParseAndValidateCsvAsync(
-                    file.OpenReadStream(),
-                    importStationValidator,
-                    cancellationToken
-                ))
-                {
-                    importDtos.Add(dto);
-                }
+                importDtos.Add(dto);
+            }
 
-                if (importDtos.Count == 0)
-                {
-                    return BadRequest(new { error = "El archivo CSV no contiene estaciones válidas." });
-                }
+            if (importDtos.Count == 0)
+            {
+                throw new ServiceValidationException("El archivo CSV no contiene estaciones válidas.", [new ValidationError("El archivo CSV no contiene estaciones válidas.", "file")]);
+            }
 
-                int affected = await stationService.CreateStationsBulkAsync(importDtos, cancellationToken);
+            int affected = await stationService.CreateStationsBulkAsync(importDtos, cancellationToken);
 
-                return Ok(new { message = $"Se importaron {affected} estaciones exitosamente.", count = affected });
-            }
-            catch (ServiceValidationException ex)
-            {
-                return BadRequest(ex.Errors);
-            }
-            catch (ServiceBusinessException ex)
-            {
-                return Conflict(new { error = ex.Message });
-            }
-            catch (ServiceException ex)
-            {
-                return StatusCode(500, new { error = ex.Message });
-            }
+            return Ok(new { message = $"Se importaron {affected} estaciones exitosamente.", count = affected });
         }
 
         [HttpGet("export")]

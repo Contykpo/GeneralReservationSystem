@@ -8,7 +8,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Source", "Source", "{02EA68
 		.env = .env
 		.env.example = .env.example
 		.gitattributes = .gitattributes
-		..\GeneralReservationSystem.Web\GeneralReservationSystem.Web\Program.cs = ..\GeneralReservationSystem.Web\GeneralReservationSystem.Web\Program.cs
 		README.md = README.md
 	EndProjectSection
 EndProject

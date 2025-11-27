@@ -330,7 +330,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task SearchStations_ValidationFails_ReturnsBadRequest()
+        public async Task SearchStations_ValidationFails_ThrowsServiceValidationException()
         {
             // Arrange
             List<ValidationFailure> validationFailures =
@@ -354,11 +354,11 @@ namespace GeneralReservationSystem.Tests.Controllers
                 }
             };
 
-            // Act
-            IActionResult result = await _controller.SearchStations(CancellationToken.None);
+            // Act & Assert
+            ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
+                () => _controller.SearchStations(CancellationToken.None));
 
-            // Assert
-            _ = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Single(exception.Errors);
 
             _mockStationService.Verify(
                 s => s.SearchStationsAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()),
@@ -457,22 +457,20 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task GetStation_StationNotFound_ReturnsNotFound()
+        public async Task GetStation_StationNotFound_ThrowsServiceNotFoundException()
         {
             // Arrange
             _ = _mockStationService
                 .Setup(s => s.GetStationAsync(It.Is<StationKeyDto>(k => k.StationId == 999), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ServiceNotFoundException("Station not found"));
 
-            // Act
-            IActionResult result = await _controller.GetStation(999, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<NotFoundObjectResult>(result);
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<ServiceNotFoundException>(
+                () => _controller.GetStation(999, CancellationToken.None));
         }
 
         [Fact]
-        public async Task GetStation_ValidationFails_ReturnsBadRequest()
+        public async Task GetStation_ValidationFails_ThrowsServiceValidationException()
         {
             // Arrange
             List<ValidationFailure> validationFailures =
@@ -484,11 +482,11 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(v => v.ValidateAsync(It.IsAny<StationKeyDto>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ValidationResult(validationFailures));
 
-            // Act
-            IActionResult result = await _controller.GetStation(0, CancellationToken.None);
+            // Act & Assert
+            ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
+                () => _controller.GetStation(0, CancellationToken.None));
 
-            // Assert
-            _ = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Single(exception.Errors);
 
             _mockStationService.Verify(
                 s => s.GetStationAsync(It.IsAny<StationKeyDto>(), It.IsAny<CancellationToken>()),
@@ -541,7 +539,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task CreateStation_DuplicateName_ReturnsConflict()
+        public async Task CreateStation_DuplicateName_ThrowsServiceBusinessException()
         {
             // Arrange
             SetupAdminUser();
@@ -558,15 +556,13 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(s => s.CreateStationAsync(createDto, It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ServiceBusinessException("Station already exists"));
 
-            // Act
-            IActionResult result = await _controller.CreateStation(createDto, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<ConflictObjectResult>(result);
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<ServiceBusinessException>(
+                () => _controller.CreateStation(createDto, CancellationToken.None));
         }
 
         [Fact]
-        public async Task CreateStation_ValidationFails_ReturnsBadRequest()
+        public async Task CreateStation_ValidationFails_ThrowsServiceValidationException()
         {
             // Arrange
             SetupAdminUser();
@@ -589,11 +585,11 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(v => v.ValidateAsync(createDto, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ValidationResult(validationFailures));
 
-            // Act
-            IActionResult result = await _controller.CreateStation(createDto, CancellationToken.None);
+            // Act & Assert
+            ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
+                () => _controller.CreateStation(createDto, CancellationToken.None));
 
-            // Assert
-            _ = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal(2, exception.Errors.Length);
 
             _mockStationService.Verify(
                 s => s.CreateStationAsync(It.IsAny<CreateStationDto>(), It.IsAny<CancellationToken>()),
@@ -642,7 +638,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task UpdateStation_StationNotFound_ReturnsNotFound()
+        public async Task UpdateStation_StationNotFound_ThrowsServiceNotFoundException()
         {
             // Arrange
             SetupAdminUser();
@@ -656,15 +652,13 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(s => s.UpdateStationAsync(It.IsAny<UpdateStationDto>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ServiceNotFoundException("Station not found"));
 
-            // Act
-            IActionResult result = await _controller.UpdateStation(999, updateDto, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<NotFoundObjectResult>(result);
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<ServiceNotFoundException>(
+                () => _controller.UpdateStation(999, updateDto, CancellationToken.None));
         }
 
         [Fact]
-        public async Task UpdateStation_DuplicateName_ReturnsConflict()
+        public async Task UpdateStation_DuplicateName_ThrowsServiceBusinessException()
         {
             // Arrange
             SetupAdminUser();
@@ -678,22 +672,20 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(s => s.UpdateStationAsync(It.IsAny<UpdateStationDto>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ServiceBusinessException("Station name already exists"));
 
-            // Act
-            IActionResult result = await _controller.UpdateStation(1, updateDto, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<ConflictObjectResult>(result);
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<ServiceBusinessException>(
+                () => _controller.UpdateStation(1, updateDto, CancellationToken.None));
         }
 
         [Fact]
-        public async Task UpdateStation_ValidationFails_ReturnsBadRequest()
+        public async Task UpdateStation_ValidationFails_ThrowsServiceValidationException()
         {
             // Arrange
             SetupAdminUser();
 
             UpdateStationDto updateDto = new()
             {
-                StationName = "" // Invalid
+                StationName = ""
             };
 
             List<ValidationFailure> validationFailures =
@@ -705,11 +697,11 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(v => v.ValidateAsync(It.IsAny<UpdateStationDto>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ValidationResult(validationFailures));
 
-            // Act
-            IActionResult result = await _controller.UpdateStation(1, updateDto, CancellationToken.None);
+            // Act & Assert
+            ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
+                () => _controller.UpdateStation(1, updateDto, CancellationToken.None));
 
-            // Assert
-            _ = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Single(exception.Errors);
 
             _mockStationService.Verify(
                 s => s.UpdateStationAsync(It.IsAny<UpdateStationDto>(), It.IsAny<CancellationToken>()),
@@ -742,7 +734,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task DeleteStation_StationNotFound_ReturnsNotFound()
+        public async Task DeleteStation_StationNotFound_ThrowsServiceNotFoundException()
         {
             // Arrange
             SetupAdminUser();
@@ -751,11 +743,9 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(s => s.DeleteStationAsync(It.IsAny<StationKeyDto>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ServiceNotFoundException("Station not found"));
 
-            // Act
-            IActionResult result = await _controller.DeleteStation(999, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<NotFoundObjectResult>(result);
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<ServiceNotFoundException>(
+                () => _controller.DeleteStation(999, CancellationToken.None));
         }
 
         [Fact]
@@ -779,22 +769,21 @@ namespace GeneralReservationSystem.Tests.Controllers
         #region ImportStationsFromCsv Tests
 
         [Fact]
-        public async Task ImportStationsFromCsv_NullFile_ReturnsBadRequest()
+        public async Task ImportStationsFromCsv_NullFile_ThrowsServiceValidationException()
         {
             // Arrange
             SetupAdminUser();
 
-            // Act
-            IActionResult result = await _controller.ImportStationsFromCsv(null!, CancellationToken.None);
+            // Act & Assert
+            ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
+                () => _controller.ImportStationsFromCsv(null!, CancellationToken.None));
 
-            // Assert
-            BadRequestObjectResult badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            object? value = badRequestResult.Value;
-            Assert.NotNull(value);
+            Assert.Single(exception.Errors);
+            Assert.Equal("file", exception.Errors[0].Field);
         }
 
         [Fact]
-        public async Task ImportStationsFromCsv_NonCsvFile_ReturnsBadRequest()
+        public async Task ImportStationsFromCsv_NonCsvFile_ThrowsServiceValidationException()
         {
             // Arrange
             SetupAdminUser();
@@ -803,17 +792,16 @@ namespace GeneralReservationSystem.Tests.Controllers
             _ = file.Setup(f => f.FileName).Returns("test.txt");
             _ = file.Setup(f => f.Length).Returns(100);
 
-            // Act
-            IActionResult result = await _controller.ImportStationsFromCsv(file.Object, CancellationToken.None);
+            // Act & Assert
+            ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
+                () => _controller.ImportStationsFromCsv(file.Object, CancellationToken.None));
 
-            // Assert
-            BadRequestObjectResult badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            object? value = badRequestResult.Value;
-            Assert.NotNull(value);
+            Assert.Single(exception.Errors);
+            Assert.Equal("file", exception.Errors[0].Field);
         }
 
         [Fact]
-        public async Task ImportStationsFromCsv_EmptyFile_ReturnsBadRequest()
+        public async Task ImportStationsFromCsv_EmptyFile_ThrowsServiceValidationException()
         {
             // Arrange
             SetupAdminUser();
@@ -822,11 +810,12 @@ namespace GeneralReservationSystem.Tests.Controllers
             _ = file.Setup(f => f.FileName).Returns("test.csv");
             _ = file.Setup(f => f.Length).Returns(0);
 
-            // Act
-            IActionResult result = await _controller.ImportStationsFromCsv(file.Object, CancellationToken.None);
+            // Act & Assert
+            ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
+                () => _controller.ImportStationsFromCsv(file.Object, CancellationToken.None));
 
-            // Assert
-            _ = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Single(exception.Errors);
+            Assert.Equal("file", exception.Errors[0].Field);
         }
 
         [Fact]
@@ -862,7 +851,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task ImportStationsFromCsv_InvalidCsvFormat_ReturnsBadRequest()
+        public async Task ImportStationsFromCsv_InvalidCsvFormat_ThrowsServiceValidationException()
         {
             // Arrange
             SetupAdminUser();
@@ -877,11 +866,13 @@ namespace GeneralReservationSystem.Tests.Controllers
             _ = file.Setup(f => f.OpenReadStream()).Returns(stream);
             _ = file.Setup(f => f.ContentType).Returns("text/csv");
 
-            // Act
-            IActionResult result = await _controller.ImportStationsFromCsv(file.Object, CancellationToken.None);
+            // Act & Assert
+            ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
+                () => _controller.ImportStationsFromCsv(file.Object, CancellationToken.None));
 
-            // Assert
-            _ = Assert.IsType<BadRequestObjectResult>(result);
+            // The CSV has 2 invalid lines, so we expect 2 validation errors
+            Assert.Equal(2, exception.Errors.Length);
+            Assert.All(exception.Errors, error => Assert.StartsWith("csv[", error.Field));
         }
 
         #endregion
