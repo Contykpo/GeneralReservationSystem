@@ -8,25 +8,23 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
 {
     public class JwtSettings
     {
-        //No es la mejor idea tener la secret key en plano en un string, pero por simplicidad dejomoslo asi por ahora
         public string SecretKey { get; set; } = string.Empty;
         public string Issuer { get; set; } = string.Empty;
         public string Audience { get; set; } = string.Empty;
         public int ExpirationDays { get; set; } = 7;
-        public string? Domain { get; set; }
     }
 
     public static class JwtHelper
     {
-        public const string CookieName = "jwt_token";
-        public const string CookiePath = "/";
+        public const string SessionCookieName = "jwt_token";
+        public const string SessionCookiePath = "/";
 
         public static SymmetricSecurityKey GetIssuerSigningKeyFromString(string secretKey)
         {
             return new(Encoding.UTF8.GetBytes(secretKey));
         }
 
-        public static string GenerateJwtToken(this UserSessionInfo userSession, JwtSettings settings)
+        public static string GenerateSessionJwtToken(this UserSessionInfo userSession, JwtSettings settings)
         {
             SymmetricSecurityKey key = GetIssuerSigningKeyFromString(settings.SecretKey);
             SigningCredentials credentials = new(key, SecurityAlgorithms.HmacSha256);
@@ -53,54 +51,31 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        public static void SetJwtCookie(this HttpResponse response, string token, JwtSettings settings)
-        {
-            CookieOptions options = new()
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Strict,
-                Path = CookiePath,
-                Expires = DateTimeOffset.UtcNow.AddDays(settings.ExpirationDays)
-            };
-
-            if (!string.IsNullOrEmpty(settings.Domain))
-            {
-                options.Domain = settings.Domain;
-            }
-
-            response.Cookies.Append(CookieName, token, options);
-        }
-
-        public static void SetJwtCookie(this HttpContext context, string token, JwtSettings settings)
-        {
-            SetJwtCookie(context.Response, token, settings);
-        }
-
-        public static string GenerateAndSetJwtCookie(this HttpContext context, UserSessionInfo userSession, JwtSettings settings)
-        {
-            string token = GenerateJwtToken(userSession, settings);
-            SetJwtCookie(context, token, settings);
-
-            return token;
-        }
-
-        public static void ClearJwtCookie(this HttpResponse response)
+        public static string GenerateAndSetSessionJwtCookie(this HttpContext context, UserSessionInfo userSession, JwtSettings jwtSettings)
         {
             CookieOptions options = new()
             {
                 HttpOnly = true,
                 Secure = true,
                 SameSite = SameSiteMode.Lax,
-                Path = CookiePath,
+                Path = SessionCookiePath,
+                Expires = DateTimeOffset.UtcNow.AddDays(jwtSettings.ExpirationDays)
             };
 
-            response.Cookies.Delete(CookieName, options);
+            string token = GenerateSessionJwtToken(userSession, jwtSettings);
+            context.Response.Cookies.Append(SessionCookieName, token, options);
+
+            return token;
         }
 
-        public static void ClearJwtCookie(this HttpContext context)
+        public static void ClearSessionJwtCookie(this HttpResponse response)
         {
-            ClearJwtCookie(context.Response);
+            response.Cookies.Delete(SessionCookieName);
+        }
+
+        public static void ClearSessionJwtCookie(this HttpContext context)
+        {
+            context.Response.ClearSessionJwtCookie();
         }
     }
 }

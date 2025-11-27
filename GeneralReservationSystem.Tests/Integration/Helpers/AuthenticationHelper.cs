@@ -1,4 +1,4 @@
-using GeneralReservationSystem.Infrastructure.Helpers;
+﻿using GeneralReservationSystem.Infrastructure.Helpers;
 
 namespace GeneralReservationSystem.Tests.Integration.Helpers;
 
@@ -13,11 +13,11 @@ public static class AuthenticationHelper
 
         foreach (string cookie in cookies)
         {
-            if (cookie.StartsWith($"{JwtHelper.CookieName}="))
+            if (cookie.StartsWith($"{JwtHelper.SessionCookieName}="))
             {
                 string[] parts = cookie.Split(';');
                 string tokenPart = parts[0];
-                string token = tokenPart[(JwtHelper.CookieName.Length + 1)..];
+                string token = tokenPart[(JwtHelper.SessionCookieName.Length + 1)..];
                 return token;
             }
         }
@@ -27,12 +27,12 @@ public static class AuthenticationHelper
 
     public static void AddJwtCookie(HttpRequestMessage request, string token)
     {
-        request.Headers.Add("Cookie", $"{JwtHelper.CookieName}={token}");
+        request.Headers.Add("Cookie", $"{JwtHelper.SessionCookieName}={token}");
     }
 
     public static void SetAuthenticationCookie(HttpClient client, string token)
     {
-        client.DefaultRequestHeaders.Add("Cookie", $"{JwtHelper.CookieName}={token}");
+        client.DefaultRequestHeaders.Add("Cookie", $"{JwtHelper.SessionCookieName}={token}");
     }
 
     public static void ClearAuthenticationCookie(HttpClient client)

@@ -6,15 +6,14 @@ using GeneralReservationSystem.Application.DTOs.Authentication;
 using GeneralReservationSystem.Application.Entities.Authentication;
 using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Services.Interfaces.Authentication;
+using GeneralReservationSystem.Server.Controllers.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
 using Moq;
 using System.Security.Claims;
-using System.Security;
-using GeneralReservationSystem.Server.Controllers.Authentication;
 
-namespace GeneralReservationSystem.Tests.Controllers
+namespace GeneralReservationSystem.Tests.Controllers.Authentication
 {
     public class UsersControllerTests
     {
@@ -335,7 +334,7 @@ namespace GeneralReservationSystem.Tests.Controllers
             ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
                 () => _controller.SearchUsers(CancellationToken.None));
 
-            Assert.Single(exception.Errors);
+            _ = Assert.Single(exception.Errors);
 
             _mockUserService.Verify(
                 s => s.SearchUsersAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()),
@@ -629,7 +628,7 @@ namespace GeneralReservationSystem.Tests.Controllers
             ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
                 () => _controller.UpdateCurrentUser(updateDto, CancellationToken.None));
 
-            Assert.Single(exception.Errors);
+            _ = Assert.Single(exception.Errors);
 
             _mockUserService.Verify(
                 s => s.UpdateUserAsync(It.IsAny<UpdateUserDto>(), It.IsAny<CancellationToken>()),

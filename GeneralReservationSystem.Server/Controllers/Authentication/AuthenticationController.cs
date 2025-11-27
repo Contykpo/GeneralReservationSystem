@@ -21,7 +21,7 @@ namespace GeneralReservationSystem.Server.Controllers.Authentication
         private async Task<(IActionResult actionResult, UserInfo? createdUser)> RegisterUserAsync(RegisterUserDto dto, bool isAdmin, CancellationToken cancellationToken)
         {
             await ValidateAsync(registerValidator, dto, cancellationToken);
-            
+
             UserInfo userInfo = isAdmin ? await authenticationService.RegisterAdminAsync(dto, cancellationToken) : await authenticationService.RegisterUserAsync(dto, cancellationToken);
 
             return new(
@@ -66,7 +66,7 @@ namespace GeneralReservationSystem.Server.Controllers.Authentication
         [Authorize]
         public IActionResult Logout()
         {
-            HttpContext.ClearJwtCookie();
+            HttpContext.ClearSessionJwtCookie();
             return Ok(new { message = "Cierre de sesión exitoso" });
         }
 
@@ -117,7 +117,7 @@ namespace GeneralReservationSystem.Server.Controllers.Authentication
                 IsAdmin = userInfo.IsAdmin
             };
 
-            _ = HttpContext.GenerateAndSetJwtCookie(session, jwtSettings);
+            _ = HttpContext.GenerateAndSetSessionJwtCookie(session, jwtSettings);
         }
     }
 }

@@ -83,7 +83,7 @@ namespace GeneralReservationSystem.Server.Controllers.Authentication
             await userService.DeleteUserAsync(keyDto, cancellationToken);
             if (userId == CurrentUserId)
             {
-                Response.ClearJwtCookie();
+                Response.ClearSessionJwtCookie();
             }
             return NoContent();
         }

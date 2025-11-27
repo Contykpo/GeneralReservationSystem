@@ -4,7 +4,6 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace GeneralReservationSystem.Web.Client.Services.Implementations
 {
@@ -148,11 +147,11 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
                 return;
             }
 
-            var errorContent = await response.Content.ReadAsStringAsync();
+            string errorContent = await response.Content.ReadAsStringAsync();
 
             throw response.StatusCode switch
             {
-                HttpStatusCode.BadRequest when TryParseValidationErrorResponse(errorContent, out var errorResponse) =>
+                HttpStatusCode.BadRequest when TryParseValidationErrorResponse(errorContent, out ValidationErrorResponse? errorResponse) =>
                     new ServiceValidationException(errorResponse!.ErrorMessage, errorResponse!.Errors),
                 HttpStatusCode.BadRequest => new ServiceBusinessException(ParseErrorMessage(errorContent) ?? "Error en la solicitud."),
                 HttpStatusCode.Unauthorized => new ServiceBusinessException(ParseErrorMessage(errorContent) ?? "No tiene permisos para realizar esta acción."),
@@ -179,7 +178,8 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
             {
                 ErrorResponse? errorResponse = JsonSerializer.Deserialize<ErrorResponse>(errorContents, jsonOptions);
                 return errorResponse?.Error;
-            } catch
+            }
+            catch
             {
             }
 

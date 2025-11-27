@@ -2,7 +2,6 @@
 using FluentValidation.Results;
 using GeneralReservationSystem.Application.DTOs.Authentication;
 using GeneralReservationSystem.Application.Exceptions.Services;
-using GeneralReservationSystem.Application.Helpers;
 using GeneralReservationSystem.Application.Services.Interfaces.Authentication;
 using GeneralReservationSystem.Infrastructure.Helpers;
 using GeneralReservationSystem.Server.Controllers.Authentication;
@@ -11,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using System.Security.Claims;
 
-namespace GeneralReservationSystem.Tests.Controllers
+namespace GeneralReservationSystem.Tests.Controllers.Authentication
 {
     public class AuthenticationControllerTests
     {
@@ -263,7 +262,7 @@ namespace GeneralReservationSystem.Tests.Controllers
             // Act & Assert
             ServiceBusinessException exception = await Assert.ThrowsAsync<ServiceBusinessException>(
                 () => _controller.RegisterAdmin(registerDto, CancellationToken.None));
-            
+
             Assert.Contains("Ya existe un usuario", exception.Message);
 
             _mockAuthenticationService.Verify(
@@ -325,7 +324,7 @@ namespace GeneralReservationSystem.Tests.Controllers
             // Act & Assert
             ServiceException exception = await Assert.ThrowsAsync<ServiceException>(
                 () => _controller.RegisterAdmin(registerDto, CancellationToken.None));
-            
+
             Assert.Contains("Error al registrar el administrador", exception.Message);
 
             _mockAuthenticationService.Verify(
@@ -663,7 +662,7 @@ namespace GeneralReservationSystem.Tests.Controllers
             ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
                 () => _controller.ChangePassword(changePasswordDto, CancellationToken.None));
 
-            Assert.Single(exception.Errors);
+            _ = Assert.Single(exception.Errors);
             Assert.Equal("NewPassword", exception.Errors[0].Field);
 
             _mockAuthenticationService.Verify(

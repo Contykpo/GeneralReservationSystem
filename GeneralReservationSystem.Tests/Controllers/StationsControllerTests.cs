@@ -358,7 +358,7 @@ namespace GeneralReservationSystem.Tests.Controllers
             ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
                 () => _controller.SearchStations(CancellationToken.None));
 
-            Assert.Single(exception.Errors);
+            _ = Assert.Single(exception.Errors);
 
             _mockStationService.Verify(
                 s => s.SearchStationsAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()),
@@ -486,7 +486,7 @@ namespace GeneralReservationSystem.Tests.Controllers
             ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
                 () => _controller.GetStation(0, CancellationToken.None));
 
-            Assert.Single(exception.Errors);
+            _ = Assert.Single(exception.Errors);
 
             _mockStationService.Verify(
                 s => s.GetStationAsync(It.IsAny<StationKeyDto>(), It.IsAny<CancellationToken>()),
@@ -701,7 +701,7 @@ namespace GeneralReservationSystem.Tests.Controllers
             ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
                 () => _controller.UpdateStation(1, updateDto, CancellationToken.None));
 
-            Assert.Single(exception.Errors);
+            _ = Assert.Single(exception.Errors);
 
             _mockStationService.Verify(
                 s => s.UpdateStationAsync(It.IsAny<UpdateStationDto>(), It.IsAny<CancellationToken>()),
@@ -778,7 +778,7 @@ namespace GeneralReservationSystem.Tests.Controllers
             ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
                 () => _controller.ImportStationsFromCsv(null!, CancellationToken.None));
 
-            Assert.Single(exception.Errors);
+            _ = Assert.Single(exception.Errors);
             Assert.Equal("file", exception.Errors[0].Field);
         }
 
@@ -796,7 +796,7 @@ namespace GeneralReservationSystem.Tests.Controllers
             ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
                 () => _controller.ImportStationsFromCsv(file.Object, CancellationToken.None));
 
-            Assert.Single(exception.Errors);
+            _ = Assert.Single(exception.Errors);
             Assert.Equal("file", exception.Errors[0].Field);
         }
 
@@ -814,7 +814,7 @@ namespace GeneralReservationSystem.Tests.Controllers
             ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
                 () => _controller.ImportStationsFromCsv(file.Object, CancellationToken.None));
 
-            Assert.Single(exception.Errors);
+            _ = Assert.Single(exception.Errors);
             Assert.Equal("file", exception.Errors[0].Field);
         }
 

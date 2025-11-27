@@ -1,5 +1,4 @@
-﻿using GeneralReservationSystem.Application;
-using GeneralReservationSystem.Infrastructure;
+﻿using GeneralReservationSystem.Infrastructure;
 using GeneralReservationSystem.Infrastructure.Helpers;
 using GeneralReservationSystem.Server;
 using GeneralReservationSystem.Server.Components;
@@ -23,8 +22,7 @@ JwtSettings jwtSettings = new()
     SecretKey = builder.Configuration["Jwt:SecretKey"] ?? "YourSuperSecretKeyThatIsAtLeast32CharactersLong!",
     Issuer = builder.Configuration["Jwt:Issuer"] ?? "GeneralReservationSystemServer",
     Audience = builder.Configuration["Jwt:Audience"] ?? "GeneralReservationSystemWebClient",
-    ExpirationDays = int.Parse(builder.Configuration["Jwt:ExpirationDays"] ?? "7"),
-    Domain = builder.Configuration["Jwt:Domain"]
+    ExpirationDays = int.Parse(builder.Configuration["Jwt:ExpirationDays"] ?? "7")
 };
 builder.Services.AddSingleton(jwtSettings);
 
@@ -54,7 +52,7 @@ builder.Services.AddAuthentication(options =>
     {
         OnMessageReceived = context =>
         {
-            if (context.Request.Cookies.TryGetValue(JwtHelper.CookieName, out string? token))
+            if (context.Request.Cookies.TryGetValue(JwtHelper.SessionCookieName, out string? token))
             {
                 context.Token = token;
             }

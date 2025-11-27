@@ -11,8 +11,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
 using Moq;
-using System.Security.Claims;
 using System.Security;
+using System.Security.Claims;
 
 namespace GeneralReservationSystem.Tests.Controllers
 {
@@ -345,7 +345,7 @@ namespace GeneralReservationSystem.Tests.Controllers
             ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
                 () => _controller.SearchReservations(CancellationToken.None));
 
-            Assert.Single(exception.Errors);
+            _ = Assert.Single(exception.Errors);
 
             _mockReservationService.Verify(
                 s => s.SearchReservationsAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()),
@@ -856,7 +856,7 @@ namespace GeneralReservationSystem.Tests.Controllers
             ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
                 () => _controller.SearchCurrentUserReservations(CancellationToken.None));
 
-            Assert.Single(exception.Errors);
+            _ = Assert.Single(exception.Errors);
 
             _mockReservationService.Verify(
                 s => s.SearchUserReservationsAsync(It.IsAny<UserKeyDto>(), It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()),

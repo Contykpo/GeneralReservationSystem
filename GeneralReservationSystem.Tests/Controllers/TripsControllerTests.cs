@@ -176,7 +176,7 @@ namespace GeneralReservationSystem.Tests.Controllers
             ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
                 () => _controller.GetTrip(0, CancellationToken.None));
 
-            Assert.Single(exception.Errors);
+            _ = Assert.Single(exception.Errors);
         }
 
         #endregion
@@ -324,7 +324,7 @@ namespace GeneralReservationSystem.Tests.Controllers
             ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
                 () => _controller.CreateTrip(createDto, CancellationToken.None));
 
-            Assert.Single(exception.Errors);
+            _ = Assert.Single(exception.Errors);
 
             _mockTripService.Verify(
                 s => s.CreateTripAsync(It.IsAny<CreateTripDto>(), It.IsAny<CancellationToken>()),
@@ -701,7 +701,7 @@ namespace GeneralReservationSystem.Tests.Controllers
             ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
                 () => _controller.SearchTrips(CancellationToken.None));
 
-            Assert.Single(exception.Errors);
+            _ = Assert.Single(exception.Errors);
 
             _mockTripService.Verify(
                 s => s.SearchTripsAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()),
