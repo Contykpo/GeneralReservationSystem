@@ -1,6 +1,28 @@
 ﻿# GeneralReservationSystem
 Sistema genérico para montar aplicaciones web de reservas. (https://generalreservationsystem.onrender.com/)
 
+---
+
+## Tecnologías y Compatibilidad
+
+- **Framework:** .NET 9 (es necesario tener instalado el SDK de .NET 9 para compilar y ejecutar la solución).
+- **Frontend:** Blazor WebAssembly con prerenderizado interactivo (`InteractiveWebAssembly`). No es una SPA tradicional, ya que utiliza prerendering para mejorar la experiencia y el SEO.
+- **Backend:** ASP.NET Core.
+- **Base de datos:** PostgreSQL.
+- **Contenedores:** Docker Compose orientado principalmente a desarrollo local, aunque puede adaptarse para producción.
+
+## Estructura de la Solución
+
+La solución contiene los siguientes proyectos principales:
+- `GeneralReservationSystem.Server`: API principal y backend.
+- `GeneralReservationSystem.Web.Client`: Cliente web Blazor WebAssembly.
+- `GeneralReservationSystem.Infrastructure`: Lógica de acceso a datos y migraciones.
+- `GeneralReservationSystem.Application`: Lógica de negocio.
+- `GeneralReservationSystem.Migration`: Herramientas para migraciones de base de datos.
+- `GeneralReservationSystem.Tests`: Pruebas unitarias y de integración.
+
+---
+
 ## Configuración del entorno (.env)
 
 Para configurar el sistema, necesitas crear un archivo `.env` en la raíz del proyecto basado en el archivo `.env.example` incluido.
@@ -34,22 +56,27 @@ SQL_HOST=aws-1-us-east-2.pooler.supabase.com
 SQL_PORT=5432
 SQL_DB=postgres
 
-SA_USER=postgres.faeehnzdfgbsfiblqbgt
-SA_PASSWORD=<Tu_Password_Supabase>
+DB_OWNER=<Usuario_Postgres_SA>
+DB_OWNER_PASSWORD=<Contraseña>
 
-DB_OWNER=postgres.faeehnzdfgbsfiblqbgt
-DB_OWNER_PASSWORD=<Tu_Password_Supabase>
-
-DB_USER=grs_app_user.faeehnzdfgbsfiblqbgt
-DB_PASSWORD=<Tu_Password_Usuario_Aplicacion>
+DB_USER=<Usuario_Aplicacion>
+DB_PASSWORD=<Contraseña>
 
 JWT_SECRET_KEY=<Tu_Clave_Secreta_JWT_64_caracteres_minimo>
-CERT_PASSWORD=<Tu_Password_Certificado>
+CERT_PASSWORD=<Tu_Password_Certificado> # Usado para el certificado SSL para desarrollo local fuera de Visual Studio
 ```
 
-Consulta los comentarios en `.env.example` para más detalles sobre cada configuración.
+Consulta los comentarios en `.env.example` para más detalles sobre cada configuración. Se recomienda usar contraseñas seguras y únicas para cada variable.
+Se recomienda también crear un usuario específico para <Usuario_Aplicacion> con menos permisos que el usuario SA, con suficientes permisos para
+alterar los datos de la base de datos/schema pero no la estructura.
+
+El usuario SA/DB Owner es utilizado para las migraciones de base de datos, mientras que el usuario de aplicación es utilizado por la API para conectarse a la base de datos en tiempo de ejecución.
+
+---
 
 ## Certificados SSL para desarrollo
+
+> **Esta sección aplica para el desarrollo por fuera de Visual Studio, ya que este IDE se encarga automáticamente de generar y confiar en certificados SSL para el desarrollo.**
 
 Para habilitar HTTPS en los servicios, es necesario crear un certificado y confiar en él. Los contenedores esperan encontrar el archivo en `~/.aspnet/https/grs.pfx` y la contraseña en la variable de entorno `CERT_PASSWORD`.
 
@@ -82,6 +109,8 @@ Esto generará el certificado en la ruta esperada por los contenedores. No es ne
 
 Recuerda que la contraseña debe coincidir con la variable de entorno `CERT_PASSWORD` utilizada en los contenedores.
 
+---
+
 ## Ejecución desde la terminal (Bash o PowerShell)
 
 Para iniciar el sistema manualmente desde una terminal Bash o PowerShell, utilice los siguientes comandos desde la raíz del proyecto. Los comandos son idénticos para ambos entornos.
@@ -101,6 +130,8 @@ docker compose -f docker-compose.yml -f docker-compose.override.yml -f docker-co
 ```
 
 Estos comandos construirán e iniciarán los contenedores en el modo seleccionado. Asegúrese de ejecutar los comandos en el directorio raíz del proyecto y de tener configurados los certificados SSL según las instrucciones previas.
+
+> Si no se requiere una base de datos local (por ejemplo, si se utiliza una conexión a Supabase), se puede omitir a docker-compose.override.yml.
 
 ---
 
@@ -123,7 +154,7 @@ Para ejecutar y depurar la solución en Visual Studio Code, utilice los tasks de
 Para abrir la aplicación web en el navegador:
 1. Instale y abra la extensión **Container Tools** en Visual Studio Code.
 2. Diríjase al panel "Containers" (ícono de Docker en la barra lateral).
-3. Ubique el contenedor correspondiente al frontend/web.
+3. Ubique el contenedor correspondiente al servidor.
 4. Haga clic derecho sobre el contenedor y seleccione "Open in Browser" o "Abrir en navegador".
 
 La aplicación web se abrirá en su navegador predeterminado.
@@ -131,3 +162,50 @@ La aplicación web se abrirá en su navegador predeterminado.
 ### Desarrollo en Visual Studio
 
 Para ejecutar y depurar la solución en Visual Studio, simplemente seleccione el perfil **Docker Compose** en el modo deseado (Debug o Release) y ejecute el proyecto. Visual Studio gestionará automáticamente el ciclo de vida de los contenedores, la depuración y la configuración del certificado SSL para los servicios.
+
+---
+
+## Tests
+
+Para ejecutar los tests, utiliza el siguiente comando en la raíz del proyecto:
+
+```sh
+dotnet test GeneralReservationSystem.Tests/GeneralReservationSystem.Tests.csproj
+```
+
+Las pruebas se encuentran en el proyecto `GeneralReservationSystem.Tests`.
+
+---
+
+## Migraciones de Base de Datos
+
+El proyecto `GeneralReservationSystem.Migration` permite aplicar y gestionar migraciones de base de datos PostgreSQL mediante argumentos de línea de comandos. El formato general es:
+
+```sh
+dotnet run --project GeneralReservationSystem.Migration -- <acción> <connectionString> [migrationName]
+```
+
+Acciones disponibles:
+- `migrate` : Aplica todas las migraciones pendientes y realiza el seed de datos.
+- `revert` : Revierte todas las migraciones que tengan recursos de revert.
+- `migrate-one <migrationName>` : Aplica solo la migración especificada.
+- `revert-one <migrationName>` : Revierte solo la migración especificada.
+- `seed` : Solo realiza el seed de datos.
+
+Actualmente solo existe una migración inicial, pero el sistema está preparado para agregar más migraciones en el futuro. Las migraciones y sus reverts deben estar embebidas como recursos en el ensamblado, bajo las carpetas `Migrations` y `Reverts` respectivamente, con extensión `.pgsql`.
+
+---
+
+## Usuario Administrador por Defecto
+
+Al inicializar la base de datos, el sistema crea automáticamente un usuario administrador si no existe:
+
+- **Usuario:** `admin`
+- **Contraseña:** `admin123`
+- **Email:** `admin@example.com`
+
+Este proceso se realiza mediante el método `SeedData` en `GeneralReservationSystem.Infrastructure.Database.MigrationsRunner`. El usuario solo se crea si no existe previamente en la tabla de usuarios.
+
+**Advertencia de seguridad:**
+- Para entornos de producción, cambia las credenciales por defecto inmediatamente después de la instalación o modifica la lógica de seed para usar credenciales seguras desde variables de entorno.
+- No utilices la contraseña por defecto en ambientes públicos o productivos.
