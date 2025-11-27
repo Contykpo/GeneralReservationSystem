@@ -1,15 +1,14 @@
 ﻿using FluentValidation;
 using FluentValidation.Results;
 using GeneralReservationSystem.Application.Exceptions.Services;
+using System.Security;
 using System.Security.Claims;
 using static GeneralReservationSystem.Application.Constants;
 
-namespace GeneralReservationSystem.Server.Services.Implementations
+namespace GeneralReservationSystem.Server.Controllers
 {
-    public abstract class WebServiceBase(IHttpContextAccessor httpContextAccessor)
+    public abstract class ControllerBase : Microsoft.AspNetCore.Mvc.ControllerBase
     {
-        protected ClaimsPrincipal? User => httpContextAccessor.HttpContext?.User;
-
         protected bool IsAdmin => User?.IsInRole(AdminRoleName) ?? false;
 
         protected int CurrentUserId
@@ -18,35 +17,21 @@ namespace GeneralReservationSystem.Server.Services.Implementations
             {
                 if (!(User?.Identity?.IsAuthenticated ?? false))
                 {
-                    throw new ServiceBusinessException("No está autorizado para realizar esta acción.");
+                    throw new UnauthorizedAccessException("No está autorizado para realizar esta acción.");
                 }
 
-                string? userIdStr = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                string? userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 return !int.TryParse(userIdStr, out int id)
-                    ? throw new ServiceBusinessException("No está autorizado para realizar esta acción.")
+                    ? throw new UnauthorizedAccessException("No está autorizado para realizar esta acción.")
                     : id;
             }
-        }
-
-        protected void EnsureAuthorized()
-        {
-            if (!IsAdmin)
-            {
-                throw new ServiceBusinessException("No tiene permisos para realizar esta acción.");
-            }
-        }
-
-        protected void EnsureAuthenticated()
-        {
-            // Access CurrentUserId to trigger authentication check
-            _ = CurrentUserId;
         }
 
         protected void EnsureOwnerOrAdmin(int targetUserId)
         {
             if (!IsAdmin && CurrentUserId != targetUserId)
             {
-                throw new ServiceBusinessException("No tiene permisos para realizar esta acción.");
+                throw new SecurityException("No tiene permisos para realizar esta acción.");
             }
         }
 

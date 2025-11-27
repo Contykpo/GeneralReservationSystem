@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using System.Globalization;
 
 namespace GeneralReservationSystem.Web.Client
 {
@@ -20,7 +21,6 @@ namespace GeneralReservationSystem.Web.Client
 
             _ = builder.Services.AddClientServices();
 
-            // Register authentication state provider for Blazor client
             _ = builder.Services.AddOptions();
             _ = builder.Services.AddScoped<ClientAuthenticationStateProvider>();
             _ = builder.Services.AddScoped<AuthenticationStateProvider>(provider => provider.GetRequiredService<ClientAuthenticationStateProvider>());

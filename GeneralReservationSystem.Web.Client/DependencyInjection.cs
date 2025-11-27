@@ -4,6 +4,7 @@ using GeneralReservationSystem.Web.Client.Services.Implementations.Authenticatio
 using GeneralReservationSystem.Web.Client.Services.Interfaces;
 using GeneralReservationSystem.Web.Client.Services.Interfaces.Authentication;
 using MudBlazor.Services;
+using MudBlazor.Translations;
 
 namespace GeneralReservationSystem.Web.Client
 {
@@ -11,8 +12,10 @@ namespace GeneralReservationSystem.Web.Client
     {
         public static IServiceCollection AddClientServices(this IServiceCollection services)
         {
-            // Register MudBlazor services
+            _ = services.AddLocalization();
+
             _ = services.AddMudServices();
+            _ = services.AddMudTranslations();
 
             _ = services.AddScoped<IClientAuthenticationService, ClientAuthenticationService>();
             _ = services.AddScoped<IClientUserService, ClientUserService>();
@@ -21,7 +24,6 @@ namespace GeneralReservationSystem.Web.Client
             _ = services.AddScoped<IClientReservationService, ClientReservationService>();
             _ = services.AddScoped<IClientEmailService, ClientEmailService>();
 
-            // Register fluent validators
             _ = services.AddFluentValidators();
 
             return services;

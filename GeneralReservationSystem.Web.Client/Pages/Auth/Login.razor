@@ -61,6 +61,10 @@
             }
             Navigation.NavigateTo("/");
         }
+        catch (ServiceValidationException ex)
+        {
+            _error = $"Errores de validación: {string.Join(", ", ex.Errors.Select(e => e.Error))}";
+        }
         catch (ServiceNotFoundException ex)
         {
             _error = ex.Message;

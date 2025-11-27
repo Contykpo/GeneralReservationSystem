@@ -54,7 +54,7 @@ namespace GeneralReservationSystem.Tests.Services
         }
 
         [Fact]
-        public async Task CreateStationAsync_DuplicateStation_ThrowsServiceBusinessException()
+        public async Task CreateStationAsync_DuplicateStation_ThrowsServiceDuplicateException()
         {
             // Arrange
             CreateStationDto createDto = new()
@@ -70,7 +70,7 @@ namespace GeneralReservationSystem.Tests.Services
                 .ThrowsAsync(new UniqueConstraintViolationException("Duplicate station"));
 
             // Act & Assert
-            ServiceBusinessException exception = await Assert.ThrowsAsync<ServiceBusinessException>(
+            ServiceDuplicateException exception = await Assert.ThrowsAsync<ServiceDuplicateException>(
                 () => _stationService.CreateStationAsync(createDto));
 
             Assert.Equal("Ya existe una estación con el mismo nombre o código.", exception.Message);
@@ -219,7 +219,7 @@ namespace GeneralReservationSystem.Tests.Services
         }
 
         [Fact]
-        public async Task UpdateStationAsync_DuplicateName_ThrowsServiceBusinessException()
+        public async Task UpdateStationAsync_DuplicateName_ThrowsServiceDuplicateException()
         {
             // Arrange
             UpdateStationDto updateDto = new()
@@ -233,7 +233,7 @@ namespace GeneralReservationSystem.Tests.Services
                 .ThrowsAsync(new UniqueConstraintViolationException("Duplicate station"));
 
             // Act & Assert
-            ServiceBusinessException exception = await Assert.ThrowsAsync<ServiceBusinessException>(
+            ServiceDuplicateException exception = await Assert.ThrowsAsync<ServiceDuplicateException>(
                 () => _stationService.UpdateStationAsync(updateDto));
 
             Assert.Equal("Ya existe una estación con el mismo nombre o código.", exception.Message);

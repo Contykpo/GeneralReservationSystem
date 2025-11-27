@@ -156,7 +156,7 @@ namespace GeneralReservationSystem.Tests.Services.API
         }
 
         [Fact]
-        public async Task CreateStationsBulkAsync_DuplicateStationNames_ThrowsServiceBusinessException()
+        public async Task CreateStationsBulkAsync_DuplicateStationNames_ThrowsServiceDuplicateException()
         {
             // Arrange
             List<ImportStationDto> importDtos =
@@ -182,7 +182,7 @@ namespace GeneralReservationSystem.Tests.Services.API
                 .ThrowsAsync(new UniqueConstraintViolationException("UQ_Station_Name"));
 
             // Act & Assert
-            ServiceBusinessException exception = await Assert.ThrowsAsync<ServiceBusinessException>(
+            ServiceDuplicateException exception = await Assert.ThrowsAsync<ServiceDuplicateException>(
                 () => _apiStationService.CreateStationsBulkAsync(importDtos));
 
             Assert.Equal("Una o más estaciones tienen nombres duplicados/ya registrados.", exception.Message);
@@ -190,7 +190,7 @@ namespace GeneralReservationSystem.Tests.Services.API
         }
 
         [Fact]
-        public async Task CreateStationsBulkAsync_StationAlreadyExists_ThrowsServiceBusinessException()
+        public async Task CreateStationsBulkAsync_StationAlreadyExists_ThrowsServiceDuplicateException()
         {
             // Arrange
             List<ImportStationDto> importDtos =
@@ -209,7 +209,7 @@ namespace GeneralReservationSystem.Tests.Services.API
                 .ThrowsAsync(new UniqueConstraintViolationException("UQ_Station_Name"));
 
             // Act & Assert
-            ServiceBusinessException exception = await Assert.ThrowsAsync<ServiceBusinessException>(
+            ServiceDuplicateException exception = await Assert.ThrowsAsync<ServiceDuplicateException>(
                 () => _apiStationService.CreateStationsBulkAsync(importDtos));
 
             Assert.Equal("Una o más estaciones tienen nombres duplicados/ya registrados.", exception.Message);

@@ -1,15 +1,13 @@
 ﻿using FluentValidation;
 using GeneralReservationSystem.Application.DTOs.Authentication;
-using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Helpers;
 using GeneralReservationSystem.Application.Services.Interfaces.Authentication;
 using GeneralReservationSystem.Infrastructure.Helpers;
-using GeneralReservationSystem.Server.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
-namespace GeneralReservationSystem.Server.Controllers
+namespace GeneralReservationSystem.Server.Controllers.Authentication
 {
     [Route("api/auth")]
     [ApiController]
@@ -22,27 +20,13 @@ namespace GeneralReservationSystem.Server.Controllers
     {
         private async Task<(IActionResult actionResult, UserInfo? createdUser)> RegisterUserAsync(RegisterUserDto dto, bool isAdmin, CancellationToken cancellationToken)
         {
-            IActionResult? validationResult = await ValidationHelper.ValidateAsync(registerValidator, dto, cancellationToken);
-            if (validationResult != null)
-            {
-                return new(validationResult, null);
-            }
-            try
-            {
-                UserInfo userInfo = isAdmin ? await authenticationService.RegisterAdminAsync(dto, cancellationToken) : await authenticationService.RegisterUserAsync(dto, cancellationToken);
+            await ValidateAsync(registerValidator, dto, cancellationToken);
+            
+            UserInfo userInfo = isAdmin ? await authenticationService.RegisterAdminAsync(dto, cancellationToken) : await authenticationService.RegisterUserAsync(dto, cancellationToken);
 
-                return new(
-                    Ok(new { message = "Administrador registrado exitosamente", userId = userInfo.UserId }),
-                    userInfo);
-            }
-            catch (ServiceBusinessException ex)
-            {
-                return new(Conflict(new { error = ex.Message }), null);
-            }
-            catch (ServiceException)
-            {
-                return new(StatusCode(500, new { error = "Error al registrar el administrador. Por favor, intente nuevamente." }), null);
-            }
+            return new(
+                Ok(new { message = "Administrador registrado exitosamente", userId = userInfo.UserId }),
+                userInfo);
         }
 
         [HttpPost("register")]
@@ -69,24 +53,13 @@ namespace GeneralReservationSystem.Server.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto dto, CancellationToken cancellationToken)
         {
-            IActionResult? validationResult = await ValidationHelper.ValidateAsync(loginValidator, dto, cancellationToken);
-            if (validationResult != null)
-            {
-                return validationResult;
-            }
+            await ValidateAsync(loginValidator, dto, cancellationToken);
 
-            try
-            {
-                UserInfo userInfo = await authenticationService.AuthenticateAsync(dto, cancellationToken);
+            UserInfo userInfo = await authenticationService.AuthenticateAsync(dto, cancellationToken);
 
-                CreateSessionAndLogin(userInfo);
+            CreateSessionAndLogin(userInfo);
 
-                return Ok(new { message = "Inicio de sesión exitoso", userId = userInfo.UserId, isAdmin = userInfo.IsAdmin });
-            }
-            catch (ServiceBusinessException ex)
-            {
-                return Conflict(new { error = ex.Message });
-            }
+            return Ok(new { message = "Inicio de sesión exitoso", userId = userInfo.UserId, isAdmin = userInfo.IsAdmin });
         }
 
         [HttpPost("logout")]
@@ -121,31 +94,15 @@ namespace GeneralReservationSystem.Server.Controllers
         [Authorize]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto, CancellationToken cancellationToken)
         {
-            IActionResult? validationResult = await ValidationHelper.ValidateAsync(changePasswordValidator, dto, cancellationToken);
-            if (validationResult != null)
+            await ValidateAsync(changePasswordValidator, dto, cancellationToken);
+
+            if (CurrentUserId != dto.UserId)
             {
-                return validationResult;
+                return Unauthorized();
             }
 
-            try
-            {
-                string? userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim) || int.Parse(userIdClaim) != dto.UserId)
-                {
-                    return Unauthorized();
-                }
-
-                await authenticationService.ChangePasswordAsync(dto, cancellationToken);
-                return Ok(new { message = "Contraseña cambiada exitosamente." });
-            }
-            catch (ServiceBusinessException ex)
-            {
-                return Conflict(new { error = ex.Message });
-            }
-            catch (ServiceNotFoundException ex)
-            {
-                return NotFound(new { error = ex.Message });
-            }
+            await authenticationService.ChangePasswordAsync(dto, cancellationToken);
+            return Ok(new { message = "Contraseña cambiada exitosamente." });
         }
 
         private void CreateSessionAndLogin(UserInfo userInfo)

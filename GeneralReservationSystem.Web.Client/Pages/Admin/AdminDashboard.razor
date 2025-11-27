@@ -1,4 +1,8 @@
-﻿@page "/admin-dashboard"
+﻿@page "/admin/dashboard"
+
+@attribute [Authorize(Roles = AdminRoleName)]
+
+@using Microsoft.AspNetCore.Authorization
 
 <PageTitle>Panel de Administración</PageTitle>
 

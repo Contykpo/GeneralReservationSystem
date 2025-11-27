@@ -12,6 +12,18 @@
         public ServiceBusinessException(string message, Exception innerException) : base(message, innerException) { }
     }
 
+    public class ServiceDuplicateException : ServiceBusinessException
+    {
+        public ServiceDuplicateException(string message) : base(message) { }
+        public ServiceDuplicateException(string message, Exception innerException) : base(message, innerException) { }
+    }
+
+    public class ServiceReferenceException : ServiceBusinessException
+    {
+        public ServiceReferenceException(string message) : base(message) { }
+        public ServiceReferenceException(string message, Exception innerException) : base(message, innerException) { }
+    }
+
     public class ServiceNotFoundException : ServiceException
     {
         public ServiceNotFoundException(string message) : base(message) { }
@@ -23,5 +35,5 @@
         public ValidationError[] Errors { get; } = errors;
     }
 
-    public sealed record ValidationError(string Error, string Field);
+    public sealed record ValidationError(string Error, string? Field);
 }

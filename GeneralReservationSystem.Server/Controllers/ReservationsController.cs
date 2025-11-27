@@ -3,20 +3,22 @@ using GeneralReservationSystem.Application.Common;
 using GeneralReservationSystem.Application.DTOs;
 using GeneralReservationSystem.Application.DTOs.Authentication;
 using GeneralReservationSystem.Application.Entities;
-using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Services.Interfaces;
 using GeneralReservationSystem.Server.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using static GeneralReservationSystem.Application.Constants;
 
 namespace GeneralReservationSystem.Server.Controllers
 {
     [Route("api/reservations")]
     [ApiController]
-    [Authorize]
-    public class ReservationsController(IReservationService reservationService, IValidator<PagedSearchRequestDto> pagedSearchValidator, IValidator<CreateReservationDto> createReservationValidator, IValidator<ReservationKeyDto> reservationKeyValidator, IValidator<UserKeyDto> userKeyValidator) : ControllerBase
+    public class ReservationsController(
+        IReservationService reservationService,
+        IValidator<PagedSearchRequestDto> pagedSearchValidator,
+        IValidator<CreateReservationDto> createReservationValidator,
+        IValidator<ReservationKeyDto> reservationKeyValidator,
+        IValidator<UserKeyDto> userKeyValidator) : ControllerBase
     {
         [HttpGet("search")]
         [Authorize(Roles = AdminRoleName)]
@@ -24,60 +26,33 @@ namespace GeneralReservationSystem.Server.Controllers
         {
             PagedSearchRequestDto searchDto = new();
             searchDto.PopulateFromQuery(Request.Query);
-            IActionResult? validationResult = await ValidationHelper.ValidateAsync(pagedSearchValidator, searchDto, cancellationToken);
-            if (validationResult != null)
-            {
-                return validationResult;
-            }
+            await ValidateAsync(pagedSearchValidator, searchDto, cancellationToken);
             PagedResult<ReservationDetailsDto> result = await reservationService.SearchReservationsAsync(searchDto, cancellationToken);
             return Ok(result);
         }
 
         [HttpGet("search/{userId:int}")]
+        [Authorize]
         public async Task<IActionResult> SearchUserReservations([FromRoute] int userId, CancellationToken cancellationToken)
         {
-            string? currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(currentUserId))
-            {
-                return Unauthorized();
-            }
+            EnsureOwnerOrAdmin(userId);
             PagedSearchRequestDto searchDto = new();
             searchDto.PopulateFromQuery(Request.Query);
-            IActionResult? paginationValidationResult = await ValidationHelper.ValidateAsync(pagedSearchValidator, searchDto, cancellationToken);
-            if (paginationValidationResult != null)
-            {
-                return paginationValidationResult;
-            }
+            await ValidateAsync(pagedSearchValidator, searchDto, cancellationToken);
             UserKeyDto keyDto = new() { UserId = userId };
-            IActionResult? userValidationResult = await ValidationHelper.ValidateAsync(userKeyValidator, keyDto, cancellationToken);
-            if (userValidationResult != null)
-            {
-                return userValidationResult;
-            }
-            if (int.Parse(currentUserId) != userId && !User.IsInRole("Admin"))
-            {
-                return Forbid();
-            }
+            await ValidateAsync(userKeyValidator, keyDto, cancellationToken);
             PagedResult<UserReservationDetailsDto> result = await reservationService.SearchUserReservationsAsync(keyDto, searchDto, cancellationToken);
             return Ok(result);
         }
 
         [HttpGet("search/me")]
+        [Authorize]
         public async Task<IActionResult> SearchCurrentUserReservations(CancellationToken cancellationToken)
         {
-            string? userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized();
-            }
             PagedSearchRequestDto searchDto = new();
             searchDto.PopulateFromQuery(Request.Query);
-            IActionResult? paginationValidationResult = await ValidationHelper.ValidateAsync(pagedSearchValidator, searchDto, cancellationToken);
-            if (paginationValidationResult != null)
-            {
-                return paginationValidationResult;
-            }
-            PagedResult<UserReservationDetailsDto> result = await reservationService.SearchUserReservationsAsync(new UserKeyDto { UserId = int.Parse(userId) }, searchDto, cancellationToken);
+            await ValidateAsync(pagedSearchValidator, searchDto, cancellationToken);
+            PagedResult<UserReservationDetailsDto> result = await reservationService.SearchUserReservationsAsync(new UserKeyDto { UserId = CurrentUserId }, searchDto, cancellationToken);
             return Ok(result);
         }
 
@@ -85,13 +60,7 @@ namespace GeneralReservationSystem.Server.Controllers
         [Authorize]
         public async Task<IActionResult> GetMyReservations(CancellationToken cancellationToken)
         {
-            string? userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized();
-            }
-
-            IEnumerable<UserReservationDetailsDto> reservations = await reservationService.GetUserReservationsAsync(new UserKeyDto { UserId = int.Parse(userId) }, cancellationToken);
+            IEnumerable<UserReservationDetailsDto> reservations = await reservationService.GetUserReservationsAsync(new UserKeyDto { UserId = CurrentUserId }, cancellationToken);
             return Ok(reservations);
         }
 
@@ -100,11 +69,7 @@ namespace GeneralReservationSystem.Server.Controllers
         public async Task<IActionResult> GetUserReservations([FromRoute] int userId, CancellationToken cancellationToken)
         {
             UserKeyDto keyDto = new() { UserId = userId };
-            IActionResult? validationResult = await ValidationHelper.ValidateAsync(userKeyValidator, keyDto, cancellationToken);
-            if (validationResult != null)
-            {
-                return validationResult;
-            }
+            await ValidateAsync(userKeyValidator, keyDto, cancellationToken);
 
             IEnumerable<UserReservationDetailsDto> reservations = await reservationService.GetUserReservationsAsync(keyDto, cancellationToken);
             return Ok(reservations);
@@ -114,66 +79,25 @@ namespace GeneralReservationSystem.Server.Controllers
         [Authorize]
         public async Task<IActionResult> CreateReservation([FromBody] CreateReservationDto dto, CancellationToken cancellationToken)
         {
-            IActionResult? validationResult = await ValidationHelper.ValidateAsync(createReservationValidator, dto, cancellationToken);
-            if (validationResult != null)
-            {
-                return validationResult;
-            }
-
-            string? userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized();
-            }
-
-            if (dto.UserId != int.Parse(userId) && !User.IsInRole("Admin"))
-            {
-                return Forbid();
-            }
-
-            try
-            {
-                _ = await reservationService.CreateReservationAsync(dto, cancellationToken);
-                return CreatedAtAction(nameof(GetReservation), new { tripId = dto.TripId, seat = dto.Seat }, new { message = "Reserva creada exitosamente" });
-            }
-            catch (ServiceBusinessException ex)
-            {
-                return Conflict(new { error = ex.Message });
-            }
+            EnsureOwnerOrAdmin(dto.UserId);
+            await ValidateAsync(createReservationValidator, dto, cancellationToken);
+            _ = await reservationService.CreateReservationAsync(dto, cancellationToken);
+            return CreatedAtAction(nameof(GetReservation), new { tripId = dto.TripId, seat = dto.Seat }, new { message = "Reserva creada exitosamente" });
         }
 
         [HttpPost("me")]
         [Authorize]
         public async Task<IActionResult> CreateReservationForMyself([FromBody] ReservationKeyDto keyDto, CancellationToken cancellationToken)
         {
-            IActionResult? validationResult = await ValidationHelper.ValidateAsync(reservationKeyValidator, keyDto, cancellationToken);
-            if (validationResult != null)
-            {
-                return validationResult;
-            }
-
-            string? userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized();
-            }
-
+            await ValidateAsync(reservationKeyValidator, keyDto, cancellationToken);
             CreateReservationDto dto = new()
             {
                 TripId = keyDto.TripId,
                 Seat = keyDto.Seat,
-                UserId = int.Parse(userId)
+                UserId = CurrentUserId
             };
-
-            try
-            {
-                _ = await reservationService.CreateReservationAsync(dto, cancellationToken);
-                return CreatedAtAction(nameof(GetReservation), new { tripId = dto.TripId, seat = dto.Seat }, new { message = "Reserva creada exitosamente" });
-            }
-            catch (ServiceBusinessException ex)
-            {
-                return Conflict(new { error = ex.Message });
-            }
+            _ = await reservationService.CreateReservationAsync(dto, cancellationToken);
+            return CreatedAtAction(nameof(GetReservation), new { tripId = dto.TripId, seat = dto.Seat }, new { message = "Reserva creada exitosamente" });
         }
 
         [HttpGet("{tripId:int}/{seat:int}")]
@@ -181,28 +105,10 @@ namespace GeneralReservationSystem.Server.Controllers
         public async Task<IActionResult> GetReservation([FromRoute] int tripId, [FromRoute] int seat, CancellationToken cancellationToken)
         {
             ReservationKeyDto keyDto = new() { TripId = tripId, Seat = seat };
-            IActionResult? validationResult = await ValidationHelper.ValidateAsync(reservationKeyValidator, keyDto, cancellationToken);
-            if (validationResult != null)
-            {
-                return validationResult;
-            }
-
-            string? userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized();
-            }
-
-            try
-            {
-                Reservation reservation = await reservationService.GetReservationAsync(keyDto, cancellationToken);
-
-                return reservation.UserId != int.Parse(userId) && !User.IsInRole("Admin") ? Forbid() : Ok(reservation);
-            }
-            catch (ServiceNotFoundException ex)
-            {
-                return NotFound(new { error = ex.Message });
-            }
+            await ValidateAsync(reservationKeyValidator, keyDto, cancellationToken);
+            Reservation reservation = await reservationService.GetReservationAsync(keyDto, cancellationToken);
+            EnsureOwnerOrAdmin(reservation.UserId);
+            return Ok(reservation);
         }
 
         [HttpDelete("{tripId:int}/{seat:int}")]
@@ -210,34 +116,11 @@ namespace GeneralReservationSystem.Server.Controllers
         public async Task<IActionResult> DeleteReservation([FromRoute] int tripId, [FromRoute] int seat, CancellationToken cancellationToken)
         {
             ReservationKeyDto keyDto = new() { TripId = tripId, Seat = seat };
-            IActionResult? validationResult = await ValidationHelper.ValidateAsync(reservationKeyValidator, keyDto, cancellationToken);
-            if (validationResult != null)
-            {
-                return validationResult;
-            }
-
-            string? userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized();
-            }
-
-            try
-            {
-                Reservation reservation = await reservationService.GetReservationAsync(keyDto, cancellationToken);
-
-                if (reservation.UserId != int.Parse(userId) && !User.IsInRole("Admin"))
-                {
-                    return Forbid();
-                }
-
-                await reservationService.DeleteReservationAsync(keyDto, cancellationToken);
-                return NoContent();
-            }
-            catch (ServiceNotFoundException ex)
-            {
-                return NotFound(new { error = ex.Message });
-            }
+            await ValidateAsync(reservationKeyValidator, keyDto, cancellationToken);
+            Reservation reservation = await reservationService.GetReservationAsync(keyDto, cancellationToken);
+            EnsureOwnerOrAdmin(reservation.UserId);
+            await reservationService.DeleteReservationAsync(keyDto, cancellationToken);
+            return NoContent();
         }
     }
 }

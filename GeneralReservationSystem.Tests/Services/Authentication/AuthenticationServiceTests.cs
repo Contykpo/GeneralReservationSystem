@@ -65,7 +65,7 @@ namespace GeneralReservationSystem.Tests.Services.Authentication
         }
 
         [Fact]
-        public async Task RegisterUserAsync_DuplicateUserNameOrEmail_ThrowsServiceBusinessException()
+        public async Task RegisterUserAsync_DuplicateUserNameOrEmail_ThrowsServiceDuplicateException()
         {
             // Arrange
             RegisterUserDto registerDto = new()
@@ -81,7 +81,7 @@ namespace GeneralReservationSystem.Tests.Services.Authentication
                 .ThrowsAsync(new UniqueConstraintViolationException("UQ_User_UserName"));
 
             // Act & Assert
-            ServiceBusinessException exception = await Assert.ThrowsAsync<ServiceBusinessException>(
+            ServiceDuplicateException exception = await Assert.ThrowsAsync<ServiceDuplicateException>(
                 () => _authenticationService.RegisterUserAsync(registerDto));
 
             Assert.Equal("Ya existe un usuario con el mismo nombre o correo electrónico.", exception.Message);
@@ -215,14 +215,14 @@ namespace GeneralReservationSystem.Tests.Services.Authentication
         }
 
         [Fact]
-        public async Task RegisterAdminAsync_WhenDuplicateUser_ThrowsServiceBusinessException()
+        public async Task RegisterAdminAsync_WhenDuplicateUser_ThrowsServiceDuplicateException()
         {
             _ = _mockUserRepository
                 .Setup(r => r.CreateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new UniqueConstraintViolationException("UQ_User_UserName"));
 
             // Act & Assert
-            ServiceBusinessException ex = await Assert.ThrowsAsync<ServiceBusinessException>(
+            ServiceDuplicateException ex = await Assert.ThrowsAsync<ServiceDuplicateException>(
                 () => _authenticationService.RegisterAdminAsync(registerAdminDTO));
 
             Assert.Equal("Ya existe un usuario con el mismo nombre o correo electrónico.", ex.Message);
