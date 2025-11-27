@@ -6,7 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>3304640a-fabc-4925-a48f-4ba587f3ed29</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-	<DockerfileContext>..\..</DockerfileContext>
+    <DockerfileContext>..\..</DockerfileContext>
+    <BlazorWebAssemblyLoadAllGlobalizationData>true</BlazorWebAssemblyLoadAllGlobalizationData>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-	<ProjectReference Include="..\GeneralReservationSystem.Infrastructure\GeneralReservationSystem.Infrastructure.csproj" />
+    <ProjectReference Include="..\GeneralReservationSystem.Infrastructure\GeneralReservationSystem.Infrastructure.csproj" />
     <ProjectReference Include="..\GeneralReservationSystem.Web.Client\GeneralReservationSystem.Web.Client.csproj" />
     <PackageReference Include="MailKit" Version="4.14.1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.9" />

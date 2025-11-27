@@ -5,7 +5,7 @@ using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Helpers;
 using GeneralReservationSystem.Application.Services.Interfaces.Authentication;
 using GeneralReservationSystem.Infrastructure.Helpers;
-using GeneralReservationSystem.Server.Controllers;
+using GeneralReservationSystem.Server.Controllers.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
@@ -125,7 +125,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task Register_DuplicateUsername_ReturnsConflict()
+        public async Task Register_DuplicateUsername_ThrowsServiceBusinessException()
         {
             // Arrange
             RegisterUserDto registerDto = new()
@@ -140,20 +140,18 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(s => s.RegisterUserAsync(registerDto, It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ServiceBusinessException("Username already exists"));
 
-            // Act
-            IActionResult result = await _controller.Register(registerDto, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<ConflictObjectResult>(result);
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<ServiceBusinessException>(
+                () => _controller.Register(registerDto, CancellationToken.None));
         }
 
         [Fact]
-        public async Task Register_ValidationFails_ReturnsBadRequest()
+        public async Task Register_ValidationFails_ThrowsServiceValidationException()
         {
             // Arrange
             RegisterUserDto registerDto = new()
             {
-                UserName = "u", // Too short
+                UserName = "u",
                 Email = "invalid-email",
                 Password = "weak",
                 ConfirmPassword = "weak"
@@ -169,11 +167,13 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(v => v.ValidateAsync(registerDto, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ValidationResult(validationFailures));
 
-            // Act
-            IActionResult result = await _controller.Register(registerDto, CancellationToken.None);
+            // Act & Assert
+            ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
+                () => _controller.Register(registerDto, CancellationToken.None));
 
-            // Assert
-            _ = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal(2, exception.Errors.Length);
+            Assert.Contains(exception.Errors, e => e.Field == "UserName");
+            Assert.Contains(exception.Errors, e => e.Field == "Email");
 
             _mockAuthenticationService.Verify(
                 s => s.RegisterUserAsync(It.IsAny<RegisterUserDto>(), It.IsAny<CancellationToken>()),
@@ -181,7 +181,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task Register_ServiceError_ReturnsInternalServerError()
+        public async Task Register_ServiceError_ThrowsServiceException()
         {
             // Arrange
             RegisterUserDto registerDto = new()
@@ -196,17 +196,14 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(s => s.RegisterUserAsync(registerDto, It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ServiceException("Database error"));
 
-            // Act
-            IActionResult result = await _controller.Register(registerDto, CancellationToken.None);
-
-            // Assert
-            ObjectResult statusResult = Assert.IsType<ObjectResult>(result);
-            Assert.Equal(500, statusResult.StatusCode);
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<ServiceException>(
+                () => _controller.Register(registerDto, CancellationToken.None));
         }
 
         #endregion
 
-        #region Register Admin Tets
+        #region Register Admin Tests
 
         [Fact]
         public async Task RegisterAdmin_ValidDto_ReturnsOkWithUserId()
@@ -248,7 +245,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task RegisterAdmin_DuplicateUsernameOrEmail_ReturnsConflict()
+        public async Task RegisterAdmin_DuplicateUsernameOrEmail_ThrowsServiceBusinessException()
         {
             // Arrange
             RegisterUserDto registerDto = new()
@@ -263,13 +260,11 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(s => s.RegisterAdminAsync(registerDto, It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ServiceBusinessException("Ya existe un usuario con el mismo nombre o correo electrónico."));
 
-            // Act
-            IActionResult result = await _controller.RegisterAdmin(registerDto, CancellationToken.None);
-
-            // Assert
-            ConflictObjectResult conflictResult = Assert.IsType<ConflictObjectResult>(result);
-            dynamic? response = conflictResult.Value;
-            Assert.Contains("Ya existe un usuario", response.error.ToString());
+            // Act & Assert
+            ServiceBusinessException exception = await Assert.ThrowsAsync<ServiceBusinessException>(
+                () => _controller.RegisterAdmin(registerDto, CancellationToken.None));
+            
+            Assert.Contains("Ya existe un usuario", exception.Message);
 
             _mockAuthenticationService.Verify(
                 s => s.RegisterAdminAsync(registerDto, It.IsAny<CancellationToken>()),
@@ -277,7 +272,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task RegisterAdmin_ValidationFails_ReturnsBadRequest()
+        public async Task RegisterAdmin_ValidationFails_ThrowsServiceValidationException()
         {
             // Arrange
             RegisterUserDto registerDto = new()
@@ -290,40 +285,29 @@ namespace GeneralReservationSystem.Tests.Controllers
 
             List<ValidationFailure> validationFailures =
             [
-                new ValidationFailure("Email",      "Formato de email inválido"),
-                new ValidationFailure("Password",   "Las contraseñas no coinciden")
+                new ValidationFailure("Email", "Formato de email inválido"),
+                new ValidationFailure("Password", "Las contraseñas no coinciden")
             ];
 
             _ = _mockRegisterValidator
                 .Setup(v => v.ValidateAsync(registerDto, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ValidationResult(validationFailures));
 
-            // Act
-            IActionResult result = await _controller.RegisterAdmin(registerDto, CancellationToken.None);
+            // Act & Assert
+            ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
+                () => _controller.RegisterAdmin(registerDto, CancellationToken.None));
 
-            BadRequestObjectResult badRequest = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal(2, exception.Errors.Length);
+            Assert.Contains(exception.Errors, e => e.Field == "Email");
+            Assert.Contains(exception.Errors, e => e.Field == "Password");
 
-            IEnumerable<object> errors = Assert.IsAssignableFrom<IEnumerable<object>>(badRequest.Value);
-
-            List<string?> errorFieldsList = errors.Select(e => ReflectionHelpers.GetProperty(e.GetType(), "field").GetValue(e).ToString()).ToList();
-            List<string?> errorList = errors.Select(e => ReflectionHelpers.GetProperty(e.GetType(), "error").GetValue(e).ToString()).ToList();
-
-            //Corroboramos que devuelva errores en los campos esperados
-            Assert.Contains(validationFailures[0].PropertyName, errorFieldsList);
-            Assert.Contains(validationFailures[1].PropertyName, errorFieldsList);
-
-            //Corroboramos que los mensajes de error sean los esperados
-            Assert.Contains(validationFailures[0].ErrorMessage, errorList);
-            Assert.Contains(validationFailures[1].ErrorMessage, errorList);
-
-            //Corroboramos que no haya registrado el admin dado que hubieron errores
             _mockAuthenticationService.Verify(
                 s => s.RegisterAdminAsync(It.IsAny<RegisterUserDto>(), It.IsAny<CancellationToken>()),
                 Times.Never);
         }
 
         [Fact]
-        public async Task RegisterAdmin_ServiceError_ReturnsInternalServerError()
+        public async Task RegisterAdmin_ServiceError_ThrowsServiceException()
         {
             // Arrange
             RegisterUserDto registerDto = new()
@@ -338,14 +322,11 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(s => s.RegisterAdminAsync(registerDto, It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ServiceException("Error al registrar el administrador."));
 
-            // Act
-            IActionResult result = await _controller.RegisterAdmin(registerDto, CancellationToken.None);
-
-            // Assert
-            ObjectResult objResult = Assert.IsType<ObjectResult>(result);
-            Assert.Equal(500, objResult.StatusCode);
-            dynamic? response = objResult.Value;
-            Assert.Contains("Error al registrar el administrador", response.error.ToString());
+            // Act & Assert
+            ServiceException exception = await Assert.ThrowsAsync<ServiceException>(
+                () => _controller.RegisterAdmin(registerDto, CancellationToken.None));
+            
+            Assert.Contains("Error al registrar el administrador", exception.Message);
 
             _mockAuthenticationService.Verify(
                 s => s.RegisterAdminAsync(registerDto, It.IsAny<CancellationToken>()),
@@ -353,7 +334,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task RegisterAdmin_ReturnsConflict_WhenServiceBusinessExceptionThrown()
+        public async Task RegisterAdmin_ThrowsServiceBusinessException_WhenServiceBusinessExceptionThrown()
         {
             // Arrange
             RegisterUserDto registerDto = new()
@@ -368,11 +349,9 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(s => s.RegisterAdminAsync(registerDto, It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ServiceBusinessException("Administrador duplicado"));
 
-            // Act
-            IActionResult result = await _controller.RegisterAdmin(registerDto, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<ConflictObjectResult>(result);
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<ServiceBusinessException>(
+                () => _controller.RegisterAdmin(registerDto, CancellationToken.None));
         }
 
         #endregion
@@ -415,7 +394,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task Login_InvalidCredentials_ReturnsConflict()
+        public async Task Login_InvalidCredentials_ThrowsServiceBusinessException()
         {
             // Arrange
             LoginDto loginDto = new()
@@ -428,20 +407,18 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(s => s.AuthenticateAsync(loginDto, It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ServiceBusinessException("Invalid credentials"));
 
-            // Act
-            IActionResult result = await _controller.Login(loginDto, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<ConflictObjectResult>(result);
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<ServiceBusinessException>(
+                () => _controller.Login(loginDto, CancellationToken.None));
         }
 
         [Fact]
-        public async Task Login_ValidationFails_ReturnsBadRequest()
+        public async Task Login_ValidationFails_ThrowsServiceValidationException()
         {
             // Arrange
             LoginDto loginDto = new()
             {
-                UserNameOrEmail = "", // Empty
+                UserNameOrEmail = "",
                 Password = ""
             };
 
@@ -455,11 +432,11 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(v => v.ValidateAsync(loginDto, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ValidationResult(validationFailures));
 
-            // Act
-            IActionResult result = await _controller.Login(loginDto, CancellationToken.None);
+            // Act & Assert
+            ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
+                () => _controller.Login(loginDto, CancellationToken.None));
 
-            // Assert
-            _ = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal(2, exception.Errors.Length);
 
             _mockAuthenticationService.Verify(
                 s => s.AuthenticateAsync(It.IsAny<LoginDto>(), It.IsAny<CancellationToken>()),
@@ -597,7 +574,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task ChangePassword_NoUserIdClaim_ReturnsUnauthorized()
+        public async Task ChangePassword_NoUserIdClaim_ThrowsUnauthorizedAccessException()
         {
             // Arrange
             ClaimsIdentity identity = new();
@@ -611,15 +588,13 @@ namespace GeneralReservationSystem.Tests.Controllers
                 NewPassword = "NewPassword123!"
             };
 
-            // Act
-            IActionResult result = await _controller.ChangePassword(changePasswordDto, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<UnauthorizedResult>(result);
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<UnauthorizedAccessException>(
+                () => _controller.ChangePassword(changePasswordDto, CancellationToken.None));
         }
 
         [Fact]
-        public async Task ChangePassword_IncorrectCurrentPassword_ReturnsConflict()
+        public async Task ChangePassword_IncorrectCurrentPassword_ThrowsServiceBusinessException()
         {
             // Arrange
             SetupAuthenticatedUser(1);
@@ -635,15 +610,13 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(s => s.ChangePasswordAsync(changePasswordDto, It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ServiceBusinessException("Current password is incorrect"));
 
-            // Act
-            IActionResult result = await _controller.ChangePassword(changePasswordDto, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<ConflictObjectResult>(result);
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<ServiceBusinessException>(
+                () => _controller.ChangePassword(changePasswordDto, CancellationToken.None));
         }
 
         [Fact]
-        public async Task ChangePassword_UserNotFound_ReturnsNotFound()
+        public async Task ChangePassword_UserNotFound_ThrowsServiceNotFoundException()
         {
             // Arrange
             SetupAuthenticatedUser(999);
@@ -659,15 +632,13 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(s => s.ChangePasswordAsync(changePasswordDto, It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ServiceNotFoundException("User not found"));
 
-            // Act
-            IActionResult result = await _controller.ChangePassword(changePasswordDto, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<NotFoundObjectResult>(result);
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<ServiceNotFoundException>(
+                () => _controller.ChangePassword(changePasswordDto, CancellationToken.None));
         }
 
         [Fact]
-        public async Task ChangePassword_ValidationFails_ReturnsBadRequest()
+        public async Task ChangePassword_ValidationFails_ThrowsServiceValidationException()
         {
             // Arrange
             SetupAuthenticatedUser(1);
@@ -676,7 +647,7 @@ namespace GeneralReservationSystem.Tests.Controllers
             {
                 UserId = 1,
                 CurrentPassword = "old",
-                NewPassword = "new" // Too weak
+                NewPassword = "new"
             };
 
             List<ValidationFailure> validationFailures =
@@ -688,11 +659,12 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(v => v.ValidateAsync(changePasswordDto, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ValidationResult(validationFailures));
 
-            // Act
-            IActionResult result = await _controller.ChangePassword(changePasswordDto, CancellationToken.None);
+            // Act & Assert
+            ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
+                () => _controller.ChangePassword(changePasswordDto, CancellationToken.None));
 
-            // Assert
-            _ = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Single(exception.Errors);
+            Assert.Equal("NewPassword", exception.Errors[0].Field);
 
             _mockAuthenticationService.Verify(
                 s => s.ChangePasswordAsync(It.IsAny<ChangePasswordDto>(), It.IsAny<CancellationToken>()),

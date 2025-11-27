@@ -6,12 +6,13 @@ using GeneralReservationSystem.Application.DTOs.Authentication;
 using GeneralReservationSystem.Application.Entities.Authentication;
 using GeneralReservationSystem.Application.Exceptions.Services;
 using GeneralReservationSystem.Application.Services.Interfaces.Authentication;
-using GeneralReservationSystem.Server.Controllers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
 using Moq;
 using System.Security.Claims;
+using System.Security;
+using GeneralReservationSystem.Server.Controllers.Authentication;
 
 namespace GeneralReservationSystem.Tests.Controllers
 {
@@ -303,7 +304,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task SearchUsers_ValidationFails_ReturnsBadRequest()
+        public async Task SearchUsers_ValidationFails_ThrowsServiceValidationException()
         {
             // Arrange
             SetupAuthenticatedUser(1, isAdmin: true);
@@ -330,11 +331,11 @@ namespace GeneralReservationSystem.Tests.Controllers
                 }
             };
 
-            // Act
-            IActionResult result = await _controller.SearchUsers(CancellationToken.None);
+            // Act & Assert
+            ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
+                () => _controller.SearchUsers(CancellationToken.None));
 
-            // Assert
-            _ = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Single(exception.Errors);
 
             _mockUserService.Verify(
                 s => s.SearchUsersAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()),
@@ -439,7 +440,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task GetCurrentUser_NoUserIdClaim_ReturnsUnauthorized()
+        public async Task GetCurrentUser_NoUserIdClaim_ThrowsUnauthorizedAccessException()
         {
             // Arrange
             ClaimsIdentity identity = new(); // No claims
@@ -453,11 +454,9 @@ namespace GeneralReservationSystem.Tests.Controllers
                 }
             };
 
-            // Act
-            IActionResult result = await _controller.GetCurrentUser(CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<UnauthorizedResult>(result);
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<UnauthorizedAccessException>(
+                () => _controller.GetCurrentUser(CancellationToken.None));
 
             _mockUserService.Verify(
                 s => s.GetUserAsync(It.IsAny<UserKeyDto>(), It.IsAny<CancellationToken>()),
@@ -465,7 +464,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task GetCurrentUser_UserNotFound_ReturnsNotFound()
+        public async Task GetCurrentUser_UserNotFound_ThrowsServiceNotFoundException()
         {
             // Arrange
             SetupAuthenticatedUser(999);
@@ -474,13 +473,9 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(s => s.GetUserAsync(It.Is<UserKeyDto>(k => k.UserId == 999), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ServiceNotFoundException("User not found"));
 
-            // Act
-            IActionResult result = await _controller.GetCurrentUser(CancellationToken.None);
-
-            // Assert
-            NotFoundObjectResult notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
-            object? errorResponse = notFoundResult.Value;
-            Assert.NotNull(errorResponse);
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<ServiceNotFoundException>(
+                () => _controller.GetCurrentUser(CancellationToken.None));
         }
 
         #endregion
@@ -488,7 +483,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         #region GetUserById Tests
 
         [Fact]
-        public async Task GetUserById_UserNotFound_ReturnsNotFound()
+        public async Task GetUserById_UserNotFound_ThrowsServiceNotFoundException()
         {
             // Arrange
             SetupAuthenticatedUser(1, isAdmin: true);
@@ -497,11 +492,9 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(s => s.GetUserAsync(It.Is<UserKeyDto>(k => k.UserId == 999), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ServiceNotFoundException("User not found"));
 
-            // Act
-            IActionResult result = await _controller.GetUserById(999, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<NotFoundObjectResult>(result);
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<ServiceNotFoundException>(
+                () => _controller.GetUserById(999, CancellationToken.None));
         }
 
         #endregion
@@ -544,7 +537,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task UpdateCurrentUser_NoUserIdClaim_ReturnsUnauthorized()
+        public async Task UpdateCurrentUser_NoUserIdClaim_ThrowsUnauthorizedAccessException()
         {
             // Arrange
             ClaimsIdentity identity = new();
@@ -563,11 +556,9 @@ namespace GeneralReservationSystem.Tests.Controllers
                 UserName = "updateduser"
             };
 
-            // Act
-            IActionResult result = await _controller.UpdateCurrentUser(updateDto, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<UnauthorizedResult>(result);
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<UnauthorizedAccessException>(
+                () => _controller.UpdateCurrentUser(updateDto, CancellationToken.None));
 
             _mockUserService.Verify(
                 s => s.UpdateUserAsync(It.IsAny<UpdateUserDto>(), It.IsAny<CancellationToken>()),
@@ -575,7 +566,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task UpdateCurrentUser_UserNotFound_ReturnsNotFound()
+        public async Task UpdateCurrentUser_UserNotFound_ThrowsServiceNotFoundException()
         {
             // Arrange
             SetupAuthenticatedUser(999);
@@ -589,15 +580,13 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(s => s.UpdateUserAsync(It.IsAny<UpdateUserDto>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ServiceNotFoundException("User not found"));
 
-            // Act
-            IActionResult result = await _controller.UpdateCurrentUser(updateDto, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<NotFoundObjectResult>(result);
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<ServiceNotFoundException>(
+                () => _controller.UpdateCurrentUser(updateDto, CancellationToken.None));
         }
 
         [Fact]
-        public async Task UpdateCurrentUser_DuplicateUserName_ReturnsConflict()
+        public async Task UpdateCurrentUser_DuplicateUserName_ThrowsServiceBusinessException()
         {
             // Arrange
             SetupAuthenticatedUser(1);
@@ -611,22 +600,20 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(s => s.UpdateUserAsync(It.IsAny<UpdateUserDto>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ServiceBusinessException("Username already exists"));
 
-            // Act
-            IActionResult result = await _controller.UpdateCurrentUser(updateDto, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<ConflictObjectResult>(result);
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<ServiceBusinessException>(
+                () => _controller.UpdateCurrentUser(updateDto, CancellationToken.None));
         }
 
         [Fact]
-        public async Task UpdateCurrentUser_ValidationFails_ReturnsBadRequest()
+        public async Task UpdateCurrentUser_ValidationFails_ThrowsServiceValidationException()
         {
             // Arrange
             SetupAuthenticatedUser(1);
 
             UpdateUserDto updateDto = new()
             {
-                UserName = "" // Invalid
+                UserName = ""
             };
 
             List<ValidationFailure> validationFailures =
@@ -638,11 +625,11 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(v => v.ValidateAsync(It.IsAny<UpdateUserDto>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ValidationResult(validationFailures));
 
-            // Act
-            IActionResult result = await _controller.UpdateCurrentUser(updateDto, CancellationToken.None);
+            // Act & Assert
+            ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
+                () => _controller.UpdateCurrentUser(updateDto, CancellationToken.None));
 
-            // Assert
-            _ = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Single(exception.Errors);
 
             _mockUserService.Verify(
                 s => s.UpdateUserAsync(It.IsAny<UpdateUserDto>(), It.IsAny<CancellationToken>()),
@@ -719,7 +706,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task UpdateUserById_DuplicateUserName_ReturnsConflict()
+        public async Task UpdateUserById_DuplicateUserName_ThrowsServiceBusinessException()
         {
             // Arrange
             SetupAuthenticatedUser(1, isAdmin: true);
@@ -733,11 +720,9 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(s => s.UpdateUserAsync(It.IsAny<UpdateUserDto>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ServiceBusinessException("Username already exists"));
 
-            // Act
-            IActionResult result = await _controller.UpdateUserById(2, updateDto, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<ConflictObjectResult>(result);
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<ServiceBusinessException>(
+                () => _controller.UpdateUserById(2, updateDto, CancellationToken.None));
         }
 
         #endregion
@@ -766,7 +751,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task DeleteCurrentUser_NoUserIdClaim_ReturnsUnauthorized()
+        public async Task DeleteCurrentUser_NoUserIdClaim_ThrowsUnauthorizedAccessException()
         {
             // Arrange
             ClaimsIdentity identity = new();
@@ -780,11 +765,9 @@ namespace GeneralReservationSystem.Tests.Controllers
                 }
             };
 
-            // Act
-            IActionResult result = await _controller.DeleteCurrentUser(CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<UnauthorizedResult>(result);
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<UnauthorizedAccessException>(
+                () => _controller.DeleteCurrentUser(CancellationToken.None));
 
             _mockUserService.Verify(
                 s => s.DeleteUserAsync(It.IsAny<UserKeyDto>(), It.IsAny<CancellationToken>()),
@@ -792,7 +775,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task DeleteCurrentUser_UserNotFound_ReturnsNotFound()
+        public async Task DeleteCurrentUser_UserNotFound_ThrowsServiceNotFoundException()
         {
             // Arrange
             SetupAuthenticatedUser(999);
@@ -801,11 +784,9 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(s => s.DeleteUserAsync(It.IsAny<UserKeyDto>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ServiceNotFoundException("User not found"));
 
-            // Act
-            IActionResult result = await _controller.DeleteCurrentUser(CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<NotFoundObjectResult>(result);
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<ServiceNotFoundException>(
+                () => _controller.DeleteCurrentUser(CancellationToken.None));
         }
 
         #endregion
@@ -851,7 +832,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task DeleteUserById_UserNotFound_ReturnsNotFound()
+        public async Task DeleteUserById_UserNotFound_ThrowsServiceNotFoundException()
         {
             // Arrange
             SetupAuthenticatedUser(1, isAdmin: true);
@@ -860,11 +841,9 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(s => s.DeleteUserAsync(It.IsAny<UserKeyDto>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ServiceNotFoundException("User not found"));
 
-            // Act
-            IActionResult result = await _controller.DeleteUserById(999, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<NotFoundObjectResult>(result);
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<ServiceNotFoundException>(
+                () => _controller.DeleteUserById(999, CancellationToken.None));
         }
 
         #endregion

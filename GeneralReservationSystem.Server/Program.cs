@@ -9,17 +9,15 @@ using Microsoft.IdentityModel.Tokens;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddInfrastructureRepositories();
+builder.Services.AddServerServices();
+builder.Services.AddControllers();
+
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
 
-builder.Services.AddControllers();
-builder.Services.AddInfrastructureRepositories();
-builder.Services.AddServerServices();
-builder.Services.AddFluentValidators();
-builder.Services.AddHttpContextAccessor();
-
-// Configure JWT settings
 JwtSettings jwtSettings = new()
 {
     SecretKey = builder.Configuration["Jwt:SecretKey"] ?? "YourSuperSecretKeyThatIsAtLeast32CharactersLong!",
@@ -30,7 +28,6 @@ JwtSettings jwtSettings = new()
 };
 builder.Services.AddSingleton(jwtSettings);
 
-// Configure JWT Bearer authentication
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -105,20 +102,20 @@ WebApplication app = builder.Build();
 
 app.UseHttpsRedirection();
 
-if (!app.Environment.IsDevelopment())
-{
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    _ = app.UseHsts();
-}
-
 app.MapWhen(ctx => ctx.Request.Path.StartsWithSegments("/api"), apiApp =>
 {
+    _ = apiApp.UseMiddleware<GlobalExceptionHandler>();
+
     _ = apiApp.UseRouting();
 
     _ = apiApp.UseAntiforgery();
 
     _ = apiApp.UseAuthentication();
     _ = apiApp.UseAuthorization();
+
+    _ = apiApp.UseRequestLocalization(new RequestLocalizationOptions()
+        .AddSupportedCultures(["en-US", "es-AR"])
+        .AddSupportedUICultures(["en-US", "es-AR"]));
 
     _ = apiApp.UseEndpoints(endpoints =>
     {
@@ -129,11 +126,6 @@ app.MapWhen(ctx => ctx.Request.Path.StartsWithSegments("/api"), apiApp =>
 
 app.MapWhen(ctx => !ctx.Request.Path.StartsWithSegments("/api"), webApp =>
 {
-    _ = webApp.UseExceptionHandler(errorApp =>
-    {
-        errorApp.Run(GlobalExceptionHandler.HandleAsync);
-    });
-
     // Configure the HTTP request pipeline.
     if (app.Environment.IsDevelopment())
     {
@@ -142,6 +134,8 @@ app.MapWhen(ctx => !ctx.Request.Path.StartsWithSegments("/api"), webApp =>
     else
     {
         _ = webApp.UseExceptionHandler("/Error", createScopeForErrors: true);
+        // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+        _ = webApp.UseHsts();
     }
 
     _ = webApp.UseStaticFiles();
@@ -151,6 +145,11 @@ app.MapWhen(ctx => !ctx.Request.Path.StartsWithSegments("/api"), webApp =>
 
     _ = webApp.UseAuthentication();
     _ = webApp.UseAuthorization();
+
+    _ = webApp.UseRequestLocalization(new RequestLocalizationOptions()
+        .AddSupportedCultures(["en-US", "es-AR"])
+        .AddSupportedUICultures(["en-US", "es-AR"]));
+
     _ = webApp.UseEndpoints(endpoints =>
     {
         _ = endpoints.MapStaticAssets();

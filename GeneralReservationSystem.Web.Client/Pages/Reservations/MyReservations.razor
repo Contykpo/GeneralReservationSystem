@@ -62,13 +62,13 @@
                             </MudSelect>
                         </MudItem>
                         <MudItem xs="12" sm="6" md="3">
-                            <MudDateRangePicker DateRange="_filterDepartureDateRange"
-                                                DateRangeChanged="@(async (DateRange? range) => { _filterDepartureDateRange = range; await _table!.ReloadServerData(); })"
+                            <MudDateRangePicker @bind-DateRange="_filterDepartureDateRange"
+                                PickerClosed="@OnDepartureDateRangeChanged"
                                 Label="Rango Fecha Salida" Variant="Variant.Outlined" Clearable="true" />
                         </MudItem>
                         <MudItem xs="12" sm="6" md="3">
-                            <MudDateRangePicker DateRange="_filterArrivalDateRange"
-                                                DateRangeChanged="@(async (DateRange? range) => { _filterArrivalDateRange = range; await _table!.ReloadServerData(); })"
+                            <MudDateRangePicker @bind-DateRange="_filterArrivalDateRange"
+                                PickerClosed="@OnArrivalDateRangeChanged"
                                 Label="Rango Fecha Llegada" Variant="Variant.Outlined" Clearable="true" />
                         </MudItem>
                         <MudItem xs="12">
@@ -269,14 +269,23 @@
         _table!.ReloadServerData();
     }
 
+    private async Task OnDepartureDateRangeChanged()
+    {
+        await _table!.ReloadServerData();
+    }
+
+    private async Task OnArrivalDateRangeChanged()
+    {
+        await _table!.ReloadServerData();
+    }
+
     private async Task HandleDelete(UserReservationDetailsDto item)
     {
         try
         {
             await ReservationService.DeleteReservationAsync(new ReservationKeyDto
             {
-                TripId =
-            item.TripId,
+                TripId = item.TripId,
                 Seat = item.Seat
             });
             Snackbar.Add("Reserva eliminada.", Severity.Success);

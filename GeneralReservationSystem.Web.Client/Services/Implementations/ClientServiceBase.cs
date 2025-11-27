@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace GeneralReservationSystem.Web.Client.Services.Implementations
 {
@@ -45,6 +46,22 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
         protected async Task PostAsync(string url, object content, CancellationToken cancellationToken = default)
         {
             HttpRequestMessage request = CreateRequestWithCredentials(HttpMethod.Post, url);
+            request.Content = JsonContent.Create(content);
+            HttpResponseMessage response = await HttpClient.SendAsync(request, cancellationToken);
+            await EnsureSuccessOrThrow(response);
+        }
+
+        protected async Task PutAsync(string url, object content, CancellationToken cancellationToken = default)
+        {
+            HttpRequestMessage request = CreateRequestWithCredentials(HttpMethod.Put, url);
+            request.Content = JsonContent.Create(content);
+            HttpResponseMessage response = await HttpClient.SendAsync(request, cancellationToken);
+            await EnsureSuccessOrThrow(response);
+        }
+
+        protected async Task PatchAsync(string url, object content, CancellationToken cancellationToken = default)
+        {
+            HttpRequestMessage request = CreateRequestWithCredentials(HttpMethod.Patch, url);
             request.Content = JsonContent.Create(content);
             HttpResponseMessage response = await HttpClient.SendAsync(request, cancellationToken);
             await EnsureSuccessOrThrow(response);
@@ -131,74 +148,61 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
                 return;
             }
 
-            string errorContent = await response.Content.ReadAsStringAsync();
+            var errorContent = await response.Content.ReadAsStringAsync();
 
             throw response.StatusCode switch
             {
-                HttpStatusCode.BadRequest when CheckBadRequestForValidationErrors(errorContent) =>
-                    new ServiceValidationException($"La solicitud es inválida.", ParseBadRequestErrors(errorContent)),
-                HttpStatusCode.Unauthorized => new ServiceBusinessException($"No está autorizado para realizar esta acción."),
-                HttpStatusCode.Forbidden => new ServiceBusinessException($"No tiene permisos para realizar esta acción."),
-                HttpStatusCode.NotFound => new ServiceNotFoundException(ParseErrorMessage(errorContent)),
-                HttpStatusCode.Conflict => new ServiceBusinessException(ParseErrorMessage(errorContent)),
-                _ => new ServiceException(ParseErrorMessage(errorContent))
+                HttpStatusCode.BadRequest when TryParseValidationErrorResponse(errorContent, out var errorResponse) =>
+                    new ServiceValidationException(errorResponse!.ErrorMessage, errorResponse!.Errors),
+                HttpStatusCode.BadRequest => new ServiceBusinessException(ParseErrorMessage(errorContent) ?? "Error en la solicitud."),
+                HttpStatusCode.Unauthorized => new ServiceBusinessException(ParseErrorMessage(errorContent) ?? "No tiene permisos para realizar esta acción."),
+                HttpStatusCode.NotFound => new ServiceNotFoundException(ParseErrorMessage(errorContent) ?? "No se encontró el recurso solicitado."),
+                HttpStatusCode.Conflict => new ServiceBusinessException(ParseErrorMessage(errorContent) ?? "Conflicto en la solicitud."),
+                _ => new ServiceException(ParseErrorMessage(errorContent) ?? "Error desconocido.")
             };
-        }
-
-        private static bool CheckBadRequestForValidationErrors(string errorObj)
-        {
-            return !string.IsNullOrWhiteSpace(errorObj);
         }
 
         private class ErrorResponse
         {
-            public string? Error { get; set; }
+            public required string Error { get; set; }
         }
 
-        private static string ParseErrorMessage(string errorContents)
+        private class ValidationErrorResponse
         {
+            public required string ErrorMessage { get; set; }
+            public required ValidationError[] Errors { get; set; }
+        }
 
+        private static string? ParseErrorMessage(string errorContents)
+        {
             try
             {
                 ErrorResponse? errorResponse = JsonSerializer.Deserialize<ErrorResponse>(errorContents, jsonOptions);
-                if (errorResponse?.Error != null)
-                {
-                    return errorResponse.Error;
-                }
-            }
-            catch
+                return errorResponse?.Error;
+            } catch
             {
             }
-            return "Error en la solicitud al servidor.";
+
+            return null;
         }
 
-        private static ValidationError[] ParseBadRequestErrors(string errorObj)
+        private static bool TryParseValidationErrorResponse(string errorContents, out ValidationErrorResponse? errorResponse)
         {
+            errorResponse = null;
+
             try
             {
-                ValidationError[]? errors = JsonSerializer.Deserialize<ValidationError[]>(errorObj, jsonOptions);
-                if (errors != null)
+                errorResponse = JsonSerializer.Deserialize<ValidationErrorResponse>(errorContents, jsonOptions);
+                if (errorResponse != null)
                 {
-                    return errors;
+                    return true;
                 }
             }
             catch
             {
             }
 
-            try
-            {
-                ValidationError? error = JsonSerializer.Deserialize<ValidationError>(errorObj, jsonOptions);
-                if (error != null)
-                {
-                    return [error];
-                }
-            }
-            catch
-            {
-            }
-
-            return [];
+            return false;
         }
     }
 }

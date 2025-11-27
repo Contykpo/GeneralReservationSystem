@@ -8,52 +8,33 @@ namespace GeneralReservationSystem.Server.Controllers
 {
     [ApiController]
     [Route("api/email")]
-    [Authorize]
     public class EmailController : ControllerBase
     {
         [HttpPost("send-confirmation")]
+        [Authorize]
         public async Task<IActionResult> SendReservationEmail([FromBody] ReservationConfirmationEmailDto dto)
         {
-            try
-            {
-                await EmailManager.SendReservationConfirmationAsync(dto.Email, dto.UserName, dto.DepartureStation, dto.ArrivalStation, dto.DepartureTime, dto.SeatNumber);
+            await EmailManager.SendReservationConfirmationAsync(dto.Email, dto.UserName, dto.DepartureStation, dto.ArrivalStation, dto.DepartureTime, dto.SeatNumber);
 
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                return Conflict(new { error = ex.Message });
-            }
+            return Ok();
         }
 
         [HttpPost("send-notification")]
+        [Authorize]
         public async Task<IActionResult> SendNotificationEmail([FromBody] EmailDto dto)
         {
-            try
-            {
-                await EmailManager.SendNotificationAsync(dto.Email, dto.Subject, dto.Body);
+            await EmailManager.SendNotificationAsync(dto.Email, dto.Subject, dto.Body);
 
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                return Conflict(new { error = ex.Message });
-            }
+            return Ok();
         }
 
         [HttpPost("send-email")]
+        [Authorize]
         public async Task<IActionResult> SendEmail([FromBody] EmailDto dto)
         {
-            try
-            {
-                await EmailManager.SendEmailAsync(dto.Email, dto.Subject, dto.Body);
+            await EmailManager.SendEmailAsync(dto.Email, dto.Subject, dto.Body);
 
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                return Conflict(new { error = ex.Message });
-            }
+            return Ok();
         }
     }
 }

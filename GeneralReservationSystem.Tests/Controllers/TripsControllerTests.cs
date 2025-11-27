@@ -147,22 +147,20 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task GetTrip_TripNotFound_ReturnsNotFound()
+        public async Task GetTrip_TripNotFound_ThrowsServiceNotFoundException()
         {
             // Arrange
             _ = _mockTripService
                 .Setup(s => s.GetTripAsync(It.Is<TripKeyDto>(k => k.TripId == 999), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ServiceNotFoundException("Trip not found"));
 
-            // Act
-            IActionResult result = await _controller.GetTrip(999, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<NotFoundObjectResult>(result);
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<ServiceNotFoundException>(
+                () => _controller.GetTrip(999, CancellationToken.None));
         }
 
         [Fact]
-        public async Task GetTrip_ValidationFails_ReturnsBadRequest()
+        public async Task GetTrip_ValidationFails_ThrowsServiceValidationException()
         {
             // Arrange
             List<ValidationFailure> validationFailures =
@@ -174,11 +172,11 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(v => v.ValidateAsync(It.IsAny<TripKeyDto>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ValidationResult(validationFailures));
 
-            // Act
-            IActionResult result = await _controller.GetTrip(0, CancellationToken.None);
+            // Act & Assert
+            ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
+                () => _controller.GetTrip(0, CancellationToken.None));
 
-            // Assert
-            _ = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Single(exception.Errors);
         }
 
         #endregion
@@ -223,18 +221,16 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task GetTripWithDetails_TripNotFound_ReturnsNotFound()
+        public async Task GetTripWithDetails_TripNotFound_ThrowsServiceNotFoundException()
         {
             // Arrange
             _ = _mockTripService
                 .Setup(s => s.GetTripWithDetailsAsync(It.Is<TripKeyDto>(k => k.TripId == 999), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ServiceNotFoundException("Trip not found"));
 
-            // Act
-            IActionResult result = await _controller.GetTripWithDetails(999, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<NotFoundObjectResult>(result);
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<ServiceNotFoundException>(
+                () => _controller.GetTripWithDetails(999, CancellationToken.None));
         }
 
         #endregion
@@ -281,7 +277,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task CreateTrip_BusinessRuleViolation_ReturnsConflict()
+        public async Task CreateTrip_BusinessRuleViolation_ThrowsServiceBusinessException()
         {
             // Arrange
             SetupAdminUser();
@@ -299,22 +295,20 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(s => s.CreateTripAsync(createDto, It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ServiceBusinessException("Departure and arrival stations must be different"));
 
-            // Act
-            IActionResult result = await _controller.CreateTrip(createDto, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<ConflictObjectResult>(result);
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<ServiceBusinessException>(
+                () => _controller.CreateTrip(createDto, CancellationToken.None));
         }
 
         [Fact]
-        public async Task CreateTrip_ValidationFails_ReturnsBadRequest()
+        public async Task CreateTrip_ValidationFails_ThrowsServiceValidationException()
         {
             // Arrange
             SetupAdminUser();
 
             CreateTripDto createDto = new()
             {
-                AvailableSeats = -5 // Invalid
+                AvailableSeats = -5
             };
 
             List<ValidationFailure> validationFailures =
@@ -326,11 +320,11 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(v => v.ValidateAsync(createDto, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ValidationResult(validationFailures));
 
-            // Act
-            IActionResult result = await _controller.CreateTrip(createDto, CancellationToken.None);
+            // Act & Assert
+            ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
+                () => _controller.CreateTrip(createDto, CancellationToken.None));
 
-            // Assert
-            _ = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Single(exception.Errors);
 
             _mockTripService.Verify(
                 s => s.CreateTripAsync(It.IsAny<CreateTripDto>(), It.IsAny<CancellationToken>()),
@@ -363,7 +357,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task DeleteTrip_TripNotFound_ReturnsNotFound()
+        public async Task DeleteTrip_TripNotFound_ThrowsServiceNotFoundException()
         {
             // Arrange
             SetupAdminUser();
@@ -372,11 +366,9 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(s => s.DeleteTripAsync(It.IsAny<TripKeyDto>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ServiceNotFoundException("Trip not found"));
 
-            // Act
-            IActionResult result = await _controller.DeleteTrip(999, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<NotFoundObjectResult>(result);
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<ServiceNotFoundException>(
+                () => _controller.DeleteTrip(999, CancellationToken.None));
         }
 
         #endregion
@@ -420,34 +412,29 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task GetFreeSeats_TripNotFound_ReturnsNotFound()
+        public async Task GetFreeSeats_TripNotFound_ThrowsServiceNotFoundException()
         {
             // Arrange
             _ = _mockTripService
                 .Setup(s => s.GetFreeSeatsAsync(It.Is<TripKeyDto>(k => k.TripId == 999), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ServiceNotFoundException("Trip not found"));
 
-            // Act
-            IActionResult result = await _controller.GetFreeSeats(999, CancellationToken.None);
-
-            // Assert
-            _ = Assert.IsType<NotFoundObjectResult>(result);
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<ServiceNotFoundException>(
+                () => _controller.GetFreeSeats(999, CancellationToken.None));
         }
 
         [Fact]
-        public async Task GetFreeSeats_ServiceError_ReturnsInternalServerError()
+        public async Task GetFreeSeats_ServiceError_ThrowsServiceException()
         {
             // Arrange
             _ = _mockTripService
                 .Setup(s => s.GetFreeSeatsAsync(It.Is<TripKeyDto>(k => k.TripId == 1), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ServiceException("Database error"));
 
-            // Act
-            IActionResult result = await _controller.GetFreeSeats(1, CancellationToken.None);
-
-            // Assert
-            ObjectResult statusResult = Assert.IsType<ObjectResult>(result);
-            Assert.Equal(500, statusResult.StatusCode);
+            // Act & Assert
+            _ = await Assert.ThrowsAsync<ServiceException>(
+                () => _controller.GetFreeSeats(1, CancellationToken.None));
         }
 
         #endregion
@@ -686,7 +673,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task SearchTrips_ValidationFails_ReturnsBadRequest()
+        public async Task SearchTrips_ValidationFails_ThrowsServiceValidationException()
         {
             // Arrange
             List<ValidationFailure> validationFailures =
@@ -710,11 +697,11 @@ namespace GeneralReservationSystem.Tests.Controllers
                 }
             };
 
-            // Act
-            IActionResult result = await _controller.SearchTrips(CancellationToken.None);
+            // Act & Assert
+            ServiceValidationException exception = await Assert.ThrowsAsync<ServiceValidationException>(
+                () => _controller.SearchTrips(CancellationToken.None));
 
-            // Assert
-            _ = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Single(exception.Errors);
 
             _mockTripService.Verify(
                 s => s.SearchTripsAsync(It.IsAny<PagedSearchRequestDto>(), It.IsAny<CancellationToken>()),

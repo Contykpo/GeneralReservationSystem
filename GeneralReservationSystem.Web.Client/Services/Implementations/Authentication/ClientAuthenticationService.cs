@@ -40,7 +40,7 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations.Authentic
 
         public async Task ChangePasswordAsync(ChangePasswordDto dto, CancellationToken cancellationToken = default)
         {
-            await PostAsync("/api/auth/change-password", dto, cancellationToken);
+            await PatchAsync("/api/auth/change-password", dto, cancellationToken);
         }
 
         private class RegisterResponse

@@ -30,7 +30,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
             }
             catch (UniqueConstraintViolationException ex)
             {
-                throw new ServiceBusinessException("Ya existe un usuario con el mismo nombre o correo electrónico.", ex);
+                throw new ServiceDuplicateException("Ya existe un usuario con el mismo nombre o correo electrónico.", ex);
             }
             catch (RepositoryException ex)
             {
@@ -59,10 +59,6 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
                 return !PasswordHelper.VerifyPassword(dto.Password, user.PasswordHash, user.PasswordSalt)
                     ? throw new ServiceBusinessException("Usuario o contraseña incorrectos.")
                     : user.GetUserInfo();
-            }
-            catch (ServiceBusinessException)
-            {
-                throw;
             }
             catch (RepositoryException ex)
             {

@@ -283,7 +283,7 @@ namespace GeneralReservationSystem.Tests.Services.Authentication
         }
 
         [Fact]
-        public async Task UpdateUserAsync_DuplicateUserNameOrEmail_ThrowsServiceBusinessException()
+        public async Task UpdateUserAsync_DuplicateUserNameOrEmail_ThrowsServiceDuplicateException()
         {
             // Arrange
             UpdateUserDto updateDto = new()
@@ -300,7 +300,7 @@ namespace GeneralReservationSystem.Tests.Services.Authentication
                 .ThrowsAsync(new UniqueConstraintViolationException("UQ_User_UserName"));
 
             // Act & Assert
-            ServiceBusinessException exception = await Assert.ThrowsAsync<ServiceBusinessException>(
+            ServiceDuplicateException exception = await Assert.ThrowsAsync<ServiceDuplicateException>(
                 () => _userService.UpdateUserAsync(updateDto));
 
             Assert.Equal("Ya existe un usuario con el mismo nombre o correo electrónico.", exception.Message);

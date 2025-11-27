@@ -56,7 +56,7 @@ namespace GeneralReservationSystem.Tests.Services
         }
 
         [Fact]
-        public async Task CreateTripAsync_InvalidStations_ThrowsServiceBusinessException()
+        public async Task CreateTripAsync_InvalidStations_ThrowsServiceReferenceException()
         {
             // Arrange
             CreateTripDto createDto = new()
@@ -73,7 +73,7 @@ namespace GeneralReservationSystem.Tests.Services
                 .ThrowsAsync(new ForeignKeyViolationException("FK_Trip_Station"));
 
             // Act & Assert
-            ServiceBusinessException exception = await Assert.ThrowsAsync<ServiceBusinessException>(
+            ServiceReferenceException exception = await Assert.ThrowsAsync<ServiceReferenceException>(
                 () => _tripService.CreateTripAsync(createDto));
 
             Assert.Equal("La estación de salida o llegada no existe.", exception.Message);

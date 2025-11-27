@@ -61,7 +61,7 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
             }
             catch (UniqueConstraintViolationException ex)
             {
-                throw new ServiceBusinessException("Ya existe un usuario con el mismo nombre o correo electrónico.", ex);
+                throw new ServiceDuplicateException("Ya existe un usuario con el mismo nombre o correo electrónico.", ex);
             }
             catch (RepositoryException ex)
             {
@@ -102,43 +102,6 @@ namespace GeneralReservationSystem.Application.Services.DefaultImplementations.A
         {
             try
             {
-                /*var query = unitOfWork.UserRepository.Query()
-                    .Select(u => new
-                    {
-                        u.UserId,
-                        u.UserName,
-                        u.Email,
-                        u.IsAdmin
-                    })
-                    .ApplyFilters(searchDto.Filters);
-
-                var items = await query
-                    .ApplyOrders(searchDto.Orders)
-                    .Skip((searchDto.Page - 1) * searchDto.PageSize)
-                    .Take(searchDto.PageSize)
-                    .ToListAsync(cancellationToken);
-
-                List<UserInfo> userInfoItems = [.. items
-                    .Select(x => new UserInfo
-                    {
-                        UserId = x.UserId,
-                        UserName = x.UserName,
-                        Email = x.Email,
-                        IsAdmin = x.IsAdmin
-                    })];
-
-                int count = await query.CountAsync(cancellationToken);
-
-                unitOfWork.Commit();
-
-                return new PagedResult<UserInfo>
-                {
-                    Items = userInfoItems,
-                    TotalCount = count,
-                    Page = searchDto.Page,
-                    PageSize = searchDto.PageSize
-                };*/
-
                 return await userRepository.SearchWithInfoAsync(searchDto, cancellationToken);
             }
             catch (RepositoryException ex)
