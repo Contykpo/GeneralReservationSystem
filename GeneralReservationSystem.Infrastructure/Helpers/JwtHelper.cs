@@ -91,7 +91,7 @@ namespace GeneralReservationSystem.Infrastructure.Helpers
             {
                 HttpOnly = true,
                 Secure = true,
-                SameSite = SameSiteMode.Strict,
+                SameSite = SameSiteMode.Lax,
                 Path = CookiePath,
             };
 
