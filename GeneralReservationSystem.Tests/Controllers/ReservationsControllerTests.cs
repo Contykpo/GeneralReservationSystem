@@ -11,7 +11,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
 using Moq;
-using System.Security;
 using System.Security.Claims;
 
 namespace GeneralReservationSystem.Tests.Controllers
@@ -514,7 +513,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task SearchUserReservations_AsNonAdminForOtherUser_ThrowsSecurityException()
+        public async Task SearchUserReservations_AsNonAdminForOtherUser_ReturnsForbid()
         {
             // Arrange
             SetupAuthenticatedUser(1, isAdmin: false);
@@ -529,9 +528,11 @@ namespace GeneralReservationSystem.Tests.Controllers
                 }
             };
 
-            // Act & Assert
-            _ = await Assert.ThrowsAsync<SecurityException>(
-                () => _controller.SearchUserReservations(2, CancellationToken.None));
+            // Act
+            IActionResult result = await _controller.SearchUserReservations(2, CancellationToken.None);
+
+            // Assert
+            _ = Assert.IsType<ForbidResult>(result);
         }
 
         [Fact]
@@ -583,28 +584,6 @@ namespace GeneralReservationSystem.Tests.Controllers
             PagedResult<UserReservationDetailsDto> pagedResult = Assert.IsType<PagedResult<UserReservationDetailsDto>>(okResult.Value);
             Assert.Equal(2, pagedResult.Page);
             Assert.Equal(5, pagedResult.PageSize);
-        }
-
-        [Fact]
-        public async Task SearchUserReservations_NoUserIdClaim_ThrowsUnauthorizedAccessException()
-        {
-            // Arrange
-            ClaimsIdentity identity = new();
-            ClaimsPrincipal claimsPrincipal = new(identity);
-
-            QueryCollection queryCollection = new(new Dictionary<string, StringValues>());
-            _controller.ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext
-                {
-                    User = claimsPrincipal,
-                    Request = { Query = queryCollection }
-                }
-            };
-
-            // Act & Assert
-            _ = await Assert.ThrowsAsync<UnauthorizedAccessException>(
-                () => _controller.SearchUserReservations(1, CancellationToken.None));
         }
 
         #endregion
@@ -864,28 +843,6 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task SearchCurrentUserReservations_NoUserIdClaim_ThrowsUnauthorizedAccessException()
-        {
-            // Arrange
-            ClaimsIdentity identity = new();
-            ClaimsPrincipal claimsPrincipal = new(identity);
-
-            QueryCollection queryCollection = new(new Dictionary<string, StringValues>());
-            _controller.ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext
-                {
-                    User = claimsPrincipal,
-                    Request = { Query = queryCollection }
-                }
-            };
-
-            // Act & Assert
-            _ = await Assert.ThrowsAsync<UnauthorizedAccessException>(
-                () => _controller.SearchCurrentUserReservations(CancellationToken.None));
-        }
-
-        [Fact]
         public async Task SearchCurrentUserReservations_EmptyResults_ReturnsEmptyPagedResult()
         {
             // Arrange
@@ -950,26 +907,6 @@ namespace GeneralReservationSystem.Tests.Controllers
             OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
             IEnumerable<UserReservationDetailsDto> reservations = Assert.IsType<IEnumerable<UserReservationDetailsDto>>(okResult.Value, exactMatch: false);
             Assert.Equal(2, reservations.Count());
-        }
-
-        [Fact]
-        public async Task GetMyReservations_NoUserIdClaim_ThrowsUnauthorizedAccessException()
-        {
-            // Arrange
-            ClaimsIdentity identity = new();
-            ClaimsPrincipal claimsPrincipal = new(identity);
-
-            _controller.ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext
-                {
-                    User = claimsPrincipal
-                }
-            };
-
-            // Act & Assert
-            _ = await Assert.ThrowsAsync<UnauthorizedAccessException>(
-                () => _controller.GetMyReservations(CancellationToken.None));
         }
 
         #endregion
@@ -1068,7 +1005,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task CreateReservation_AsNonAdminForOtherUser_ThrowsSecurityException()
+        public async Task CreateReservation_AsNonAdminForOtherUser_ReturnsForbid()
         {
             // Arrange
             SetupAuthenticatedUser(1, isAdmin: false);
@@ -1080,10 +1017,11 @@ namespace GeneralReservationSystem.Tests.Controllers
                 Seat = 5
             };
 
-            // Act & Assert
-            _ = await Assert.ThrowsAsync<SecurityException>(
-                () => _controller.CreateReservation(createDto, CancellationToken.None));
+            // Act
+            IActionResult result = await _controller.CreateReservation(createDto, CancellationToken.None);
 
+            // Assert
+            _ = Assert.IsType<ForbidResult>(result);
             _mockReservationService.Verify(
                 s => s.CreateReservationAsync(It.IsAny<CreateReservationDto>(), It.IsAny<CancellationToken>()),
                 Times.Never);
@@ -1108,33 +1046,6 @@ namespace GeneralReservationSystem.Tests.Controllers
 
             // Act & Assert
             _ = await Assert.ThrowsAsync<ServiceBusinessException>(
-                () => _controller.CreateReservation(createDto, CancellationToken.None));
-        }
-
-        [Fact]
-        public async Task CreateReservation_NoUserIdClaim_ThrowsUnauthorizedAccessException()
-        {
-            // Arrange
-            ClaimsIdentity identity = new();
-            ClaimsPrincipal claimsPrincipal = new(identity);
-
-            _controller.ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext
-                {
-                    User = claimsPrincipal
-                }
-            };
-
-            CreateReservationDto createDto = new()
-            {
-                TripId = 1,
-                UserId = 1,
-                Seat = 5
-            };
-
-            // Act & Assert
-            _ = await Assert.ThrowsAsync<UnauthorizedAccessException>(
                 () => _controller.CreateReservation(createDto, CancellationToken.None));
         }
 
@@ -1252,7 +1163,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task GetReservation_AsNonAdminForOtherUser_ThrowsSecurityException()
+        public async Task GetReservation_AsNonAdminForOtherUser_ReturnsForbid()
         {
             // Arrange
             SetupAuthenticatedUser(1, isAdmin: false);
@@ -1268,9 +1179,11 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(s => s.GetReservationAsync(It.Is<ReservationKeyDto>(k => k.TripId == 1 && k.Seat == 5), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(reservation);
 
-            // Act & Assert
-            _ = await Assert.ThrowsAsync<SecurityException>(
-                () => _controller.GetReservation(1, 5, CancellationToken.None));
+            // Act
+            IActionResult result = await _controller.GetReservation(1, 5, CancellationToken.None);
+
+            // Assert
+            _ = Assert.IsType<ForbidResult>(result);
         }
 
         [Fact]
@@ -1353,7 +1266,7 @@ namespace GeneralReservationSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task DeleteReservation_AsNonAdminForOtherUser_ThrowsSecurityException()
+        public async Task DeleteReservation_AsNonAdminForOtherUser_ReturnsForbid()
         {
             // Arrange
             SetupAuthenticatedUser(1, isAdmin: false);
@@ -1369,13 +1282,11 @@ namespace GeneralReservationSystem.Tests.Controllers
                 .Setup(s => s.GetReservationAsync(It.Is<ReservationKeyDto>(k => k.TripId == 1 && k.Seat == 5), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(reservation);
 
-            // Act & Assert
-            _ = await Assert.ThrowsAsync<SecurityException>(
-                () => _controller.DeleteReservation(1, 5, CancellationToken.None));
+            // Act
+            IActionResult result = await _controller.DeleteReservation(1, 5, CancellationToken.None);
 
-            _mockReservationService.Verify(
-                s => s.DeleteReservationAsync(It.IsAny<ReservationKeyDto>(), It.IsAny<CancellationToken>()),
-                Times.Never);
+            // Assert
+            _ = Assert.IsType<ForbidResult>(result);
         }
 
         [Fact]

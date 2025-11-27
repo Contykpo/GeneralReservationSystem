@@ -35,14 +35,17 @@ namespace GeneralReservationSystem.Server.Controllers.Authentication
         [Authorize]
         public async Task<IActionResult> GetCurrentUser(CancellationToken cancellationToken)
         {
-            return await GetUserById(CurrentUserId, cancellationToken);
+            return await GetUserById((int)CurrentUserId!, cancellationToken);
         }
 
         [HttpGet("{userId:int}")]
         [Authorize]
         public async Task<IActionResult> GetUserById([FromRoute] int userId, CancellationToken cancellationToken)
         {
-            EnsureOwnerOrAdmin(userId);
+            if (!IsOwnerOrAdmin(userId))
+            {
+                return Forbid();
+            }
             UserKeyDto keyDto = new() { UserId = userId };
             await ValidateAsync(userKeyValidator, keyDto, cancellationToken);
             UserInfo userInfo = (await userService.GetUserAsync(keyDto, cancellationToken)).GetUserInfo();
@@ -60,7 +63,7 @@ namespace GeneralReservationSystem.Server.Controllers.Authentication
         [Authorize]
         public async Task<IActionResult> UpdateCurrentUser([FromBody] UpdateUserDto dto, CancellationToken cancellationToken)
         {
-            dto.UserId = CurrentUserId;
+            dto.UserId = (int)CurrentUserId!;
             return await UpdateUser(dto, cancellationToken);
         }
 
@@ -68,7 +71,10 @@ namespace GeneralReservationSystem.Server.Controllers.Authentication
         [Authorize]
         public async Task<IActionResult> UpdateUserById([FromRoute] int userId, [FromBody] UpdateUserDto dto, CancellationToken cancellationToken)
         {
-            EnsureOwnerOrAdmin(userId);
+            if (!IsOwnerOrAdmin(userId))
+            {
+                return Forbid();
+            }
             dto.UserId = userId;
             return await UpdateUser(dto, cancellationToken);
         }
@@ -92,7 +98,7 @@ namespace GeneralReservationSystem.Server.Controllers.Authentication
         [Authorize]
         public async Task<IActionResult> DeleteCurrentUser(CancellationToken cancellationToken)
         {
-            return await DeleteUserById(CurrentUserId, cancellationToken);
+            return await DeleteUserById((int)CurrentUserId!, cancellationToken);
         }
     }
 }

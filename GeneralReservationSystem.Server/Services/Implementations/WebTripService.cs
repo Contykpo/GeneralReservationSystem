@@ -39,14 +39,14 @@ namespace GeneralReservationSystem.Server.Services.Implementations
 
         public async Task<Trip> CreateTripAsync(CreateTripDto dto, CancellationToken cancellationToken = default)
         {
-            EnsureAuthorized();
+            EnsureAdmin();
             await ValidateAsync(createTripValidator, dto, cancellationToken);
             return await tripService.CreateTripAsync(dto, cancellationToken);
         }
 
         public async Task DeleteTripAsync(TripKeyDto keyDto, CancellationToken cancellationToken = default)
         {
-            EnsureAuthorized();
+            EnsureAdmin();
             await ValidateAsync(tripKeyValidator, keyDto, cancellationToken);
             await tripService.DeleteTripAsync(keyDto, cancellationToken);
         }

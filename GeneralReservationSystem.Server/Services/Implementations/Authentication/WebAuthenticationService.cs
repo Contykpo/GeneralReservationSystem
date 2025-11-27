@@ -22,7 +22,7 @@ namespace GeneralReservationSystem.Server.Services.Implementations.Authenticatio
 
             return Task.FromResult(new UserInfo
             {
-                UserId = CurrentUserId,
+                UserId = (int)CurrentUserId!,
                 UserName = userName ?? string.Empty,
                 Email = email ?? string.Empty,
                 IsAdmin = IsAdmin

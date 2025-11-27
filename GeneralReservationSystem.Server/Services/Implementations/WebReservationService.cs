@@ -29,14 +29,14 @@ namespace GeneralReservationSystem.Server.Services.Implementations
 
         public async Task<IEnumerable<UserReservationDetailsDto>> GetUserReservationsAsync(UserKeyDto keyDto, CancellationToken cancellationToken = default)
         {
-            EnsureAuthorized();
+            EnsureAdmin();
             await ValidateAsync(userKeyValidator, keyDto, cancellationToken);
             return await reservationService.GetUserReservationsAsync(keyDto, cancellationToken);
         }
 
         public async Task<PagedResult<ReservationDetailsDto>> SearchReservationsAsync(PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default)
         {
-            EnsureAuthorized();
+            EnsureAdmin();
             await ValidateAsync(pagedSearchValidator, searchDto, cancellationToken);
             return await reservationService.SearchReservationsAsync(searchDto, cancellationToken);
         }
@@ -54,7 +54,7 @@ namespace GeneralReservationSystem.Server.Services.Implementations
         {
             EnsureAuthenticated();
             await ValidateAsync(pagedSearchValidator, searchDto, cancellationToken);
-            UserKeyDto keyDto = new() { UserId = CurrentUserId };
+            UserKeyDto keyDto = new() { UserId = (int)CurrentUserId! };
             return await reservationService.SearchUserReservationsAsync(keyDto, searchDto, cancellationToken);
         }
 
@@ -80,7 +80,7 @@ namespace GeneralReservationSystem.Server.Services.Implementations
         public async Task<IEnumerable<UserReservationDetailsDto>> GetCurrentUserReservationsAsync(CancellationToken cancellationToken = default)
         {
             EnsureAuthenticated();
-            UserKeyDto keyDto = new() { UserId = CurrentUserId };
+            UserKeyDto keyDto = new() { UserId = (int)CurrentUserId! };
             return await reservationService.GetUserReservationsAsync(keyDto, cancellationToken);
         }
 
@@ -93,7 +93,7 @@ namespace GeneralReservationSystem.Server.Services.Implementations
             {
                 TripId = keyDto.TripId,
                 Seat = keyDto.Seat,
-                UserId = CurrentUserId
+                UserId = (int)CurrentUserId!
             };
 
             return await reservationService.CreateReservationAsync(dto, cancellationToken);

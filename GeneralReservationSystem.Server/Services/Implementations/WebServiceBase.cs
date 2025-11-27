@@ -10,43 +10,36 @@ namespace GeneralReservationSystem.Server.Services.Implementations
     {
         protected ClaimsPrincipal? User => httpContextAccessor.HttpContext?.User;
 
+        protected int? CurrentUserId => int.TryParse(User?.FindFirst(ClaimTypes.NameIdentifier)?.Value, out int id) ? id : null;
+
         protected bool IsAdmin => User?.IsInRole(AdminRoleName) ?? false;
 
-        protected int CurrentUserId
+        protected bool IsOwnerOrAdmin(int targetUserId)
         {
-            get
-            {
-                if (!(User?.Identity?.IsAuthenticated ?? false))
-                {
-                    throw new ServiceBusinessException("No está autorizado para realizar esta acción.");
-                }
-
-                string? userIdStr = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                return !int.TryParse(userIdStr, out int id)
-                    ? throw new ServiceBusinessException("No está autorizado para realizar esta acción.")
-                    : id;
-            }
-        }
-
-        protected void EnsureAuthorized()
-        {
-            if (!IsAdmin)
-            {
-                throw new ServiceBusinessException("No tiene permisos para realizar esta acción.");
-            }
+            return IsAdmin || CurrentUserId == targetUserId;
         }
 
         protected void EnsureAuthenticated()
         {
-            // Access CurrentUserId to trigger authentication check
-            _ = CurrentUserId;
+            if (CurrentUserId == null)
+            {
+                throw new ServiceException("No está autorizado para realizar esta acción.");
+            }
+        }
+
+        protected void EnsureAdmin()
+        {
+            if (!IsAdmin)
+            {
+                throw new ServiceException("No tiene permisos para realizar esta acción.");
+            }
         }
 
         protected void EnsureOwnerOrAdmin(int targetUserId)
         {
-            if (!IsAdmin && CurrentUserId != targetUserId)
+            if (!IsOwnerOrAdmin(targetUserId))
             {
-                throw new ServiceBusinessException("No tiene permisos para realizar esta acción.");
+                throw new ServiceException("No tiene permisos para realizar esta acción.");
             }
         }
 

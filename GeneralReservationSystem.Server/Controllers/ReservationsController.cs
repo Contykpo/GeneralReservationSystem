@@ -35,7 +35,10 @@ namespace GeneralReservationSystem.Server.Controllers
         [Authorize]
         public async Task<IActionResult> SearchUserReservations([FromRoute] int userId, CancellationToken cancellationToken)
         {
-            EnsureOwnerOrAdmin(userId);
+            if (!IsOwnerOrAdmin(userId))
+            {
+                return Forbid();
+            }
             PagedSearchRequestDto searchDto = new();
             searchDto.PopulateFromQuery(Request.Query);
             await ValidateAsync(pagedSearchValidator, searchDto, cancellationToken);
@@ -52,7 +55,7 @@ namespace GeneralReservationSystem.Server.Controllers
             PagedSearchRequestDto searchDto = new();
             searchDto.PopulateFromQuery(Request.Query);
             await ValidateAsync(pagedSearchValidator, searchDto, cancellationToken);
-            PagedResult<UserReservationDetailsDto> result = await reservationService.SearchUserReservationsAsync(new UserKeyDto { UserId = CurrentUserId }, searchDto, cancellationToken);
+            PagedResult<UserReservationDetailsDto> result = await reservationService.SearchUserReservationsAsync(new UserKeyDto { UserId = (int)CurrentUserId! }, searchDto, cancellationToken);
             return Ok(result);
         }
 
@@ -60,7 +63,7 @@ namespace GeneralReservationSystem.Server.Controllers
         [Authorize]
         public async Task<IActionResult> GetMyReservations(CancellationToken cancellationToken)
         {
-            IEnumerable<UserReservationDetailsDto> reservations = await reservationService.GetUserReservationsAsync(new UserKeyDto { UserId = CurrentUserId }, cancellationToken);
+            IEnumerable<UserReservationDetailsDto> reservations = await reservationService.GetUserReservationsAsync(new UserKeyDto { UserId = (int)CurrentUserId! }, cancellationToken);
             return Ok(reservations);
         }
 
@@ -79,7 +82,10 @@ namespace GeneralReservationSystem.Server.Controllers
         [Authorize]
         public async Task<IActionResult> CreateReservation([FromBody] CreateReservationDto dto, CancellationToken cancellationToken)
         {
-            EnsureOwnerOrAdmin(dto.UserId);
+            if (!IsOwnerOrAdmin(dto.UserId))
+            {
+                return Forbid();
+            }
             await ValidateAsync(createReservationValidator, dto, cancellationToken);
             _ = await reservationService.CreateReservationAsync(dto, cancellationToken);
             return CreatedAtAction(nameof(GetReservation), new { tripId = dto.TripId, seat = dto.Seat }, new { message = "Reserva creada exitosamente" });
@@ -94,7 +100,7 @@ namespace GeneralReservationSystem.Server.Controllers
             {
                 TripId = keyDto.TripId,
                 Seat = keyDto.Seat,
-                UserId = CurrentUserId
+                UserId = (int)CurrentUserId!
             };
             _ = await reservationService.CreateReservationAsync(dto, cancellationToken);
             return CreatedAtAction(nameof(GetReservation), new { tripId = dto.TripId, seat = dto.Seat }, new { message = "Reserva creada exitosamente" });
@@ -107,8 +113,7 @@ namespace GeneralReservationSystem.Server.Controllers
             ReservationKeyDto keyDto = new() { TripId = tripId, Seat = seat };
             await ValidateAsync(reservationKeyValidator, keyDto, cancellationToken);
             Reservation reservation = await reservationService.GetReservationAsync(keyDto, cancellationToken);
-            EnsureOwnerOrAdmin(reservation.UserId);
-            return Ok(reservation);
+            return !IsOwnerOrAdmin(reservation.UserId) ? Forbid() : Ok(reservation);
         }
 
         [HttpDelete("{tripId:int}/{seat:int}")]
@@ -118,7 +123,10 @@ namespace GeneralReservationSystem.Server.Controllers
             ReservationKeyDto keyDto = new() { TripId = tripId, Seat = seat };
             await ValidateAsync(reservationKeyValidator, keyDto, cancellationToken);
             Reservation reservation = await reservationService.GetReservationAsync(keyDto, cancellationToken);
-            EnsureOwnerOrAdmin(reservation.UserId);
+            if (!IsOwnerOrAdmin(reservation.UserId))
+            {
+                return Forbid();
+            }
             await reservationService.DeleteReservationAsync(keyDto, cancellationToken);
             return NoContent();
         }

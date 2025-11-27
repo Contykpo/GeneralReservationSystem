@@ -102,7 +102,7 @@ app.UseHttpsRedirection();
 
 app.MapWhen(ctx => ctx.Request.Path.StartsWithSegments("/api"), apiApp =>
 {
-    _ = apiApp.UseMiddleware<GlobalExceptionHandler>();
+    _ = apiApp.UseMiddleware<ApiServiceExceptionHandler>();
 
     _ = apiApp.UseRouting();
 

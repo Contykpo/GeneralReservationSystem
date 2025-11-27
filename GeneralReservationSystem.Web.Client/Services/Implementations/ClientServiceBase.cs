@@ -154,7 +154,8 @@ namespace GeneralReservationSystem.Web.Client.Services.Implementations
                 HttpStatusCode.BadRequest when TryParseValidationErrorResponse(errorContent, out ValidationErrorResponse? errorResponse) =>
                     new ServiceValidationException(errorResponse!.ErrorMessage, errorResponse!.Errors),
                 HttpStatusCode.BadRequest => new ServiceBusinessException(ParseErrorMessage(errorContent) ?? "Error en la solicitud."),
-                HttpStatusCode.Unauthorized => new ServiceBusinessException(ParseErrorMessage(errorContent) ?? "No tiene permisos para realizar esta acción."),
+                HttpStatusCode.Unauthorized => new ServiceException(ParseErrorMessage(errorContent) ?? "No está autorizado para realizar esta acción."),
+                HttpStatusCode.Forbidden => new ServiceException(ParseErrorMessage(errorContent) ?? "No tiene permisos para realizar esta acción."),
                 HttpStatusCode.NotFound => new ServiceNotFoundException(ParseErrorMessage(errorContent) ?? "No se encontró el recurso solicitado."),
                 HttpStatusCode.Conflict => new ServiceBusinessException(ParseErrorMessage(errorContent) ?? "Conflicto en la solicitud."),
                 _ => new ServiceException(ParseErrorMessage(errorContent) ?? "Error desconocido.")

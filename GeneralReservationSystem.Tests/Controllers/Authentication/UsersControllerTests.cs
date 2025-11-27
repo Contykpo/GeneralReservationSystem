@@ -439,30 +439,6 @@ namespace GeneralReservationSystem.Tests.Controllers.Authentication
         }
 
         [Fact]
-        public async Task GetCurrentUser_NoUserIdClaim_ThrowsUnauthorizedAccessException()
-        {
-            // Arrange
-            ClaimsIdentity identity = new(); // No claims
-            ClaimsPrincipal claimsPrincipal = new(identity);
-
-            _controller.ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext
-                {
-                    User = claimsPrincipal
-                }
-            };
-
-            // Act & Assert
-            _ = await Assert.ThrowsAsync<UnauthorizedAccessException>(
-                () => _controller.GetCurrentUser(CancellationToken.None));
-
-            _mockUserService.Verify(
-                s => s.GetUserAsync(It.IsAny<UserKeyDto>(), It.IsAny<CancellationToken>()),
-                Times.Never);
-        }
-
-        [Fact]
         public async Task GetCurrentUser_UserNotFound_ThrowsServiceNotFoundException()
         {
             // Arrange
@@ -533,35 +509,6 @@ namespace GeneralReservationSystem.Tests.Controllers.Authentication
             Assert.Equal(updatedUser.UserId, userInfo.UserId);
             Assert.Equal(updatedUser.UserName, userInfo.UserName);
             Assert.Equal(updatedUser.Email, userInfo.Email);
-        }
-
-        [Fact]
-        public async Task UpdateCurrentUser_NoUserIdClaim_ThrowsUnauthorizedAccessException()
-        {
-            // Arrange
-            ClaimsIdentity identity = new();
-            ClaimsPrincipal claimsPrincipal = new(identity);
-
-            _controller.ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext
-                {
-                    User = claimsPrincipal
-                }
-            };
-
-            UpdateUserDto updateDto = new()
-            {
-                UserName = "updateduser"
-            };
-
-            // Act & Assert
-            _ = await Assert.ThrowsAsync<UnauthorizedAccessException>(
-                () => _controller.UpdateCurrentUser(updateDto, CancellationToken.None));
-
-            _mockUserService.Verify(
-                s => s.UpdateUserAsync(It.IsAny<UpdateUserDto>(), It.IsAny<CancellationToken>()),
-                Times.Never);
         }
 
         [Fact]
@@ -747,30 +694,6 @@ namespace GeneralReservationSystem.Tests.Controllers.Authentication
             _mockUserService.Verify(
                 s => s.DeleteUserAsync(It.Is<UserKeyDto>(k => k.UserId == 1), It.IsAny<CancellationToken>()),
                 Times.Once);
-        }
-
-        [Fact]
-        public async Task DeleteCurrentUser_NoUserIdClaim_ThrowsUnauthorizedAccessException()
-        {
-            // Arrange
-            ClaimsIdentity identity = new();
-            ClaimsPrincipal claimsPrincipal = new(identity);
-
-            _controller.ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext
-                {
-                    User = claimsPrincipal
-                }
-            };
-
-            // Act & Assert
-            _ = await Assert.ThrowsAsync<UnauthorizedAccessException>(
-                () => _controller.DeleteCurrentUser(CancellationToken.None));
-
-            _mockUserService.Verify(
-                s => s.DeleteUserAsync(It.IsAny<UserKeyDto>(), It.IsAny<CancellationToken>()),
-                Times.Never);
         }
 
         [Fact]

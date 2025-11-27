@@ -17,13 +17,13 @@ namespace GeneralReservationSystem.Server.Services.Implementations.Authenticatio
     {
         public async Task<IEnumerable<User>> GetAllUsersAsync(CancellationToken cancellationToken = default)
         {
-            EnsureAuthorized();
+            EnsureAdmin();
             return await userService.GetAllUsersAsync(cancellationToken);
         }
 
         public async Task<PagedResult<UserInfo>> SearchUsersAsync(PagedSearchRequestDto searchDto, CancellationToken cancellationToken = default)
         {
-            EnsureAuthorized();
+            EnsureAdmin();
             await ValidateAsync(pagedSearchValidator, searchDto, cancellationToken);
             return await userService.SearchUsersAsync(searchDto, cancellationToken);
         }

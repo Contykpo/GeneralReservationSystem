@@ -37,28 +37,28 @@ namespace GeneralReservationSystem.Server.Services.Implementations
 
         public async Task<Station> CreateStationAsync(CreateStationDto dto, CancellationToken cancellationToken = default)
         {
-            EnsureAuthorized();
+            EnsureAdmin();
             await ValidateAsync(createStationValidator, dto, cancellationToken);
             return await stationService.CreateStationAsync(dto, cancellationToken);
         }
 
         public async Task<Station> UpdateStationAsync(UpdateStationDto dto, CancellationToken cancellationToken = default)
         {
-            EnsureAuthorized();
+            EnsureAdmin();
             await ValidateAsync(updateStationValidator, dto, cancellationToken);
             return await stationService.UpdateStationAsync(dto, cancellationToken);
         }
 
         public async Task DeleteStationAsync(StationKeyDto keyDto, CancellationToken cancellationToken = default)
         {
-            EnsureAuthorized();
+            EnsureAdmin();
             await ValidateAsync(stationKeyValidator, keyDto, cancellationToken);
             await stationService.DeleteStationAsync(keyDto, cancellationToken);
         }
 
         public async Task<ImportResult> ImportStationsFromCsvAsync(Stream csvStream, string fileName, CancellationToken cancellationToken = default)
         {
-            EnsureAuthorized();
+            EnsureAdmin();
 
             if (csvStream == null || !csvStream.CanRead)
             {
@@ -98,7 +98,7 @@ namespace GeneralReservationSystem.Server.Services.Implementations
 
         public async Task<(byte[] FileContent, string FileName)> ExportStationsToCsvAsync(CancellationToken cancellationToken = default)
         {
-            EnsureAuthorized();
+            EnsureAdmin();
             IEnumerable<Station> stations = await stationService.GetAllStationsAsync(cancellationToken);
             byte[] bytes = CsvHelper.ExportToCsv(stations);
             string fileName = $"stations_{DateTime.UtcNow:yyyyMMddHHmmss}.csv";

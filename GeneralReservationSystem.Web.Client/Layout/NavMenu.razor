@@ -6,6 +6,7 @@
             <MudNavLink Href="/profile">Perfil</MudNavLink>
         </Authorized>
     </AuthorizeView>
+    <LoginDisplay OnLogout="OnLogout" />
     <AuthorizeView Roles="Admin">
         <Authorized>
             <MudDivider Class="my-2" />
@@ -16,7 +17,6 @@
             <MudNavLink Href="/admin/users">Usuarios</MudNavLink>
         </Authorized>
     </AuthorizeView>
-    <LoginDisplay OnLogout="OnLogout"/>
 </MudNavMenu>
 
 @code{

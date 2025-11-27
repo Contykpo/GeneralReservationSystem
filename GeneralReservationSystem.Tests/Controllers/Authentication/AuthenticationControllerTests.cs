@@ -235,8 +235,8 @@ namespace GeneralReservationSystem.Tests.Controllers.Authentication
             OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
             dynamic? response = okResult.Value;
             Assert.NotNull(response);
-            Assert.Contains("Administrador registrado exitosamente", response.message.ToString());
-            Assert.Equal(42, (int)response.userId);
+            Assert.Contains("Administrador registrado exitosamente", response?.message.ToString());
+            Assert.Equal(42, (int?)response?.userId);
 
             _mockAuthenticationService.Verify(
                 s => s.RegisterAdminAsync(registerDto, It.IsAny<CancellationToken>()),
@@ -570,26 +570,6 @@ namespace GeneralReservationSystem.Tests.Controllers.Authentication
             _mockAuthenticationService.Verify(
                 s => s.ChangePasswordAsync(It.IsAny<ChangePasswordDto>(), It.IsAny<CancellationToken>()),
                 Times.Never);
-        }
-
-        [Fact]
-        public async Task ChangePassword_NoUserIdClaim_ThrowsUnauthorizedAccessException()
-        {
-            // Arrange
-            ClaimsIdentity identity = new();
-            ClaimsPrincipal claimsPrincipal = new(identity);
-            _controller.ControllerContext.HttpContext.User = claimsPrincipal;
-
-            ChangePasswordDto changePasswordDto = new()
-            {
-                UserId = 1,
-                CurrentPassword = "OldPassword123!",
-                NewPassword = "NewPassword123!"
-            };
-
-            // Act & Assert
-            _ = await Assert.ThrowsAsync<UnauthorizedAccessException>(
-                () => _controller.ChangePassword(changePasswordDto, CancellationToken.None));
         }
 
         [Fact]

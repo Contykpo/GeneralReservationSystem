@@ -1,7 +1,6 @@
 ﻿using FluentValidation;
 using FluentValidation.Results;
 using GeneralReservationSystem.Application.Exceptions.Services;
-using System.Security;
 using System.Security.Claims;
 using static GeneralReservationSystem.Application.Constants;
 
@@ -9,30 +8,13 @@ namespace GeneralReservationSystem.Server.Controllers
 {
     public abstract class ControllerBase : Microsoft.AspNetCore.Mvc.ControllerBase
     {
+        protected int? CurrentUserId => int.TryParse(User?.FindFirst(ClaimTypes.NameIdentifier)?.Value, out int id) ? id : null;
+
         protected bool IsAdmin => User?.IsInRole(AdminRoleName) ?? false;
 
-        protected int CurrentUserId
+        protected bool IsOwnerOrAdmin(int targetUserId)
         {
-            get
-            {
-                if (!(User?.Identity?.IsAuthenticated ?? false))
-                {
-                    throw new UnauthorizedAccessException("No está autorizado para realizar esta acción.");
-                }
-
-                string? userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                return !int.TryParse(userIdStr, out int id)
-                    ? throw new UnauthorizedAccessException("No está autorizado para realizar esta acción.")
-                    : id;
-            }
-        }
-
-        protected void EnsureOwnerOrAdmin(int targetUserId)
-        {
-            if (!IsAdmin && CurrentUserId != targetUserId)
-            {
-                throw new SecurityException("No tiene permisos para realizar esta acción.");
-            }
+            return IsAdmin || CurrentUserId == targetUserId;
         }
 
         protected async Task ValidateAsync<T>(IValidator<T> validator, T dto, CancellationToken cancellationToken)
